@@ -20,9 +20,9 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { username, password });
-      const { user, access_token } = response.data;
-      setAuth(user, access_token);
+      const response = await api.post('/auth/login', { email: username, password });
+      const { user, accessToken } = response.data.data;
+      setAuth(user, accessToken);
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Lỗi đăng nhập', error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
@@ -40,13 +40,14 @@ export default function LoginScreen() {
 
       <View className="space-y-4">
         <View>
-          <Text className="text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</Text>
+          <Text className="text-sm font-medium text-gray-700 mb-1">Email</Text>
           <TextInput
             className="border border-gray-300 rounded-ant px-4 py-3 bg-gray-50"
-            placeholder="Nhập mã sinh viên hoặc tên đăng nhập"
+            placeholder="Nhập email đăng nhập"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
+            keyboardType="email-address"
           />
         </View>
 
