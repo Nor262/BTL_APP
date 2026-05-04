@@ -8,12 +8,11 @@ import '../src/global.css';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Provider as AntProvider } from '@ant-design/react-native';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useEffect } from 'react';
-import { useRouter, useSegments } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { registerForPushNotificationsAsync } from '@/utils/notifications';
 
 export const unstable_settings = {
-
   anchor: '(tabs)',
 };
 
@@ -22,19 +21,31 @@ export default function RootLayout() {
   const { user } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
+
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || !navigationState?.key) return;
+
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
 
-    if (!user && !inAuthGroup) {
-      router.replace('/login');
-    } else if (user && inAuthGroup) {
-      router.replace('/(tabs)');
-      registerForPushNotificationsAsync();
-    } else if (user) {
-      registerForPushNotificationsAsync();
-    }
-  }, [user, segments]);
+    setTimeout(() => {
+      if (!user && !inAuthGroup) {
+        router.replace('/login');
+      } else if (user && inAuthGroup) {
+        router.replace('/(tabs)');
+        registerForPushNotificationsAsync();
+      } else if (user) {
+        registerForPushNotificationsAsync();
+      }
+    }, 0);
+  }, [user, segments, navigationState?.key, isMounted]);
+
 
 
   return (

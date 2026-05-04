@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -6,6 +5,13 @@ import api from '@/api/client';
 
 export async function registerForPushNotificationsAsync() {
   let token;
+
+  if (Constants.appOwnership === 'expo') {
+    console.log('Push notifications are not supported in Expo Go. Use a development build.');
+    return;
+  }
+
+  const Notifications = await import('expo-notifications');
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
