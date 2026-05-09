@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { StyleSheet, ActivityIndicator, Alert, Dimensions, View as RNView } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { View, Text, Pressable, ScrollView, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
@@ -14,6 +15,7 @@ export default function BatchScanScreen() {
   const [scanning, setScanning] = useState(true);
   const [mode, setMode] = useState<'transaction' | 'info'>('transaction');
   const [condition, setCondition] = useState<'Good' | 'Broken'>('Good');
+  const [evidenceImage, setEvidenceImage] = useState<string | null>(null);
   const router = useRouter();
 
   if (!permission) {
@@ -56,6 +58,7 @@ export default function BatchScanScreen() {
       const itemData = response.data.data || response.data;
       setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
     } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Lỗi', 'Mã QR không hợp lệ hoặc thiết bị không tồn tại');
     } finally {
       if (mode === 'transaction') {
@@ -64,25 +67,55 @@ export default function BatchScanScreen() {
     }
   };
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setEvidenceImage(result.assets[0].uri);
+    }
+  };
+
   const handleConfirm = async () => {
     if (scannedItems.length === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     
     try {
       for (const item of scannedItems) {
         const endpoint = item.status === 'available' ? 'checkout' : 'checkin';
-        await api.put(`/transactions/${item.transaction_id}/${endpoint}`, {
-          qr_code_data: item.qr_code_data,
-          condition: condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi'
+        const formData = new FormData();
+        formData.append('qr_code_data', item.qr_code_data);
+        formData.append('condition', condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi');
+        
+        if (evidenceImage) {
+          const filename = evidenceImage.split('/').pop() || 'image.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image`;
+          
+          formData.append('image', { uri: evidenceImage, name: filename, type } as any);
+        }
+
+        await api.put(`/transactions/${item.transaction_id}/${endpoint}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         });
       }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Thành công', `Đã xử lý ${scannedItems.length} thiết bị!`);
       router.back();
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Lỗi', error.response?.data?.message || 'Không thể xử lý yêu cầu hàng loạt');
     }
   };
 
   const removeItem = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setScannedItems(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -166,6 +199,31 @@ export default function BatchScanScreen() {
                       <Text className={`ml-2 font-bold text-xs ${condition === 'Broken' ? 'text-red-600' : 'text-gray-500'}`}>HỎNG</Text>
                     </Pressable>
                   </View>
+                  
+                  {condition === 'Broken' && (
+                    <View className="mt-4">
+                      <Text className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Hình ảnh minh chứng</Text>
+                      {evidenceImage ? (
+                        <View className="relative h-32 w-full rounded-xl overflow-hidden mb-2">
+                          <Image source={{ uri: evidenceImage }} className="w-full h-full bg-gray-200" resizeMode="cover" />
+                          <Pressable 
+                            className="absolute top-2 right-2 bg-black/50 w-8 h-8 rounded-full items-center justify-center"
+                            onPress={() => setEvidenceImage(null)}
+                          >
+                            <Feather name="x" size={16} color="white" />
+                          </Pressable>
+                        </View>
+                      ) : (
+                        <Pressable 
+                          className="h-20 w-full border border-dashed border-gray-300 rounded-xl items-center justify-center bg-white"
+                          onPress={pickImage}
+                        >
+                          <Feather name="camera" size={24} color="#007AFF" />
+                          <Text className="text-xs text-primary font-medium mt-1">Tải ảnh lên</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
                 </View>
               )}
 

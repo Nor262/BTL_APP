@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Modal, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Modal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
@@ -10,15 +10,28 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { StatusBar } from 'expo-status-bar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+import * as Haptics from 'expo-haptics';
+
+LocaleConfig.locales['vi'] = {
+  monthNames: ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'],
+  monthNamesShort: ['Th.1','Th.2','Th.3','Th.4','Th.5','Th.6','Th.7','Th.8','Th.9','Th.10','Th.11','Th.12'],
+  dayNames: ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'],
+  dayNamesShort: ['CN','T2','T3','T4','T5','T6','T7'],
+  today: 'Hôm nay'
+};
+LocaleConfig.defaultLocale = 'vi';
 
 export default function EquipmentDetailScreen() {
   const { id } = useLocalSearchParams();
   const [equipment, setEquipment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState<'start' | 'due' | null>(null);
+  const [startDate, setStartDate] = useState(new Date());
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
   const [notes, setNotes] = useState('');
   const [occupiedDates, setOccupiedDates] = useState<any[]>([]);
+  const [markedDates, setMarkedDates] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
@@ -27,10 +40,24 @@ export default function EquipmentDetailScreen() {
       try {
         const [eqRes, transRes] = await Promise.all([
           api.get(`/equipment/${id}`),
-          api.get(`/transactions/equipment/${id}`).catch(() => ({ data: { data: [] } }))
-        ]);
+        const availRes = await api.get(`/equipment/${id}/availability`).catch(() => ({ data: [] }));
         setEquipment(eqRes.data.data || eqRes.data);
-        setOccupiedDates(transRes.data.data || transRes.data || []);
+        
+        const occupied = availRes.data.data || availRes.data || [];
+        setOccupiedDates(occupied);
+
+        // Generate marked dates for calendar
+        const marks: any = {};
+        occupied.forEach((period: any) => {
+          let curr = new Date(period.start);
+          const end = new Date(period.end);
+          while (curr <= end) {
+            const dateString = curr.toISOString().split('T')[0];
+            marks[dateString] = { disabled: true, disableTouchEvent: true, color: '#fee2e2', textColor: '#ef4444', startingDay: curr.getTime() === new Date(period.start).getTime(), endingDay: curr.getTime() === end.getTime() };
+            curr.setDate(curr.getDate() + 1);
+          }
+        });
+        setMarkedDates(marks);
       } catch (error) {
         console.error(error);
         Alert.alert('Lỗi', 'Không thể tải thông tin thiết bị');
@@ -43,8 +70,14 @@ export default function EquipmentDetailScreen() {
   }, [id]);
 
   const handleBorrow = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (!notes.trim()) {
       Alert.alert('Yêu cầu', 'Vui lòng nhập mục đích mượn thiết bị');
+      return;
+    }
+
+    if (startDate >= dueDate) {
+      Alert.alert('Lỗi', 'Ngày bắt đầu phải trước ngày trả');
       return;
     }
 
@@ -52,13 +85,16 @@ export default function EquipmentDetailScreen() {
     try {
       await api.post('/transactions/borrow', {
         equipment_id: parseInt(id as string),
+        start_date: startDate.toISOString(),
         due_date: dueDate.toISOString(),
         notes: notes,
       });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Thành công', 'Yêu cầu mượn đã được gửi. Hệ thống sẽ thông báo khi quản trị viên phê duyệt.', [
         { text: 'Về trang chủ', onPress: () => router.replace('/(tabs)') }
       ]);
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Lỗi', error.response?.data?.message || 'Không thể gửi yêu cầu');
     } finally {
       setSubmitting(false);
@@ -150,17 +186,20 @@ export default function EquipmentDetailScreen() {
               <View className="mt-8">
                 <View className="flex-row items-center mb-3">
                   <Feather name="calendar" size={18} color="#FF3B30" />
-                  <Text className="font-bold text-lg text-gray-900 ml-2">Lịch bận hiện tại</Text>
+                  <Text className="font-bold text-lg text-gray-900 ml-2">Lịch bận thiết bị</Text>
                 </View>
-                <View className="bg-red-50 p-4 rounded-xl border border-red-100">
-                  {occupiedDates.map((trans, idx) => (
-                    <View key={idx} className="flex-row items-center mb-2">
-                      <View className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2" />
-                      <Text className="text-gray-700 text-sm">
-                        {new Date(trans.request_date).toLocaleDateString('vi-VN')} → {new Date(trans.due_date).toLocaleDateString('vi-VN')}
-                      </Text>
-                    </View>
-                  ))}
+                <View className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                  <Calendar
+                    markingType={'period'}
+                    markedDates={markedDates}
+                    theme={{
+                      todayTextColor: '#007AFF',
+                      arrowColor: '#007AFF',
+                      textDayFontWeight: '500',
+                      textMonthFontWeight: 'bold',
+                      textDayHeaderFontWeight: 'bold',
+                    }}
+                  />
                 </View>
               </View>
             )}
@@ -168,14 +207,24 @@ export default function EquipmentDetailScreen() {
         </ScrollView>
 
         <View className="absolute bottom-0 left-0 right-0 bg-white p-5 border-t border-gray-100 flex-row items-center">
-          <View className="flex-1 mr-4">
-            <Text className="text-gray-500 font-bold text-[10px] uppercase">Hạn trả dự kiến</Text>
+          <View className="flex-1 mr-2">
+            <Text className="text-gray-500 font-bold text-[10px] uppercase">Từ ngày</Text>
             <Pressable 
-              onPress={() => setShowDatePicker(true)}
+              onPress={() => setShowDatePicker('start')}
               className="flex-row items-center mt-1"
             >
-              <Text className="text-primary font-bold text-lg mr-2">{dueDate.toLocaleDateString('vi-VN')}</Text>
-              <Feather name="edit" size={16} color="#CC0D00" />
+              <Text className="text-primary font-bold text-sm mr-1">{startDate.toLocaleDateString('vi-VN')}</Text>
+              <Feather name="edit" size={12} color="#CC0D00" />
+            </Pressable>
+          </View>
+          <View className="flex-1 mr-2 border-l border-gray-200 pl-2">
+            <Text className="text-gray-500 font-bold text-[10px] uppercase">Đến ngày</Text>
+            <Pressable 
+              onPress={() => setShowDatePicker('due')}
+              className="flex-row items-center mt-1"
+            >
+              <Text className="text-primary font-bold text-sm mr-1">{dueDate.toLocaleDateString('vi-VN')}</Text>
+              <Feather name="edit" size={12} color="#CC0D00" />
             </Pressable>
           </View>
           <View className="flex-1">
@@ -188,19 +237,19 @@ export default function EquipmentDetailScreen() {
           </View>
         </View>
 
-        <Modal visible={showDatePicker} transparent animationType="slide" statusBarTranslucent>
+        <Modal visible={!!showDatePicker} transparent animationType="slide" statusBarTranslucent>
           <View className="flex-1 justify-end bg-black/40">
             <View className="bg-white p-6 rounded-t-[30px]">
               <View className="flex-row justify-between items-center mb-6">
-                <Pressable onPress={() => setShowDatePicker(false)}><Text className="text-gray-500 font-medium">Hủy</Text></Pressable>
-                <Text className="font-bold text-lg text-gray-900">Chọn ngày trả</Text>
-                <Pressable onPress={() => setShowDatePicker(false)}><Text className="text-primary font-bold">Xong</Text></Pressable>
+                <Pressable onPress={() => setShowDatePicker(null)}><Text className="text-gray-500 font-medium">Hủy</Text></Pressable>
+                <Text className="font-bold text-lg text-gray-900">{showDatePicker === 'start' ? 'Chọn ngày nhận' : 'Chọn ngày trả'}</Text>
+                <Pressable onPress={() => setShowDatePicker(null)}><Text className="text-primary font-bold">Xong</Text></Pressable>
               </View>
               <DatePickerView
                 mode="date"
-                value={dueDate}
-                onChange={setDueDate}
-                minDate={new Date()}
+                value={showDatePicker === 'start' ? startDate : dueDate}
+                onChange={(date) => showDatePicker === 'start' ? setStartDate(date) : setDueDate(date)}
+                minDate={showDatePicker === 'start' ? new Date() : startDate}
               />
             </View>
           </View>
