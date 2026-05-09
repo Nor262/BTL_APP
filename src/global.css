@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .bg-primary-gradient {
+    background: linear-gradient(135deg, #CC0D00 0%, #8B0000 100%);
+  }
+
+  .bg-glass {
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+  }
+
+  .shadow-premium {
+    shadow-color: #000;
+    shadow-offset: 0 10px;
+    shadow-opacity: 0.1;
+    shadow-radius: 20px;
+    elevation: 10;
+  }
+}
+
 @layer base {
   :root {
     --primary: #CC0D00;

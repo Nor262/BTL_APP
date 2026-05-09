@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, ActivityIndicator, Alert, Dimensions, View as RNView } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { View, Text, Pressable, ScrollView } from '@/tw';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { IconOutline } from '@ant-design/icons-react-native';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
+import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
+
+const { width, height } = Dimensions.get('window');
 
 export default function BatchScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -16,16 +22,18 @@ export default function BatchScanScreen() {
   const router = useRouter();
 
   if (!permission) {
-    return <View className="flex-1 justify-center items-center"><ActivityIndicator /></View>;
+    return <View className="flex-1 justify-center items-center bg-secondary-dark"><ActivityIndicator color="#CC0D00" /></View>;
   }
 
   if (!permission.granted) {
     return (
-      <View className="flex-1 justify-center items-center px-8">
-        <Text className="text-center mb-4">Chúng tôi cần quyền truy cập Camera để quét mã QR</Text>
-        <Pressable className="bg-primary px-6 py-3 rounded-ant" onPress={requestPermission}>
-          <Text className="text-white font-bold">CẤP QUYỀN CAMERA</Text>
-        </Pressable>
+      <View className="flex-1 justify-center items-center px-10 bg-secondary-dark">
+        <View className="w-20 h-20 bg-white/10 rounded-3xl items-center justify-center mb-6">
+          <IconOutline name="camera" size={40} color="white" />
+        </View>
+        <Text className="text-white text-2xl font-bold text-center mb-2">Quyền truy cập Camera</Text>
+        <Text className="text-gray-400 text-center mb-10 leading-6">Chúng tôi cần quyền truy cập Camera để quét mã QR thiết bị và thực hiện các giao dịch mượn/trả.</Text>
+        <Button title="CẤP QUYỀN CAMERA" onPress={requestPermission} />
       </View>
     );
   }
@@ -38,23 +46,22 @@ export default function BatchScanScreen() {
 
     try {
       if (mode === 'info') {
-        // Just verify and show info (redirect to detail)
         const response = await api.get(`/equipment/verify?qr_data=${data}`);
-        router.push(`/equipment/${response.data.equipment_id}`);
+        router.push(`/equipment/${response.data.data?.equipment_id || response.data.equipment_id}`);
         return;
       }
 
-      // Transaction mode
       if (scannedItems.find(item => item.qr_code_data === data)) {
-        Alert.alert('Thông báo', 'Thiết bị này đã có trong danh sách');
+        Alert.alert('Thông báo', 'Thiết bị này đã có trong danh sách quét');
         setTimeout(() => setScanning(true), 1500);
         return;
       }
 
       const response = await api.get(`/equipment/verify?qr_data=${data}`);
-      setScannedItems(prev => [...prev, { ...response.data, qr_code_data: data }]);
+      const itemData = response.data.data || response.data;
+      setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
     } catch (error) {
-      Alert.alert('Lỗi', 'Mã QR không hợp lệ hoặc không tồn tại trong hệ thống');
+      Alert.alert('Lỗi', 'Mã QR không hợp lệ hoặc thiết bị không tồn tại');
     } finally {
       if (mode === 'transaction') {
         setTimeout(() => setScanning(true), 1500);
@@ -66,7 +73,6 @@ export default function BatchScanScreen() {
     if (scannedItems.length === 0) return;
     
     try {
-      // Logic for batch processing based on transaction type
       for (const item of scannedItems) {
         const endpoint = item.status === 'available' ? 'checkout' : 'checkin';
         await api.put(`/transactions/${item.transaction_id}/${endpoint}`, {
@@ -74,135 +80,145 @@ export default function BatchScanScreen() {
           condition: condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi'
         });
       }
-      Alert.alert('Thành công', `Đã xử lý ${scannedItems.length} thiết bị`);
+      Alert.alert('Thành công', `Đã xử lý bàn giao cho ${scannedItems.length} thiết bị thành công!`);
       router.back();
     } catch (error: any) {
       Alert.alert('Lỗi', error.response?.data?.message || 'Không thể xử lý yêu cầu hàng loạt');
     }
   };
 
-
   const removeItem = (index: number) => {
     setScannedItems(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
-    <View className="flex-1 bg-black">
-      {/* Top 50%: Camera */}
-      <View className="h-1/2 relative">
+    <View className="flex-1 bg-secondary-dark">
+      <View className="h-[60%] relative">
         <CameraView
           style={StyleSheet.absoluteFill}
           onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
-          barcodeScannerSettings={{
-            barcodeTypes: ['qr'],
-          }}
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         />
+        
         <View className="absolute inset-0 items-center justify-center">
-          <View className="w-64 h-64 border-2 border-white/50 rounded-3xl" />
-          {!scanning && (
-            <View className="absolute bg-green-500/80 px-4 py-2 rounded-full">
-              <Text className="text-white font-bold">ĐÃ QUÉT!</Text>
-            </View>
-          )}
+          <Animated.View entering={ZoomIn.duration(1000)}>
+            <RNView className="w-72 h-72 border-[3px] border-primary rounded-[50px] items-center justify-center">
+              <RNView className="absolute top-0 left-0 w-10 h-10 border-t-[5px] border-l-[5px] border-white rounded-tl-3xl" />
+              <RNView className="absolute top-0 right-0 w-10 h-10 border-t-[5px] border-r-[5px] border-white rounded-tr-3xl" />
+              <RNView className="absolute bottom-0 left-0 w-10 h-10 border-b-[5px] border-l-[5px] border-white rounded-bl-3xl" />
+              <RNView className="absolute bottom-0 right-0 w-10 h-10 border-b-[5px] border-r-[5px] border-white rounded-br-3xl" />
+              
+              {!scanning && (
+                <Animated.View entering={FadeIn} className="bg-success px-6 py-2 rounded-full shadow-lg">
+                  <Text className="text-white font-bold text-lg">ĐÃ NHẬN!</Text>
+                </Animated.View>
+              )}
+            </RNView>
+          </Animated.View>
         </View>
-        <Pressable 
-          className="absolute top-12 left-4 w-10 h-10 bg-black/50 rounded-full items-center justify-center"
-          onPress={() => router.back()}
-        >
-          <IconOutline name="arrow-left" size={24} color="white" />
-        </Pressable>
 
-        <View className="absolute top-12 right-4 flex-row bg-black/50 p-1 rounded-full border border-white/20">
+        <View className="absolute top-14 left-6 right-6 flex-row justify-between items-center">
           <Pressable 
-            className={`px-4 py-1.5 rounded-full ${mode === 'transaction' ? 'bg-primary' : ''}`}
-            onPress={() => { setMode('transaction'); setScannedItems([]); }}
+            className="w-12 h-12 bg-black/40 rounded-2xl items-center justify-center border border-white/20"
+            onPress={() => router.back()}
           >
-            <Text className="text-white text-xs font-bold">GIAO DỊCH</Text>
+            <IconOutline name="close" size={24} color="white" />
           </Pressable>
-          <Pressable 
-            className={`px-4 py-1.5 rounded-full ${mode === 'info' ? 'bg-primary' : ''}`}
-            onPress={() => { setMode('info'); setScannedItems([]); }}
-          >
-            <Text className="text-white text-xs font-bold">TRA CỨU</Text>
-          </Pressable>
+          
+          <View className="flex-row bg-black/40 p-1.5 rounded-2xl border border-white/20">
+            <Pressable 
+              className={`px-4 py-2 rounded-xl ${mode === 'transaction' ? 'bg-primary' : ''}`}
+              onPress={() => { setMode('transaction'); setScannedItems([]); }}
+            >
+              <Text className="text-white text-xs font-bold">GIAO DỊCH</Text>
+            </Pressable>
+            <Pressable 
+              className={`px-4 py-2 rounded-xl ${mode === 'info' ? 'bg-primary' : ''}`}
+              onPress={() => { setMode('info'); setScannedItems([]); }}
+            >
+              <Text className="text-white text-xs font-bold">TRA CỨU</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
-      {/* Bottom 50%: Scanned List */}
-      <View className="h-1/2 bg-white rounded-t-[30px] p-6">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-xl font-bold">
-            {mode === 'transaction' ? `Danh sách đã quét (${scannedItems.length})` : 'Thông tin thiết bị'}
+      <Animated.View 
+        entering={FadeInDown.duration(800)}
+        className="flex-1 bg-surface-muted -mt-10 rounded-t-[40px] shadow-premium p-8"
+      >
+        <View className="flex-row justify-between items-center mb-6">
+          <Text className="text-2xl font-bold text-secondary">
+            {mode === 'transaction' ? `Đã quét (${scannedItems.length})` : 'Thông tin'}
           </Text>
           {scannedItems.length > 0 && mode === 'transaction' && (
             <Pressable onPress={() => setScannedItems([])}>
-              <Text className="text-red-500 font-medium">Xóa hết</Text>
+              <Text className="text-primary font-bold">Xóa tất cả</Text>
             </Pressable>
           )}
         </View>
 
-        <ScrollView className="flex-1">
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {mode === 'transaction' && scannedItems.length === 0 ? (
-            <View className="items-center justify-center py-10">
-              <IconOutline name="qrcode" size={48} color="#ddd" />
-              <Text className="text-gray-400 mt-2">Vui lòng đưa mã QR vào khung hình</Text>
-            </View>
-          ) : mode === 'info' ? (
-            <View className="items-center justify-center py-10">
-              <IconOutline name="search" size={48} color="#ddd" />
-              <Text className="text-gray-400 mt-2">Quét mã để xem thông tin chi tiết</Text>
+            <View className="items-center justify-center py-10 border-2 border-dashed border-gray-200 rounded-[30px]">
+              <IconOutline name="qrcode" size={48} color="#D1D1D6" />
+              <Text className="text-gray-400 mt-4 text-center font-medium">Đưa mã QR vào khung hình camera</Text>
             </View>
           ) : (
             <>
-              <View className="mb-4 bg-gray-50 p-4 rounded-ant border border-gray-100">
-                <Text className="text-xs font-bold text-gray-500 mb-2 uppercase">Xác nhận tình trạng thiết bị:</Text>
-                <View className="flex-row">
-                  <Pressable 
-                    className={`flex-1 flex-row items-center justify-center py-2 rounded-ant mr-2 ${condition === 'Good' ? 'bg-green-500' : 'bg-white border border-gray-200'}`}
-                    onPress={() => setCondition('Good')}
-                  >
-                    <IconOutline name="check-circle" size={16} color={condition === 'Good' ? 'white' : '#52c41a'} />
-                    <Text className={`ml-1 text-xs font-bold ${condition === 'Good' ? 'text-white' : 'text-gray-600'}`}>TỐT</Text>
-                  </Pressable>
-                  <Pressable 
-                    className={`flex-1 flex-row items-center justify-center py-2 rounded-ant ${condition === 'Broken' ? 'bg-red-500' : 'bg-white border border-gray-200'}`}
-                    onPress={() => setCondition('Broken')}
-                  >
-                    <IconOutline name="warning" size={16} color={condition === 'Broken' ? 'white' : '#f5222d'} />
-                    <Text className={`ml-1 text-xs font-bold ${condition === 'Broken' ? 'text-white' : 'text-gray-600'}`}>HỎNG/LỖI</Text>
-                  </Pressable>
+              {mode === 'transaction' && (
+                <View className="mb-6 bg-white p-6 rounded-[30px] shadow-sm border border-gray-50">
+                  <Text className="text-[10px] font-bold text-gray-400 mb-4 uppercase tracking-widest">Xác nhận tình trạng hiện tại</Text>
+                  <View className="flex-row">
+                    <Pressable 
+                      className={`flex-1 flex-row items-center justify-center py-3 rounded-2xl mr-2 ${condition === 'Good' ? 'bg-success/10 border-success' : 'bg-gray-50 border-transparent'} border`}
+                      onPress={() => setCondition('Good')}
+                    >
+                      <IconOutline name="check-circle" size={18} color={condition === 'Good' ? '#34C759' : '#C7C7CC'} />
+                      <Text className={`ml-2 font-bold ${condition === 'Good' ? 'text-success' : 'text-gray-400'}`}>TỐT</Text>
+                    </Pressable>
+                    <Pressable 
+                      className={`flex-1 flex-row items-center justify-center py-3 rounded-2xl ${condition === 'Broken' ? 'bg-error/10 border-error' : 'bg-gray-50 border-transparent'} border`}
+                      onPress={() => setCondition('Broken')}
+                    >
+                      <IconOutline name="warning" size={18} color={condition === 'Broken' ? '#FF3B30' : '#C7C7CC'} />
+                      <Text className={`ml-2 font-bold ${condition === 'Broken' ? 'text-error' : 'text-gray-400'}`}>HỎNG</Text>
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
+              )}
 
               {scannedItems.map((item, index) => (
-                <View key={index} className="flex-row items-center bg-gray-50 p-3 rounded-ant mb-2">
-                  <View className="w-10 h-10 bg-primary/10 rounded-ant items-center justify-center mr-3">
-                    <IconOutline name="laptop" size={20} color="#CC0D00" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-bold text-sm" numberOfLines={1}>{item.name}</Text>
-                    <Text className="text-xs text-gray-500">SN: {item.serial_number}</Text>
-                  </View>
-                  <Pressable onPress={() => removeItem(index)} className="p-2">
-                    <IconOutline name="close-circle" size={20} color="#ff4d4f" />
+                <Animated.View 
+                  key={index} 
+                  entering={FadeInDown.delay(index * 100)}
+                  className="flex-row items-center bg-white p-4 rounded-3xl mb-3 shadow-sm border border-gray-50"
+                >
+                  <RNView className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center mr-4">
+                    <IconOutline name="laptop" size={24} color="#CC0D00" />
+                  </RNView>
+                  <RNView className="flex-1">
+                    <Text className="font-bold text-secondary text-base" numberOfLines={1}>{item.name}</Text>
+                    <Text className="text-xs text-gray-400 mt-1">SN: {item.serial_number}</Text>
+                  </RNView>
+                  <Pressable onPress={() => removeItem(index)} className="p-2 bg-gray-50 rounded-full">
+                    <IconOutline name="delete" size={18} color="#FF3B30" />
                   </Pressable>
-                </View>
+                </Animated.View>
               ))}
             </>
           )}
         </ScrollView>
 
         {mode === 'transaction' && (
-          <Pressable 
-            className={`mt-4 py-4 rounded-ant items-center ${scannedItems.length > 0 ? 'bg-primary' : 'bg-gray-300'}`}
-            onPress={handleConfirm}
-            disabled={scannedItems.length === 0}
-          >
-            <Text className="text-white font-bold text-lg">XÁC NHẬN HÀNG LOẠT</Text>
-          </Pressable>
+          <RNView className="pt-4">
+            <Button 
+              title={`XÁC NHẬN ${scannedItems.length} THIẾT BỊ`} 
+              onPress={handleConfirm} 
+              disabled={scannedItems.length === 0}
+            />
+          </RNView>
         )}
-      </View>
-
+      </Animated.View>
     </View>
   );
 }
