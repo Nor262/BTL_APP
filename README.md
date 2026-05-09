@@ -1,50 +1,75 @@
-# Welcome to your Expo app 👋
+# Equipment Management System - Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Ứng dụng di động quản lý thiết bị dành cho người mượn (đăng ký mượn, xem lịch bận) và thủ kho (quét QR, Check-in/Check-out, báo cáo hư hỏng).
 
-## Get started
+## 🚀 Tính năng chính
 
-1. Install dependencies
+- **Quét mã QR**: Quét mã thiết bị để mượn hoặc tra cứu thông tin nhanh.
+- **Calendar View**: Xem lịch bận của từng thiết bị trực quan, tránh đặt trùng ngày.
+- **Báo cáo hư hỏng kèm ảnh**: Chụp ảnh tình trạng thiết bị trực tiếp từ camera khi bàn giao/nhận lại.
+- **Haptic Feedback**: Phản hồi rung khi quét mã thành công hoặc có thông báo quan trọng.
+- **Quản lý yêu cầu**: Theo dõi trạng thái các đơn mượn cá nhân.
 
-   ```bash
-   npm install
-   ```
+## 🛠 Tech Stack
 
-2. Start the app
+- **Framework**: [Expo](https://expo.dev/) (v54) / React Native
+- **Router**: Expo Router (File-based navigation)
+- **Styling**: NativeWind (Tailwind CSS v4)
+- **State Management**: Zustand
+- **UI Components**: @ant-design/react-native, expo-symbols
+- **Data Fetching**: Axios
 
-   ```bash
-   npx expo start
-   ```
+## 📋 Yêu cầu hệ thống
 
-In the output, you'll find options to open the app in a
+- **Node.js**: v20 hoặc mới hơn
+- **Expo Go App**: Cài đặt trên điện thoại (Android/iOS) để test nhanh.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🛠 Hướng dẫn cài đặt
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### 1. Clone repository
 ```bash
-npm run reset-project
+git clone <repository-url>
+cd frontendApp
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Cài đặt dependency
+```bash
+npm install
+```
 
-## Learn more
+### 3. Thiết lập biến môi trường
+Tạo file `.env` hoặc cấu hình biến:
+```bash
+# URL của Backend API (Sử dụng IP LAN nếu test trên thiết bị thật)
+EXPO_PUBLIC_API_URL=http://<YOUR_LOCAL_IP>:3000/v1
+```
+*Ghi chú: Ứng dụng có cơ chế tự động phát hiện IP máy chủ (Debugger Host) nếu bạn không cấu hình biến này.*
 
-To learn more about developing your project with Expo, look at the following resources:
+### 4. Chạy ứng dụng
+```bash
+npm run dev
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 5. Kết nối thiết bị
+- Quét mã QR hiện trên terminal bằng ứng dụng **Expo Go** (Android) hoặc **Camera** (iOS).
+- Đảm bảo điện thoại và máy tính cùng kết nối vào một mạng Wi-Fi.
 
-## Join the community
+## 📂 Cấu trúc thư mục chính
 
-Join our community of developers creating universal apps.
+```
+app/
+├── (tabs)/         # Các màn hình chính (Trang chủ, Khám phá)
+├── equipment/      # Chi tiết thiết bị & Đăng ký mượn (Calendar)
+├── scan.tsx        # Màn hình quét mã QR & Check-in/Check-out
+├── login.tsx       # Đăng nhập
+└── my-loans.tsx    # Lịch sử mượn cá nhân
+components/
+└── ui/             # Các UI components dùng chung (Button, Badge, etc.)
+src/
+├── api/            # Cấu hình Axios Client
+├── constants/      # Cấu hình IP, màu sắc hệ thống
+└── store/          # Zustand Auth Store
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📜 Lưu ý
+Mặc định ứng dụng sẽ kết nối tới `http://localhost:3000/v1`. Nếu chạy trên emulator Android, có thể cần đổi sang `http://10.0.2.2:3000/v1` hoặc IP thực tế của máy tính.
