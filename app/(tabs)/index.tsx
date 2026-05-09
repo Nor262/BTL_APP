@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import BorrowerHome from '@/components/dashboard/BorrowerHome';
 import StorekeeperHome from '@/components/dashboard/StorekeeperHome';
-import { View } from '@/tw';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
@@ -10,8 +10,8 @@ export default function HomeScreen() {
   if (!user) return null;
 
   return (
-    <View className="flex-1">
+    <Animated.View entering={FadeIn} className="flex-1">
       {user.role === 'borrower' ? <BorrowerHome /> : <StorekeeperHome />}
-    </View>
+    </Animated.View>
   );
 }

@@ -1,0 +1,32 @@
+app/(tabs)/_layout.tsx(5,26): error TS2307: Cannot find module 'expo-blur' or its corresponding type declarations.
+app/(tabs)/explore.tsx(165,15): error TS2322: Type '{ label: string; value: string; onChangeText: Dispatch<SetStateAction<string>>; icon: string; }' is not assignable to type 'IntrinsicAttributes & InputProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & InputProps'.
+app/(tabs)/explore.tsx(188,17): error TS2322: Type '{ label: string; secureTextEntry: true; value: string; onChangeText: (v: string) => void; icon: string; }' is not assignable to type 'IntrinsicAttributes & InputProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & InputProps'.
+app/(tabs)/explore.tsx(196,17): error TS2322: Type '{ label: string; secureTextEntry: true; value: string; onChangeText: (v: string) => void; icon: string; }' is not assignable to type 'IntrinsicAttributes & InputProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & InputProps'.
+app/(tabs)/explore.tsx(204,17): error TS2322: Type '{ label: string; secureTextEntry: true; value: string; onChangeText: (v: string) => void; icon: string; }' is not assignable to type 'IntrinsicAttributes & InputProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & InputProps'.
+app/equipment/[id].tsx(206,13): error TS2322: Type '{ title: string; onPress: () => Promise<void>; loading: boolean; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & ButtonProps'.
+app/login.tsx(50,9): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: LinearGradientProps): LinearGradient', gave the following error.
+    Type '{ colors: [string, string]; style: { position: "absolute"; top: number; left: number; right: number; bottom: number; }; start: { x: number; y: number; }; end: { x: number; y: number; }; opacity: number; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+      Property 'opacity' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+  Overload 2 of 2, '(props: LinearGradientProps, context: any): LinearGradient', gave the following error.
+    Type '{ colors: [string, string]; style: { position: "absolute"; top: number; left: number; right: number; bottom: number; }; start: { x: number; y: number; }; end: { x: number; y: number; }; opacity: number; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+      Property 'opacity' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+app/register.tsx(54,9): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: LinearGradientProps): LinearGradient', gave the following error.
+    Type '{ colors: [string, string]; style: { position: "absolute"; top: number; left: number; right: number; bottom: number; }; start: { x: number; y: number; }; end: { x: number; y: number; }; opacity: number; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+      Property 'opacity' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+  Overload 2 of 2, '(props: LinearGradientProps, context: any): LinearGradient', gave the following error.
+    Type '{ colors: [string, string]; style: { position: "absolute"; top: number; left: number; right: number; bottom: number; }; start: { x: number; y: number; }; end: { x: number; y: number; }; opacity: number; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+      Property 'opacity' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<LinearGradient> & Readonly<LinearGradientProps>'.
+app/scan.tsx(217,15): error TS2322: Type '{ title: string; onPress: () => Promise<void>; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & ButtonProps'.
+src/components/dashboard/BorrowerHome.tsx(115,40): error TS2345: Argument of type '"/(tabs)/profile"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/login" | `/login?${string}` | `/login#${string}` | "/modal" | `/modal?${string}` | `/modal#${string}` | "/my-loans" | `/my-loans?${string}` | ... 35 more ... | { ...; }'.
+src/components/dashboard/StorekeeperHome.tsx(85,42): error TS2345: Argument of type '"/(tabs)/profile"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/login" | `/login?${string}` | `/login#${string}` | "/modal" | `/modal?${string}` | `/modal#${string}` | "/my-loans" | `/my-loans?${string}` | ... 35 more ... | { ...; }'.
+src/components/dashboard/StorekeeperHome.tsx(144,51): error TS2345: Argument of type '"/(tabs)/transactions"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/login" | `/login?${string}` | `/login#${string}` | "/modal" | `/modal?${string}` | `/modal#${string}` | "/my-loans" | `/my-loans?${string}` | ... 35 more ... | { ...; }'.
+src/components/ui/Button.tsx(4,10): error TS2305: Module '"nativewind"' has no exported member 'styled'.
+src/components/ui/Input.tsx(3,10): error TS2305: Module '"nativewind"' has no exported member 'styled'.

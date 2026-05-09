@@ -1,25 +1,34 @@
 import React from 'react';
 import { Pressable, Text, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { styled } from 'nativewind';
 import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-
-const StyledPressable = styled(Pressable);
 
 interface ButtonProps {
   onPress: () => void;
   title: string;
   loading?: boolean;
+  disabled?: boolean;
   variant?: 'primary' | 'secondary' | 'outline';
   className?: string;
+  containerClassName?: string;
+  textClassName?: string;
 }
 
-export default function Button({ onPress, title, loading, variant = 'primary', className = '' }: ButtonProps) {
+export default function Button({ 
+  onPress, 
+  title, 
+  loading, 
+  disabled, 
+  variant = 'primary', 
+  className = '', 
+  containerClassName = '',
+  textClassName = '' 
+}: ButtonProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
+    opacity: disabled || loading ? 0.6 : 1,
   }));
 
   const handlePressIn = () => {
@@ -31,64 +40,48 @@ export default function Button({ onPress, title, loading, variant = 'primary', c
   };
 
   const handlePress = () => {
+    if (disabled || loading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onPress();
   };
 
-  if (variant === 'primary') {
-    return (
-      <Animated.View style={[animatedStyle, { width: '100%' }]}>
-        <StyledPressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onPress={handlePress}
-          disabled={loading}
-          className={`overflow-hidden rounded-xl ${className}`}
-        >
-          <LinearGradient
-            colors={['#CC0D00', '#8B0000']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="py-4 items-center justify-center"
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white font-bold text-lg tracking-wider">{title.toUpperCase()}</Text>
-            )}
-          </LinearGradient>
-        </StyledPressable>
-      </Animated.View>
-    );
-  }
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'primary':
+        return 'bg-primary';
+      case 'outline':
+        return 'border border-primary bg-transparent';
+      default:
+        return 'bg-gray-100';
+    }
+  };
 
-  if (variant === 'outline') {
-    return (
-      <Animated.View style={[animatedStyle, { width: '100%' }]}>
-        <StyledPressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onPress={handlePress}
-          disabled={loading}
-          className={`py-4 rounded-xl border-2 border-primary items-center justify-center ${className}`}
-        >
-          <Text className="text-primary font-bold text-lg tracking-wider">{title.toUpperCase()}</Text>
-        </StyledPressable>
-      </Animated.View>
-    );
-  }
+  const getTextColor = () => {
+    switch (variant) {
+      case 'primary':
+        return 'text-white';
+      case 'outline':
+        return 'text-primary';
+      default:
+        return 'text-gray-900';
+    }
+  };
 
   return (
-    <Animated.View style={[animatedStyle, { width: '100%' }]}>
-      <StyledPressable
+    <Animated.View style={animatedStyle} className={`w-full ${containerClassName}`}>
+      <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={handlePress}
-        disabled={loading}
-        className={`py-4 rounded-xl bg-surface-muted items-center justify-center ${className}`}
+        disabled={loading || disabled}
+        className={`py-4 items-center justify-center rounded-xl ${getVariantStyles()} ${className}`}
       >
-        <Text className="text-secondary font-bold text-lg tracking-wider">{title.toUpperCase()}</Text>
-      </StyledPressable>
+        {loading ? (
+          <ActivityIndicator color={variant === 'primary' ? 'white' : '#CC0D00'} />
+        ) : (
+          <Text className={`${getTextColor()} font-bold text-base ${textClassName}`}>{title}</Text>
+        )}
+      </Pressable>
     </Animated.View>
   );
 }

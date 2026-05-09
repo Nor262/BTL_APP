@@ -1,236 +1,288 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput, Alert, Modal, Dimensions } from 'react-native';
-import { IconOutline } from '@ant-design/icons-react-native';
+import { View, Text, ScrollView, Pressable, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { StatusBar } from 'expo-status-bar';
-
-const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuthStore();
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [fullName, setFullName] = useState(user?.full_name || '');
-  const [passwords, setPasswords] = useState({ old_password: '', new_password: '', confirm: '' });
-  const [loadingPass, setLoadingPass] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const { user, logout, setAuth } = useAuthStore();
   const router = useRouter();
 
-  const handleUpdateProfile = async () => {
-    if (!fullName.trim()) return;
-    setLoadingProfile(true);
-    try {
-      await api.patch('/auth/profile', { full_name: fullName });
-      Alert.alert('Thành công', 'Thông tin cá nhân đã được cập nhật');
-      setShowProfileModal(false);
-    } catch (error: any) {
-      Alert.alert('Lỗi', 'Không thể cập nhật thông tin');
-    } finally {
-      setLoadingProfile(false);
-    }
-  };
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [fullName, setFullName] = useState(user?.full_name || '');
+  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+  const [loading, setLoading] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn thoát khỏi phiên làm việc này?', [
+    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
       { text: 'Hủy', style: 'cancel' },
-      { text: 'Đăng xuất', style: 'destructive', onPress: logout }
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: () => {
+          logout();
+          router.replace('/login');
+        }
+      }
     ]);
   };
 
-  const handleChangePassword = async () => {
-    if (passwords.new_password !== passwords.confirm) {
-      Alert.alert('Lỗi', 'Mật khẩu xác nhận không trùng khớp');
+  const updateProfile = async () => {
+    if (!fullName) {
+      Alert.alert('Thông báo', 'Họ và tên không được để trống');
       return;
     }
-    setLoadingPass(true);
+    setLoading(true);
     try {
-      await api.patch('/auth/change-password', {
-        old_password: passwords.old_password,
-        new_password: passwords.new_password
-      });
-      Alert.alert('Thành công', 'Mật khẩu đã được thay đổi thành công');
-      setShowPasswordModal(false);
-      setPasswords({ old_password: '', new_password: '', confirm: '' });
+      const res = await api.patch('/auth/profile', { full_name: fullName });
+      setAuth(res.data.data || res.data, useAuthStore.getState().token!);
+      Alert.alert('Thành công', 'Cập nhật thông tin thành công');
+      setShowEditModal(false);
     } catch (error: any) {
-      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể đổi mật khẩu');
+      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể cập nhật thông tin');
     } finally {
-      setLoadingPass(false);
+      setLoading(false);
     }
   };
 
-  if (!user) return null;
+  const handleChangePassword = async () => {
+    const { current, new: newPass, confirm } = passwords;
+    if (!current || !newPass || !confirm) {
+      Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin mật khẩu');
+      return;
+    }
+    if (newPass !== confirm) {
+      Alert.alert('Thông báo', 'Mật khẩu mới không khớp');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.patch('/auth/change-password', {
+        old_password: current,
+        new_password: newPass
+      });
+      Alert.alert('Thành công', 'Đổi mật khẩu thành công');
+      setShowPasswordModal(false);
+      setPasswords({ current: '', new: '', confirm: '' });
+    } catch (error: any) {
+      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể đổi mật khẩu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showHelp = () => {
+    Alert.alert('Hỗ trợ', 'Vui lòng liên hệ quản trị viên CLB tại văn phòng hoặc qua email để được hỗ trợ kỹ thuật.');
+  };
+
+  const showAbout = () => {
+    Alert.alert('Về ứng dụng', 'Hệ thống Quản lý Thiết bị CLB v1.0.0\nPhát triển bởi Team BTL.\n© 2026 PTIT');
+  };
 
   return (
-    <View className="flex-1 bg-surface-muted">
-      <StatusBar style="light" />
+    <Animated.View entering={FadeIn} className="flex-1 bg-gray-50">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="bg-secondary-dark pt-20 pb-24 px-6 rounded-b-[50px] items-center relative overflow-hidden">
-          <LinearGradient
-            colors={['#CC0D00', '#8B0000']}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.8 }}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
-          <Animated.View entering={FadeInUp.duration(800)} className="items-center">
-            <View className="w-28 h-28 bg-white/20 rounded-[40px] items-center justify-center border-2 border-white/30 shadow-2xl">
-              <IconOutline name="user" size={56} color="white" />
-            </View>
-            <Text className="text-3xl font-bold text-white mt-6">{user.full_name}</Text>
-            <View className="bg-white/20 px-4 py-1.5 rounded-full mt-2 border border-white/30">
-              <Text className="text-white text-xs font-bold uppercase tracking-[2px]">
-                {user.role === 'admin' ? 'QUẢN TRỊ VIÊN' : user.role === 'storekeeper' ? 'THỦ KHO' : 'SINH VIÊN'}
-              </Text>
-            </View>
-          </Animated.View>
+        <View className="bg-primary pt-20 pb-8 px-6 items-center rounded-b-[40px] shadow-sm">
+          <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-sm mb-4 border-4 border-white/20">
+            <Text className="text-primary text-4xl font-bold">
+              {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+            </Text>
+          </View>
+          <Text className="text-white text-2xl font-bold">{user?.full_name}</Text>
+          <Text className="text-white/80 mt-1">{user?.email}</Text>
+          <View className="bg-white/20 px-4 py-1.5 rounded-full mt-3">
+            <Text className="text-white text-xs font-bold uppercase tracking-wider">
+              {user?.role === 'storekeeper' ? 'THỦ KHO' : 'SINH VIÊN'}
+            </Text>
+          </View>
         </View>
 
-        <View className="px-6 -mt-12">
-          <Animated.View entering={FadeInDown.delay(200)} className="bg-white rounded-[40px] shadow-premium p-4">
-            <SettingItem 
-              icon="book" 
-              label="Đơn mượn của tôi" 
-              onPress={() => router.push('/my-loans')} 
-              color="#CC0D00"
+        <View className="px-6 py-6">
+          <Text className="font-bold text-gray-900 text-lg mb-4">Cài đặt tài khoản</Text>
+
+          <Animated.View entering={FadeInDown.delay(200)} className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <ProfileOption
+              icon="user"
+              title="Sửa thông tin"
+              onPress={() => setShowEditModal(true)}
+              isFirst
             />
-            <SettingItem 
-              icon="edit" 
-              label="Cập nhật thông tin" 
-              onPress={() => setShowProfileModal(true)} 
-              color="#007AFF"
+            <ProfileOption
+              icon="lock"
+              title="Đổi mật khẩu"
+              onPress={() => setShowPasswordModal(true)}
             />
-            <SettingItem 
-              icon="lock" 
-              label="Đổi mật khẩu" 
-              onPress={() => setShowPasswordModal(true)} 
-              color="#FF9500"
-            />
-            <SettingItem 
-              icon="bell" 
-              label="Thông báo" 
-              onPress={() => {}} 
-              color="#5856D6"
-            />
-            <SettingItem 
-              icon="setting" 
-              label="Cài đặt hệ thống" 
-              onPress={() => {}} 
-              color="#8E8E93"
-              isLast
+            <ProfileOption
+              icon="clock"
+              title="Lịch sử mượn trả"
+              onPress={() => router.push('/my-loans')}
             />
           </Animated.View>
 
-          <Text className="text-gray-400 text-[10px] font-bold mt-8 mb-4 ml-6 uppercase tracking-widest">Hỗ trợ & Pháp lý</Text>
-          <Animated.View entering={FadeInDown.delay(400)} className="bg-white rounded-[40px] shadow-premium p-4 mb-10">
-            <SettingItem 
-              icon="question-circle" 
-              label="Hướng dẫn sử dụng" 
-              onPress={() => {}} 
-              color="#34C759"
+          <Text className="font-bold text-gray-900 text-lg mb-4">Khác</Text>
+          <Animated.View entering={FadeInDown.delay(400)} className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <ProfileOption
+              icon="help-circle"
+              title="Hỗ trợ & Trợ giúp"
+              onPress={showHelp}
+              isFirst
             />
-            <SettingItem 
-              icon="info-circle" 
-              label="Về ứng dụng v1.0.0" 
-              onPress={() => {}} 
-              color="#5AC8FA"
-              isLast
+            <ProfileOption
+              icon="info"
+              title="Về ứng dụng"
+              onPress={showAbout}
             />
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(600)}>
-            <Pressable 
-              className="bg-error/10 p-6 rounded-[30px] border border-error/20 items-center mb-10"
+            <Pressable
+              className="bg-red-50 flex-row items-center p-4 rounded-2xl border border-red-100"
               onPress={handleLogout}
             >
-              <Text className="text-error font-bold text-lg">ĐĂNG XUẤT</Text>
+              <View className="w-10 h-10 bg-white rounded-xl items-center justify-center mr-4">
+                <Feather name="log-out" size={20} color="#FF3B30" />
+              </View>
+              <Text className="flex-1 font-bold text-red-500 text-base">Đăng xuất</Text>
             </Pressable>
           </Animated.View>
         </View>
+        <View className="h-24" />
       </ScrollView>
 
-      {/* Profile Modal */}
-      <Modal visible={showProfileModal} transparent animationType="fade">
-        <View className="flex-1 justify-center bg-black/60 px-6">
-          <Animated.View entering={FadeInDown} className="bg-white p-8 rounded-[40px] shadow-2xl">
-            <Text className="text-2xl font-bold text-secondary mb-8">Thông tin cá nhân</Text>
-            <Input 
-              label="Họ và tên"
-              value={fullName}
-              onChangeText={setFullName}
-              icon="user"
-            />
-            <View className="mt-8">
-              <Button title="LƯU THAY ĐỔI" onPress={handleUpdateProfile} loading={loadingProfile} />
-              <Pressable className="mt-4 items-center" onPress={() => setShowProfileModal(false)}>
-                <Text className="text-gray-400 font-bold">HỦY</Text>
-              </Pressable>
-            </View>
-          </Animated.View>
+      {/* Edit Profile Modal */}
+      <Modal visible={showEditModal} transparent animationType="fade" statusBarTranslucent={true}>
+        <View className="flex-1">
+          <Pressable 
+            className="absolute inset-0 bg-black/40" 
+            onPress={() => setShowEditModal(false)} 
+          />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            className="flex-1 justify-center px-6"
+            pointerEvents="box-none"
+          >
+            <Pressable 
+              className="bg-white rounded-[30px] p-6 shadow-2xl" 
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Cập nhật thông tin</Text>
+
+              <Input
+                label="Họ và tên"
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="Nhập họ và tên"
+                icon="user"
+              />
+
+              <View className="flex-row">
+                <Button
+                  title="Hủy"
+                  onPress={() => setShowEditModal(false)}
+                  containerClassName="flex-1 mr-2"
+                  variant="secondary"
+                />
+                <Button
+                  title="Lưu"
+                  onPress={updateProfile}
+                  loading={loading}
+                  containerClassName="flex-1 ml-2"
+                />
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
       {/* Password Modal */}
-      <Modal visible={showPasswordModal} transparent animationType="fade">
-        <View className="flex-1 justify-center bg-black/60 px-6">
-          <Animated.View entering={FadeInDown} className="bg-white p-8 rounded-[40px] shadow-2xl">
-            <Text className="text-2xl font-bold text-secondary mb-8">Đổi mật khẩu</Text>
-            <View className="space-y-4">
-              <Input 
+      <Modal visible={showPasswordModal} transparent animationType="fade" statusBarTranslucent>
+        <View className="flex-1">
+          <Pressable 
+            className="absolute inset-0 bg-black/40" 
+            onPress={() => setShowPasswordModal(false)} 
+          />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            className="flex-1 justify-center px-6"
+            pointerEvents="box-none"
+          >
+            <Pressable 
+              className="bg-white rounded-[30px] p-6 shadow-2xl" 
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Đổi mật khẩu</Text>
+
+              <Input
                 label="Mật khẩu hiện tại"
+                value={passwords.current}
+                onChangeText={(v) => setPasswords(prev => ({ ...prev, current: v }))}
                 secureTextEntry
-                value={passwords.old_password}
-                onChangeText={(v) => setPasswords(p => ({ ...p, old_password: v }))}
+                placeholder="••••••••"
                 icon="lock"
               />
-              <View className="h-4" />
-              <Input 
+
+              <Input
                 label="Mật khẩu mới"
+                value={passwords.new}
+                onChangeText={(v) => setPasswords(prev => ({ ...prev, new: v }))}
                 secureTextEntry
-                value={passwords.new_password}
-                onChangeText={(v) => setPasswords(p => ({ ...p, new_password: v }))}
-                icon="key"
+                placeholder="••••••••"
+                icon="lock"
               />
-              <View className="h-4" />
-              <Input 
-                label="Xác nhận mật khẩu"
-                secureTextEntry
+
+              <Input
+                label="Xác nhận mật khẩu mới"
                 value={passwords.confirm}
-                onChangeText={(v) => setPasswords(p => ({ ...p, confirm: v }))}
-                icon="check"
+                onChangeText={(v) => setPasswords(prev => ({ ...prev, confirm: v }))}
+                secureTextEntry
+                placeholder="••••••••"
+                icon="lock"
               />
-            </View>
-            <View className="mt-10">
-              <Button title="CẬP NHẬT MẬT KHẨU" onPress={handleChangePassword} loading={loadingPass} />
-              <Pressable className="mt-4 items-center" onPress={() => setShowPasswordModal(false)}>
-                <Text className="text-gray-400 font-bold">HỦY</Text>
-              </Pressable>
-            </View>
-          </Animated.View>
+
+              <View className="flex-row">
+                <Button
+                  title="Hủy"
+                  onPress={() => {
+                    setShowPasswordModal(false);
+                    setPasswords({ current: '', new: '', confirm: '' });
+                  }}
+                  containerClassName="flex-1 mr-2"
+                  variant="secondary"
+                />
+                <Button
+                  title="Đổi mật khẩu"
+                  onPress={handleChangePassword}
+                  loading={loading}
+                  containerClassName="flex-1 ml-2"
+                />
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
-    </View>
+    </Animated.View>
   );
 }
 
-function SettingItem({ icon, label, onPress, color, isLast }: any) {
+function ProfileOption({ icon, title, onPress, isFirst = false }: any) {
   return (
-    <Pressable 
-      className={`flex-row items-center p-5 ${isLast ? '' : 'border-b border-gray-50'}`} 
+    <Pressable
+      className={`flex-row items-center p-4 ${!isFirst ? 'border-t border-gray-100' : ''}`}
       onPress={onPress}
     >
-      <View 
-        className="w-10 h-10 rounded-2xl items-center justify-center mr-4"
-        style={{ backgroundColor: `${color}15` }}
-      >
-        <IconOutline name={icon} size={20} color={color} />
+      <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-4">
+        <Feather name={icon} size={20} color="#666" />
       </View>
-      <Text className="flex-1 text-secondary font-medium text-base">{label}</Text>
-      <IconOutline name="right" size={16} color="#C7C7CC" />
+      <Text className="flex-1 font-medium text-gray-900 text-base">{title}</Text>
+      <Feather name="chevron-right" size={16} color="#ccc" />
     </Pressable>
   );
 }

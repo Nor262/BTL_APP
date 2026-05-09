@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
-import { IconOutline } from '@ant-design/icons-react-native';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/api/client';
 import Badge from '../ui/Badge';
+import LoadingScreen from '../ui/LoadingScreen';
 
 export default function StorekeeperHome() {
   const [stats, setStats] = useState<any>({
@@ -40,11 +40,6 @@ export default function StorekeeperHome() {
       setRecentTransactions(transRes.data.data.slice(0, 5));
     } catch (error) {
       console.error(error);
-      // Fallback for demo if API fails
-      setRecentTransactions([
-        { id: 1, equipment: { name: 'MacBook Pro M2' }, borrower: { full_name: 'Nguyễn Văn A' }, status: 'pending' },
-        { id: 2, equipment: { name: 'Sony A7IV' }, borrower: { full_name: 'Trần Thị B' }, status: 'approved' },
-      ]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -60,49 +55,57 @@ export default function StorekeeperHome() {
     fetchData();
   };
 
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
-    <View className="flex-1 bg-surface-muted">
+    <View className="flex-1 bg-gray-50">
       <ScrollView 
         className="flex-1"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />
         }
       >
-        <View className="bg-secondary-dark pt-16 pb-16 px-6 rounded-b-[40px] shadow-premium overflow-hidden">
-          <LinearGradient
-            colors={['#CC0D00', '#8B0000']}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.8 }}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
+        <View className="bg-primary pt-16 pb-20 px-6 rounded-b-[40px] shadow-lg">
           <View className="flex-row justify-between items-center mb-8">
             <View>
-              <Text className="text-white/70 text-base">Chào thủ kho,</Text>
-              <Text className="text-white text-2xl font-bold">{user?.full_name || 'Admin'}</Text>
+              <Text className="text-white/70 text-sm font-medium">Hệ thống Quản lý</Text>
+              <Text className="text-white text-2xl font-bold">Thủ kho PTIT</Text>
             </View>
-            <Pressable 
-              className="w-12 h-12 bg-white/20 rounded-2xl items-center justify-center border border-white/30"
-              onPress={() => router.push('/(tabs)/profile')}
-            >
-              <IconOutline name="setting" size={24} color="white" />
-            </Pressable>
+            <View className="flex-row items-center">
+              <Pressable 
+                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center mr-3"
+                onPress={() => router.push('/notifications')}
+              >
+                <Feather name="bell" size={20} color="white" />
+              </Pressable>
+              <Pressable 
+                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
+                onPress={() => router.push('/(tabs)/explore')}
+              >
+                <Feather name="user" size={20} color="white" />
+              </Pressable>
+            </View>
           </View>
 
           <Animated.View entering={FadeInDown.delay(200)}>
             <Pressable 
-              className="bg-white rounded-3xl p-6 shadow-premium flex-row items-center justify-between"
+              className="bg-white/10 border border-white/20 rounded-3xl p-6 flex-row items-center justify-between"
               onPress={() => router.push('/scan')}
             >
               <View className="flex-row items-center">
-                <View className="w-14 h-14 bg-primary/10 rounded-2xl items-center justify-center">
-                  <IconOutline name="scan" size={32} color="#CC0D00" />
+                <View className="w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-lg">
+                  <Feather name="maximize" size={30} color="#CC0D00" />
                 </View>
                 <View className="ml-4">
-                  <Text className="text-secondary font-bold text-lg">Quét mã bàn giao</Text>
-                  <Text className="text-gray-400 text-sm">Check-in / Check-out nhanh</Text>
+                  <Text className="text-white font-bold text-xl">Quét mã QR</Text>
+                  <Text className="text-white/60 text-xs mt-1">Check-in / Check-out nhanh chóng</Text>
                 </View>
               </View>
-              <IconOutline name="right" size={20} color="#CC0D00" />
+              <View className="w-8 h-8 bg-white/10 rounded-full items-center justify-center">
+                <Feather name="chevron-right" size={20} color="white" />
+              </View>
             </Pressable>
           </Animated.View>
         </View>
@@ -112,21 +115,21 @@ export default function StorekeeperHome() {
             <StatCard 
               label="Chờ duyệt" 
               value={stats.pending} 
-              icon="file-protect" 
+              icon="shield" 
               color="#007AFF" 
               delay={300}
             />
             <StatCard 
               label="Đang mượn" 
               value={stats.in_use} 
-              icon="clock-circle" 
+              icon="clock" 
               color="#FF9500" 
               delay={400}
             />
             <StatCard 
               label="Quá hạn" 
               value={stats.overdue} 
-              icon="warning" 
+              icon="alert-triangle" 
               color="#FF3B30" 
               delay={500}
             />
@@ -139,10 +142,10 @@ export default function StorekeeperHome() {
             />
           </View>
 
-          <View className="flex-row justify-between items-center mt-8 mb-4">
-            <Text className="font-bold text-xl text-secondary">Yêu cầu mới nhất</Text>
-            <Pressable onPress={() => router.push('/(tabs)/transactions')}>
-              <Text className="text-primary font-bold text-sm">Tất cả</Text>
+          <View className="flex-row justify-between items-center mt-6 mb-4">
+            <Text className="font-bold text-xl text-gray-900">Yêu cầu mới nhất</Text>
+            <Pressable onPress={() => router.push('/my-loans')}>
+              <Text className="text-primary font-bold text-sm">Xem tất cả</Text>
             </Pressable>
           </View>
 
@@ -150,30 +153,41 @@ export default function StorekeeperHome() {
             <Animated.View 
               key={item.id} 
               entering={FadeInDown.delay(700 + index * 100)}
-              className="bg-white p-4 rounded-3xl shadow-sm mb-3 border border-gray-100 flex-row items-center"
+              className="bg-white p-4 rounded-2xl shadow-sm mb-3 border border-gray-100 flex-row items-center"
             >
-              <View className="w-12 h-12 bg-surface-muted rounded-2xl items-center justify-center mr-4">
-                <IconOutline name="laptop" size={24} color="#666" />
+              <View className="w-12 h-12 bg-gray-50 rounded-xl items-center justify-center mr-4">
+                <View className="w-10 h-10 bg-white rounded-lg items-center justify-center shadow-sm">
+                  <Feather name="monitor" size={20} color="#CC0D00" />
+                </View>
               </View>
               <View className="flex-1">
-                <Text className="font-bold text-secondary text-base" numberOfLines={1}>
+                <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>
                   {item.equipment?.name}
                 </Text>
-                <Text className="text-xs text-gray-400 mt-1">
-                  Mượn bởi: {item.borrower?.full_name}
+                <View className="flex-row items-center mt-1">
+                  <Feather name="user" size={10} color="#999" />
+                  <Text className="text-[10px] text-gray-500 ml-1">
+                    {item.borrower?.full_name}
+                  </Text>
+                </View>
+              </View>
+              <View className="items-end">
+                <Badge status={item.status} />
+                <Text className="text-[9px] text-gray-400 mt-1 italic">
+                  {new Date(item.created_at).toLocaleDateString('vi-VN')}
                 </Text>
               </View>
-              <Badge status={item.status} />
             </Animated.View>
           ))}
           
           {recentTransactions.length === 0 && (
-            <View className="items-center py-10">
-              <Text className="text-gray-400 italic">Không có giao dịch gần đây</Text>
+            <View className="items-center py-12 bg-white rounded-[30px] border border-dashed border-gray-200">
+              <Feather name="inbox" size={40} color="#eee" />
+              <Text className="text-gray-400 font-medium mt-2">Không có giao dịch gần đây</Text>
             </View>
           )}
         </View>
-        <View className="h-20" />
+        <View className="h-32" />
       </ScrollView>
     </View>
   );
@@ -184,17 +198,17 @@ function StatCard({ label, value, icon, color, delay }: any) {
     <Animated.View 
       entering={FadeInDown.delay(delay).duration(500)}
       style={{ width: '48%' }} 
-      className="bg-white p-5 rounded-3xl shadow-sm mb-4 border border-gray-50"
+      className="bg-white p-4 rounded-2xl shadow-sm mb-4 border border-gray-100"
     >
       <View 
-        className="w-10 h-10 rounded-2xl items-center justify-center mb-3"
+        className="w-10 h-10 rounded-xl items-center justify-center mb-3"
         style={{ backgroundColor: `${color}15` }}
       >
-        <IconOutline name={icon} size={24} color={color} />
+        <Feather name={icon} size={24} color={color} />
       </View>
-      <Text className="font-bold text-gray-400 text-sm uppercase">{label}</Text>
+      <Text className="font-bold text-gray-500 text-xs">{label}</Text>
       <Text 
-        className="text-3xl font-bold mt-1"
+        className="text-2xl font-bold mt-1"
         style={{ color: color }}
       >
         {value}

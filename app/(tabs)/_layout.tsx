@@ -1,59 +1,43 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View, Platform } from 'react-native';
-import { IconOutline } from '@ant-design/icons-react-native';
-import { BlurView } from 'expo-blur';
+import { Platform } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#CC0D00',
-        tabBarInactiveTintColor: '#8E8E93',
         headerShown: false,
+        tabBarActiveTintColor: '#CC0D00',
+        tabBarInactiveTintColor: '#999',
         tabBarStyle: {
-          position: 'absolute',
-          bottom: 20,
-          left: 20,
-          right: 20,
-          height: 70,
-          borderRadius: 35,
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'white',
-          borderTopWidth: 0,
-          elevation: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.1,
-          shadowRadius: 20,
-          paddingBottom: Platform.OS === 'ios' ? 0 : 0,
-          overflow: 'hidden',
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#F2F2F2',
+          height: Platform.OS === 'ios' ? 95 : 75,
+          paddingBottom: Platform.OS === 'ios' ? 35 : 15,
+          paddingTop: 12,
+          elevation: 0,
         },
-        tabBarBackground: () => (
-          Platform.OS === 'ios' ? (
-            <BlurView intensity={80} tint="light" style={{ flex: 1 }} />
-          ) : null
-        ),
         tabBarLabelStyle: {
+          fontFamily: 'System',
+          fontWeight: '500',
           fontSize: 10,
-          fontWeight: 'bold',
-          marginBottom: 10,
-        },
-        tabBarIconStyle: {
-          marginTop: 10,
+          marginTop: -4,
         }
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'TRANG CHỦ',
-          tabBarIcon: ({ color }) => <IconOutline name="home" size={24} color={color} />,
+          title: 'Trang chủ',
+          tabBarIcon: ({ color }) => <Feather name="home" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'CÁ NHÂN',
-          tabBarIcon: ({ color }) => <IconOutline name="user" size={24} color={color} />,
+          title: 'Cá nhân',
+          tabBarIcon: ({ color }) => <Feather name="user" size={24} color={color} />,
         }}
       />
     </Tabs>

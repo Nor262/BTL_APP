@@ -2,16 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Modal, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { IconOutline } from '@ant-design/icons-react-native';
+import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
 import { DatePickerView } from '@ant-design/react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { StatusBar } from 'expo-status-bar';
-
-const { width } = Dimensions.get('window');
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
 export default function EquipmentDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -68,95 +66,79 @@ export default function EquipmentDetailScreen() {
   };
 
   if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#CC0D00" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <View className="flex-1 bg-surface-muted">
-      <StatusBar style="light" />
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="relative">
-          <View className="w-full h-[400px]">
-            <Image 
-              source={equipment.image_url ? { uri: equipment.image_url } : { uri: 'https://picsum.photos/seed/' + id + '/800/600' }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-            <LinearGradient
-              colors={['rgba(0,0,0,0.4)', 'transparent', 'transparent', 'rgba(242,242,247,1)']}
-              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-            />
-          </View>
-          
-          <View className="absolute top-12 left-6 right-6 flex-row justify-between items-center">
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      style={{ flex: 1 }}
+    >
+      <View className="flex-1 bg-white">
+        <StatusBar style="dark" />
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="relative">
+            <View className="w-full h-72 bg-gray-50 items-center justify-center">
+              {equipment.image_url ? (
+                <Image 
+                  source={{ uri: equipment.image_url }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              ) : (
+                <Feather name="camera" size={48} color="#D1D1D6" />
+              )}
+            </View>
+            
             <Pressable 
-              className="w-12 h-12 bg-white/30 rounded-2xl items-center justify-center border border-white/20 blur-md"
+              className="absolute top-12 left-6 w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm"
               onPress={() => router.back()}
             >
-              <IconOutline name="arrow-left" size={24} color="white" />
+              <Feather name="arrow-left" size={20} color="#333" />
             </Pressable>
-            <View className="bg-white/30 px-4 py-2 rounded-2xl border border-white/20">
-              <Text className="text-white font-bold text-xs uppercase">{equipment.category?.name || 'THIẾT BỊ'}</Text>
-            </View>
           </View>
-        </View>
 
-        <Animated.View 
-          entering={FadeInDown.duration(600)}
-          className="px-6 -mt-16"
-        >
-          <View className="bg-white p-6 rounded-[40px] shadow-premium">
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <Text className="text-3xl font-bold text-secondary">{equipment.name}</Text>
-                <View className="flex-row items-center mt-2">
-                  <IconOutline name="barcode" size={14} color="#8E8E93" />
-                  <Text className="text-gray-400 text-sm ml-2">SN: {equipment.serial_number}</Text>
-                </View>
+          <View className="px-6 pt-6 pb-32">
+            <View className="flex-row justify-between items-start mb-4">
+              <View className="flex-1 pr-4">
+                <Text className="text-2xl font-bold text-gray-900">{equipment.name}</Text>
+                <Text className="text-gray-500 text-sm mt-1">SN: {equipment.serial_number}</Text>
               </View>
               <Badge status={equipment.status} />
             </View>
 
-            <View className="flex-row mt-8 justify-between">
-              <View className="items-center bg-surface-muted p-4 rounded-3xl flex-1 mr-2">
-                <IconOutline name="environment" size={24} color="#CC0D00" />
-                <Text className="text-gray-400 text-[10px] mt-2 uppercase font-bold">Vị trí kho</Text>
-                <Text className="text-secondary font-bold text-xs mt-1" numberOfLines={1}>
-                  {equipment.location?.name || 'KHO A'}
+            <View className="flex-row my-6 justify-between">
+              <View className="items-center bg-gray-50 p-3 rounded-xl flex-1 mr-2 border border-gray-100">
+                <Feather name="map-pin" size={20} color="#CC0D00" />
+                <Text className="text-gray-500 text-[10px] mt-2 uppercase font-bold">Vị trí kho</Text>
+                <Text className="text-gray-900 font-bold text-xs mt-1" numberOfLines={1}>
+                  {equipment.location?.name || 'Không xác định'}
                 </Text>
               </View>
-              <View className="items-center bg-surface-muted p-4 rounded-3xl flex-1 mx-1">
-                <IconOutline name="calendar" size={24} color="#007AFF" />
-                <Text className="text-gray-400 text-[10px] mt-2 uppercase font-bold">Ngày mua</Text>
-                <Text className="text-secondary font-bold text-xs mt-1">
-                  {equipment.purchase_date ? new Date(equipment.purchase_date).getFullYear() : '2024'}
+              <View className="items-center bg-gray-50 p-3 rounded-xl flex-1 ml-2 border border-gray-100">
+                <Feather name="tag" size={20} color="#007AFF" />
+                <Text className="text-gray-500 text-[10px] mt-2 uppercase font-bold">Danh mục</Text>
+                <Text className="text-gray-900 font-bold text-xs mt-1" numberOfLines={1}>
+                  {equipment.category?.name || 'Thiết bị'}
                 </Text>
-              </View>
-              <View className="items-center bg-surface-muted p-4 rounded-3xl flex-1 ml-2">
-                <IconOutline name="safety" size={24} color="#34C759" />
-                <Text className="text-gray-400 text-[10px] mt-2 uppercase font-bold">Tình trạng</Text>
-                <Text className="text-secondary font-bold text-xs mt-1">100%</Text>
               </View>
             </View>
 
-            <Text className="font-bold text-xl text-secondary mt-10 mb-4">Thông số kỹ thuật</Text>
-            <View className="space-y-3">
-              {Object.entries(equipment.specifications || { 'Thương hiệu': 'Sony', 'Độ phân giải': '4K', 'Kết nối': 'Wi-Fi/Bluetooth' }).map(([key, value]: [string, any], index) => (
-                <View key={key} className="flex-row justify-between items-center py-2 border-b border-gray-50">
-                  <Text className="text-gray-500 font-medium capitalize">{key}</Text>
-                  <Text className="text-secondary font-bold">{value}</Text>
+            <Text className="font-bold text-lg text-gray-900 mb-3">Thông số kỹ thuật</Text>
+            <View className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
+              {Object.entries(equipment.specifications || { 'Thương hiệu': 'Chưa cập nhật' }).map(([key, value]: [string, any], index) => (
+                <View key={key} className="flex-row justify-between items-center py-2">
+                  <Text className="text-gray-500 capitalize">{key}</Text>
+                  <Text className="text-gray-900 font-medium">{value}</Text>
                 </View>
               ))}
             </View>
 
-            <Text className="font-bold text-xl text-secondary mt-10 mb-4">Mục đích sử dụng</Text>
+            <Text className="font-bold text-lg text-gray-900 mb-3">Mục đích sử dụng</Text>
             <TextInput
-              className="bg-surface-muted rounded-3xl p-6 text-secondary text-base min-h-[120px]"
-              placeholder="Nhập lý do bạn muốn mượn thiết bị này..."
+              className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-900 text-base min-h-[100px]"
+              placeholder="VD: Mượn quay phim sự kiện CLB..."
               placeholderTextColor="#999"
               value={notes}
               onChangeText={setNotes}
@@ -165,16 +147,16 @@ export default function EquipmentDetailScreen() {
             />
 
             {occupiedDates.length > 0 && (
-              <View className="mt-10">
-                <View className="flex-row items-center mb-4">
-                  <IconOutline name="clock-circle" size={20} color="#FF3B30" />
-                  <Text className="font-bold text-xl text-secondary ml-2">Lịch bận hiện tại</Text>
+              <View className="mt-8">
+                <View className="flex-row items-center mb-3">
+                  <Feather name="calendar" size={18} color="#FF3B30" />
+                  <Text className="font-bold text-lg text-gray-900 ml-2">Lịch bận hiện tại</Text>
                 </View>
-                <View className="bg-error/5 p-4 rounded-3xl border border-error/10">
+                <View className="bg-red-50 p-4 rounded-xl border border-red-100">
                   {occupiedDates.map((trans, idx) => (
                     <View key={idx} className="flex-row items-center mb-2">
-                      <View className="w-2 h-2 rounded-full bg-error mr-3" />
-                      <Text className="text-secondary font-medium text-sm">
+                      <View className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2" />
+                      <Text className="text-gray-700 text-sm">
                         {new Date(trans.request_date).toLocaleDateString('vi-VN')} → {new Date(trans.due_date).toLocaleDateString('vi-VN')}
                       </Text>
                     </View>
@@ -183,48 +165,47 @@ export default function EquipmentDetailScreen() {
               </View>
             )}
           </View>
-        </Animated.View>
-        <View className="h-32" />
-      </ScrollView>
+        </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 bg-white p-6 pb-10 shadow-premium flex-row items-center rounded-t-[40px] border-t border-gray-100">
-        <View className="flex-1 mr-6">
-          <Text className="text-gray-400 font-bold text-[10px] uppercase">Hạn trả dự kiến</Text>
-          <Pressable 
-            onPress={() => setShowDatePicker(true)}
-            className="flex-row items-center mt-1"
-          >
-            <Text className="text-secondary font-bold text-xl mr-2">{dueDate.toLocaleDateString('vi-VN')}</Text>
-            <IconOutline name="edit" size={16} color="#CC0D00" />
-          </Pressable>
-        </View>
-        <View className="flex-1">
-          <Button 
-            title="Đăng ký mượn" 
-            onPress={handleBorrow}
-            loading={submitting}
-            disabled={equipment.status !== 'available' || submitting}
-          />
-        </View>
-      </View>
-
-      <Modal visible={showDatePicker} transparent animationType="slide">
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white p-8 rounded-t-[40px]">
-            <View className="flex-row justify-between items-center mb-8">
-              <Pressable onPress={() => setShowDatePicker(false)}><Text className="text-gray-400 font-bold">HỦY</Text></Pressable>
-              <Text className="font-bold text-xl text-secondary">Chọn ngày trả</Text>
-              <Pressable onPress={() => setShowDatePicker(false)}><Text className="text-primary font-bold">XONG</Text></Pressable>
-            </View>
-            <DatePickerView
-              mode="date"
-              value={dueDate}
-              onChange={setDueDate}
-              minDate={new Date()}
+        <View className="absolute bottom-0 left-0 right-0 bg-white p-5 border-t border-gray-100 flex-row items-center">
+          <View className="flex-1 mr-4">
+            <Text className="text-gray-500 font-bold text-[10px] uppercase">Hạn trả dự kiến</Text>
+            <Pressable 
+              onPress={() => setShowDatePicker(true)}
+              className="flex-row items-center mt-1"
+            >
+              <Text className="text-primary font-bold text-lg mr-2">{dueDate.toLocaleDateString('vi-VN')}</Text>
+              <Feather name="edit" size={16} color="#CC0D00" />
+            </Pressable>
+          </View>
+          <View className="flex-1">
+            <Button 
+              title="ĐĂNG KÝ MƯỢN" 
+              onPress={handleBorrow}
+              loading={submitting}
+              disabled={equipment.status !== 'available' || submitting}
             />
           </View>
         </View>
-      </Modal>
-    </View>
+
+        <Modal visible={showDatePicker} transparent animationType="slide" statusBarTranslucent>
+          <View className="flex-1 justify-end bg-black/40">
+            <View className="bg-white p-6 rounded-t-[30px]">
+              <View className="flex-row justify-between items-center mb-6">
+                <Pressable onPress={() => setShowDatePicker(false)}><Text className="text-gray-500 font-medium">Hủy</Text></Pressable>
+                <Text className="font-bold text-lg text-gray-900">Chọn ngày trả</Text>
+                <Pressable onPress={() => setShowDatePicker(false)}><Text className="text-primary font-bold">Xong</Text></Pressable>
+              </View>
+              <DatePickerView
+                mode="date"
+                value={dueDate}
+                onChange={setDueDate}
+                minDate={new Date()}
+              />
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

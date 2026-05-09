@@ -3,7 +3,6 @@ import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } fro
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
 import { Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -44,60 +43,57 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View className="flex-1 bg-secondary-dark">
-      <StatusBar style="light" />
-      <LinearGradient
-        colors={['#CC0D00', '#1C1C1E']}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        opacity={0.3}
-      />
+    <View className="flex-1 bg-white">
+      <StatusBar style="dark" />
       
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         className="flex-1"
       >
         <ScrollView 
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 px-8 pt-20 pb-12 justify-between">
+          <View className="px-8 pt-16 pb-12">
             <Animated.View 
               entering={FadeInUp.delay(200).duration(800)}
-              className="items-center"
+              className="items-center mt-10 mb-10"
             >
-              <Text className="text-white text-3xl font-bold tracking-tight">Tạo tài khoản</Text>
-              <Text className="text-gray-400 text-lg mt-2 text-center">
-                Bắt đầu quản lý thiết bị của bạn
+              <Text className="text-gray-900 text-3xl font-bold tracking-tight">Tạo tài khoản</Text>
+              <Text className="text-gray-500 text-base mt-2 text-center">
+                Bắt đầu mượn thiết bị CLB ngay hôm nay
               </Text>
             </Animated.View>
 
             <Animated.View 
               entering={FadeInDown.delay(400).duration(800)}
-              className="bg-white/10 p-6 rounded-3xl border border-white/20 mt-8"
-              style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+              className="w-full"
             >
               <Input
                 label="Họ và tên"
                 placeholder="Nguyễn Văn A"
                 value={formData.full_name}
                 onChangeText={(v) => updateForm('full_name', v)}
+                icon="user"
               />
               <Input
-                label="Mã sinh viên / Username"
+                label="Mã sinh viên"
                 placeholder="B21DCCN001"
                 value={formData.username}
                 onChangeText={(v) => updateForm('username', v)}
                 autoCapitalize="none"
+                icon="credit-card"
               />
               <Input
                 label="Email"
-                placeholder="a.b21cn001@student.ptit.edu.vn"
+                placeholder="example@student.ptit.edu.vn"
                 value={formData.email}
                 onChangeText={(v) => updateForm('email', v)}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                icon="mail"
               />
               <Input
                 label="Mật khẩu"
@@ -105,6 +101,7 @@ export default function RegisterScreen() {
                 value={formData.password}
                 onChangeText={(v) => updateForm('password', v)}
                 secureTextEntry
+                icon="lock"
               />
 
               <Button 
@@ -114,19 +111,13 @@ export default function RegisterScreen() {
                 className="mt-6"
               />
 
-              <View className="flex-row justify-center mt-6">
-                <Text className="text-gray-400">Đã có tài khoản? </Text>
+              <View className="flex-row justify-center mt-8">
+                <Text className="text-gray-500 text-base">Đã có tài khoản? </Text>
                 <Pressable onPress={() => router.back()}>
-                  <Text className="text-primary-light font-bold">Đăng nhập</Text>
+                  <Text className="text-primary font-bold text-base">Đăng nhập</Text>
                 </Pressable>
               </View>
             </Animated.View>
-
-            <View className="items-center mt-8">
-              <Text className="text-gray-500 text-xs text-center">
-                Bằng cách đăng ký, bạn đồng ý với các Điều khoản & Chính sách của chúng tôi
-              </Text>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
