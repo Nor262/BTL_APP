@@ -38,9 +38,10 @@ export default function EquipmentDetailScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [eqRes, transRes] = await Promise.all([
+        const [eqRes, availRes] = await Promise.all([
           api.get(`/equipment/${id}`),
-        const availRes = await api.get(`/equipment/${id}/availability`).catch(() => ({ data: [] }));
+          api.get(`/equipment/${id}/availability`).catch(() => ({ data: { data: [] } })),
+        ]);
         setEquipment(eqRes.data.data || eqRes.data);
         
         const occupied = availRes.data.data || availRes.data || [];
