@@ -12,11 +12,11 @@ import LoadingScreen from '../ui/LoadingScreen';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
+// Updated Dashboard with Active Loans - Forcing re-bundle
 export default function BorrowerHome() {
   const [equipment, setEquipment] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [activeLoans, setActiveLoans] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -26,14 +26,18 @@ export default function BorrowerHome() {
 
   const fetchData = async () => {
     try {
-      const [eqRes, catRes, countRes] = await Promise.all([
+      const [eqRes, transRes, countRes] = await Promise.all([
         api.get('/equipment').catch(e => { console.error('Eq error:', e.message); return { data: { data: [] } }; }),
-        api.get('/categories').catch(e => { console.error('Cat error:', e.message); return { data: { data: [] } }; }),
+        api.get('/transactions/my').catch(e => { console.error('Trans error:', e.message); return { data: { data: [] } }; }),
         api.get('/notifications/unread-count').catch(e => { console.error('Noti error:', e.message); return { data: { data: { count: 0 } } }; })
       ]);
       
       setEquipment(eqRes.data?.data || eqRes.data || []);
-      setCategories(catRes.data?.data || catRes.data || []);
+      
+      const transactions = transRes.data?.data || transRes.data || [];
+      const active = transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue');
+      setActiveLoans(active);
+      
       setUnreadCount(countRes.data?.data?.count || countRes.data?.count || 0);
     } catch (error) {
       console.error('General Fetch Error:', error);
@@ -53,10 +57,8 @@ export default function BorrowerHome() {
   };
 
   const filteredEquipment = equipment.filter((item: any) => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) ||
-                         item.serial_number.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = selectedCategory === null || item.category_id === selectedCategory || item.category?.id === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return item.name.toLowerCase().includes(search.toLowerCase()) ||
+           item.serial_number.toLowerCase().includes(search.toLowerCase());
   });
 
   const renderEquipmentItem = ({ item, index }: { item: any, index: number }) => (
@@ -151,39 +153,64 @@ export default function BorrowerHome() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />
         }
       >
-        <View className="px-6 py-8">
-
-          {/* Categories */}
-          <View className="flex-row justify-between items-end mb-4">
-            <Text className="font-bold text-xl text-gray-900 tracking-tight">Danh mục</Text>
-            <Pressable onPress={() => setSelectedCategory(null)}>
-              <Text className="text-primary font-bold text-sm">Tất cả</Text>
-            </Pressable>
+        <View className="px-6 py-6">
+          {/* Active Loans Horizontal Section */}
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="font-bold text-xl text-gray-900 tracking-tight">Thiết bị đang mượn</Text>
+            {activeLoans.length > 0 && (
+              <Pressable onPress={() => router.push('/my-loans')}>
+                <Text className="text-primary font-bold text-sm">Xem tất cả</Text>
+              </Pressable>
+            )}
           </View>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-8">
-            <Pressable 
-              onPress={() => setSelectedCategory(null)}
-              className={`px-6 py-3 rounded-2xl mr-3 ${selectedCategory === null ? 'bg-primary shadow-lg shadow-red-200' : 'bg-gray-50 border border-gray-100'}`}
-            >
-              <Text className={`font-bold text-sm ${selectedCategory === null ? 'text-white' : 'text-gray-500'}`}>TẤT CẢ</Text>
-            </Pressable>
-            {categories.map((cat: any, index: number) => (
-              <Animated.View key={cat.id} entering={FadeInRight.delay(index * 100)}>
-                <Pressable 
-                  onPress={() => setSelectedCategory(cat.id)}
-                  className={`px-6 py-3 rounded-2xl mr-3 ${selectedCategory === cat.id ? 'bg-primary shadow-lg shadow-red-200' : 'bg-gray-50 border border-gray-100'}`}
+
+          {activeLoans.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-10 -mx-6 px-6">
+              {activeLoans.map((loan: any, index: number) => (
+                <Animated.View 
+                  key={loan.id} 
+                  entering={FadeInRight.delay(index * 100)}
+                  className="mr-4"
                 >
-                  <Text className={`font-bold text-sm ${selectedCategory === cat.id ? 'text-white' : 'text-gray-500'}`}>
-                    {cat.name.toUpperCase()}
-                  </Text>
-                </Pressable>
-              </Animated.View>
-            ))}
-          </ScrollView>
+                  <Pressable 
+                    onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
+                    className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
+                    style={{ width: width * 0.75 }}
+                  >
+                    <View className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center overflow-hidden">
+                      {loan.equipment?.image_url ? (
+                        <Image source={{ uri: loan.equipment.image_url }} style={{ width: '100%', height: '100%' }} />
+                      ) : (
+                        <Feather name="box" size={24} color="#D1D1D6" />
+                      )}
+                    </View>
+                    <View className="flex-1 ml-4">
+                      <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{loan.equipment?.name || 'Thiết bị'}</Text>
+                      <View className="flex-row items-center mt-1">
+                        <View className={`w-2 h-2 rounded-full ${loan.status === 'overdue' ? 'bg-red-500' : 'bg-green-500'} mr-2`} />
+                        <Text className="text-gray-500 text-xs font-medium">{loan.status === 'overdue' ? 'Quá hạn trả' : 'Đang sử dụng'}</Text>
+                      </View>
+                    </View>
+                    <View className="bg-gray-50 w-10 h-10 rounded-full items-center justify-center">
+                      <Feather name="chevron-right" size={18} color="#999" />
+                    </View>
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View className="bg-gray-50 rounded-[30px] p-6 items-center mb-10 border border-dashed border-gray-200">
+               <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mb-3 shadow-sm">
+                  <Feather name="info" size={20} color="#D1D1D6" />
+               </View>
+               <Text className="text-gray-400 text-sm font-medium">Bạn hiện không mượn thiết bị nào</Text>
+            </View>
+          )}
 
           {/* Equipment Grid */}
-          <Text className="font-bold text-xl text-gray-900 mb-5 tracking-tight">Thiết bị hiện có</Text>
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="font-bold text-xl text-gray-900 tracking-tight">Thiết bị hiện có</Text>
+          </View>
           <FlatList
             data={filteredEquipment}
             renderItem={renderEquipmentItem}
