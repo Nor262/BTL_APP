@@ -18,6 +18,8 @@ export const unstable_settings = {
 
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 
+import CustomAlert from '@/components/common/CustomAlert';
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { user } = useAuthStore();
@@ -59,6 +61,7 @@ export default function RootLayout() {
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />
+          <CustomAlert />
         </ThemeProvider>
       </AntProvider>
     </ErrorBoundary>

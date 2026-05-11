@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'expo-router';
@@ -7,9 +7,11 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useAlertStore } from '@/store/useAlertStore';
 
 export default function ProfileScreen() {
   const { user, logout, setAuth } = useAuthStore();
+  const { showAlert } = useAlertStore();
   const router = useRouter();
 
   const [showEditModal, setShowEditModal] = useState(false);
@@ -19,32 +21,43 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Đăng xuất',
-        style: 'destructive',
-        onPress: () => {
-          logout();
-          router.replace('/login');
-        }
+    showAlert({
+      type: 'warning',
+      title: 'Đăng xuất',
+      message: 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?',
+      showCancel: true,
+      onConfirm: () => {
+        logout();
+        router.replace('/login');
       }
-    ]);
+    });
   };
 
   const updateProfile = async () => {
-    if (!fullName) {
-      Alert.alert('Thông báo', 'Họ và tên không được để trống');
+    if (!fullName.trim()) {
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Họ và tên không được để trống'
+      });
       return;
     }
     setLoading(true);
     try {
-      const res = await api.patch('/auth/profile', { full_name: fullName });
+      const res = await api.patch('/auth/profile', { full_name: fullName.trim() });
       setAuth(res.data.data || res.data, useAuthStore.getState().token!);
-      Alert.alert('Thành công', 'Cập nhật thông tin thành công');
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Cập nhật thông tin cá nhân thành công'
+      });
       setShowEditModal(false);
     } catch (error: any) {
-      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể cập nhật thông tin');
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: error.response?.data?.message || 'Không thể cập nhật thông tin'
+      });
     } finally {
       setLoading(false);
     }
@@ -53,11 +66,19 @@ export default function ProfileScreen() {
   const handleChangePassword = async () => {
     const { current, new: newPass, confirm } = passwords;
     if (!current || !newPass || !confirm) {
-      Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin mật khẩu');
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Vui lòng điền đầy đủ thông tin mật khẩu'
+      });
       return;
     }
     if (newPass !== confirm) {
-      Alert.alert('Thông báo', 'Mật khẩu mới không khớp');
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Mật khẩu mới không khớp'
+      });
       return;
     }
 
@@ -67,22 +88,38 @@ export default function ProfileScreen() {
         old_password: current,
         new_password: newPass
       });
-      Alert.alert('Thành công', 'Đổi mật khẩu thành công');
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Đổi mật khẩu thành công'
+      });
       setShowPasswordModal(false);
       setPasswords({ current: '', new: '', confirm: '' });
     } catch (error: any) {
-      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể đổi mật khẩu');
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: error.response?.data?.message || 'Không thể đổi mật khẩu'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const showHelp = () => {
-    Alert.alert('Hỗ trợ', 'Vui lòng liên hệ quản trị viên CLB tại văn phòng hoặc qua email để được hỗ trợ kỹ thuật.');
+    showAlert({
+      type: 'info',
+      title: 'Hỗ trợ',
+      message: 'Vui lòng liên hệ quản trị viên CLB tại văn phòng hoặc qua email để được hỗ trợ kỹ thuật.'
+    });
   };
 
   const showAbout = () => {
-    Alert.alert('Về ứng dụng', 'Hệ thống Quản lý Thiết bị CLB v1.0.0\nPhát triển bởi Team BTL.\n© 2026 PTIT');
+    showAlert({
+      type: 'info',
+      title: 'Về ứng dụng',
+      message: 'Hệ thống Quản lý Thiết bị CLB v1.0.0\nPhát triển bởi Team BTL.\n© 2026 PTIT'
+    });
   };
 
   return (
