@@ -11,16 +11,23 @@ import { StatusBar } from 'expo-status-bar';
 
 import { handleApiError } from '@/utils/error-handler';
 
+import { useAlertStore } from '@/store/useAlertStore';
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
+  const { showAlert } = useAlertStore();
   const router = useRouter();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ email và mật khẩu');
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Vui lòng nhập đầy đủ email và mật khẩu'
+      });
       return;
     }
 

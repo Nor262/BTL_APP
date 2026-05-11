@@ -105,16 +105,22 @@ export default function BorrowerHome() {
           </View>
           <View className="flex-row">
             <Pressable 
-              className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-2"
+              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center mr-2"
               onPress={() => router.push('/scan')}
             >
-              <Feather name="maximize" size={24} color="white" />
+              <Feather name="maximize" size={22} color="white" />
             </Pressable>
             <Pressable 
-              className="w-12 h-12 bg-white/20 rounded-full items-center justify-center"
+              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center mr-2"
+              onPress={() => router.push('/notifications')}
+            >
+              <Feather name="bell" size={22} color="white" />
+            </Pressable>
+            <Pressable 
+              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center"
               onPress={() => router.push('/(tabs)/explore')}
             >
-              <Feather name="user" size={24} color="white" />
+              <Feather name="user" size={22} color="white" />
             </Pressable>
           </View>
         </View>

@@ -28,7 +28,10 @@ export default function ProfileScreen() {
       showCancel: true,
       onConfirm: () => {
         logout();
-        router.replace('/login');
+        // Force a small delay before replacing to ensure the state has propagated
+        setTimeout(() => {
+          router.replace('/login');
+        }, 50);
       }
     });
   };
@@ -154,6 +157,11 @@ export default function ProfileScreen() {
               icon="lock"
               title="Đổi mật khẩu"
               onPress={() => setShowPasswordModal(true)}
+            />
+            <ProfileOption
+              icon="bell"
+              title="Thông báo"
+              onPress={() => router.push('/notifications')}
             />
             <ProfileOption
               icon="clock"

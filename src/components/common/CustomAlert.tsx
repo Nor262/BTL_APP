@@ -1,10 +1,10 @@
 import React from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useAlertStore } from '@/store/useAlertStore';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const CustomAlert = () => {
   const { visible, type, title, message, onConfirm, showCancel, hideAlert } = useAlertStore();
@@ -23,21 +23,26 @@ const CustomAlert = () => {
   const icon = getIcon();
 
   const handleConfirm = () => {
-    if (onConfirm) onConfirm();
     hideAlert();
+    if (onConfirm) {
+      requestAnimationFrame(() => {
+        onConfirm();
+      });
+    }
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none">
-      <View style={styles.overlay}>
+    <View style={styles.root} pointerEvents="auto">
+      <Animated.View 
+        entering={FadeIn.duration(200)}
+        exiting={FadeOut.duration(200)}
+        style={styles.overlay}
+      >
+        <Pressable style={styles.backdrop} onPress={hideAlert} />
+        
         <Animated.View 
-          entering={FadeIn.duration(200)}
+          entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(200)}
-          style={styles.backdrop}
-        />
-        <Animated.View 
-          entering={ZoomIn.duration(300).springify()}
-          exiting={ZoomOut.duration(200)}
           style={styles.content}
         >
           <View style={[styles.iconContainer, { backgroundColor: icon.bg }]}>
@@ -64,21 +69,26 @@ const CustomAlert = () => {
             </Pressable>
           </View>
         </Animated.View>
-      </View>
-    </Modal>
+      </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  root: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9999,
+    elevation: 99,
+  },
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   content: {
     backgroundColor: 'white',
@@ -139,6 +149,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
+    elevation: 4,
   },
   confirmButtonText: {
     color: 'white',

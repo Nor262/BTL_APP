@@ -38,16 +38,14 @@ export default function RootLayout() {
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
 
-    setTimeout(() => {
-      if (!user && !inAuthGroup) {
-        router.replace('/login');
-      } else if (user && inAuthGroup) {
-        router.replace('/(tabs)');
-        registerForPushNotificationsAsync();
-      } else if (user) {
-        registerForPushNotificationsAsync();
-      }
-    }, 0);
+    if (!user && !inAuthGroup) {
+      router.replace('/login');
+    } else if (user && inAuthGroup) {
+      router.replace('/(tabs)');
+      registerForPushNotificationsAsync();
+    } else if (user) {
+      registerForPushNotificationsAsync();
+    }
   }, [user, segments, navigationState?.key, isMounted]);
 
   return (
