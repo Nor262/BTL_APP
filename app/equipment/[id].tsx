@@ -22,6 +22,8 @@ LocaleConfig.locales['vi'] = {
 };
 LocaleConfig.defaultLocale = 'vi';
 
+import { handleApiError } from '@/utils/error-handler';
+
 export default function EquipmentDetailScreen() {
   const { id } = useLocalSearchParams();
   const [equipment, setEquipment] = useState<any>(null);
@@ -38,9 +40,10 @@ export default function EquipmentDetailScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [eqRes, transRes] = await Promise.all([
+        const [eqRes, availRes] = await Promise.all([
           api.get(`/equipment/${id}`),
-        const availRes = await api.get(`/equipment/${id}/availability`).catch(() => ({ data: [] }));
+          api.get(`/equipment/${id}/availability`).catch(() => ({ data: { data: [] } }))
+        ]);
         setEquipment(eqRes.data.data || eqRes.data);
         
         const occupied = availRes.data.data || availRes.data || [];
@@ -59,8 +62,7 @@ export default function EquipmentDetailScreen() {
         });
         setMarkedDates(marks);
       } catch (error) {
-        console.error(error);
-        Alert.alert('Lỗi', 'Không thể tải thông tin thiết bị');
+        handleApiError(error, 'Không thể tải thông tin thiết bị');
         router.back();
       } finally {
         setLoading(false);
@@ -87,7 +89,7 @@ export default function EquipmentDetailScreen() {
         equipment_id: parseInt(id as string),
         start_date: startDate.toISOString(),
         due_date: dueDate.toISOString(),
-        notes: notes,
+        notes: notes.trim(),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Thành công', 'Yêu cầu mượn đã được gửi. Hệ thống sẽ thông báo khi quản trị viên phê duyệt.', [
@@ -95,7 +97,7 @@ export default function EquipmentDetailScreen() {
       ]);
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể gửi yêu cầu');
+      handleApiError(error, 'Không thể gửi yêu cầu');
     } finally {
       setSubmitting(false);
     }

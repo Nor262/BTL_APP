@@ -16,6 +16,8 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+import ErrorBoundary from '@/components/common/ErrorBoundary';
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { user } = useAuthStore();
@@ -46,20 +48,20 @@ export default function RootLayout() {
     }, 0);
   }, [user, segments, navigationState?.key, isMounted]);
 
-
-
   return (
-    <AntProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="login" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </AntProvider>
+    <ErrorBoundary>
+      <AntProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="login" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </AntProvider>
+    </ErrorBoundary>
   );
 }
 

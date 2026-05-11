@@ -8,6 +8,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { StatusBar } from 'expo-status-bar';
 
+import { handleApiError } from '@/utils/error-handler';
+
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
     username: '',
@@ -20,8 +22,8 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     const { username, password, email, full_name } = formData;
-    if (!username || !password || !email || !full_name) {
-      Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin');
+    if (!username.trim() || !password.trim() || !email.trim() || !full_name.trim()) {
+      Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin đăng ký');
       return;
     }
 
@@ -32,7 +34,7 @@ export default function RegisterScreen() {
         { text: 'Đăng nhập ngay', onPress: () => router.replace('/login') }
       ]);
     } catch (error: any) {
-      Alert.alert('Lỗi đăng ký', error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
+      handleApiError(error, 'Lỗi đăng ký');
     } finally {
       setLoading(false);
     }
