@@ -33,6 +33,7 @@ export default function RootLayout() {
     setIsMounted(true);
   }, []);
 
+  // Handle Redirection
   useEffect(() => {
     if (!isMounted || !navigationState?.key) return;
 
@@ -42,11 +43,15 @@ export default function RootLayout() {
       router.replace('/login');
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)');
-      registerForPushNotificationsAsync();
-    } else if (user) {
-      registerForPushNotificationsAsync();
     }
   }, [user, segments, navigationState?.key, isMounted]);
+
+  // Handle Notifications Registration (Only when user changes)
+  useEffect(() => {
+    if (isMounted && user) {
+      registerForPushNotificationsAsync();
+    }
+  }, [user, isMounted]);
 
   return (
     <ErrorBoundary>

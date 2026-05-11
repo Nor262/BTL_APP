@@ -26,19 +26,17 @@ export default function BorrowerHome() {
 
   const fetchData = async () => {
     try {
-      const [eqRes, catRes, notiRes] = await Promise.all([
-        api.get('/equipment'),
-        api.get('/categories'),
-        api.get('/notifications')
+      const [eqRes, catRes, countRes] = await Promise.all([
+        api.get('/equipment').catch(e => { console.error('Eq error:', e.message); return { data: { data: [] } }; }),
+        api.get('/categories').catch(e => { console.error('Cat error:', e.message); return { data: { data: [] } }; }),
+        api.get('/notifications/unread-count').catch(e => { console.error('Noti error:', e.message); return { data: { data: { count: 0 } } }; })
       ]);
-      setEquipment(eqRes.data.data || eqRes.data);
-      setCategories(catRes.data.data || catRes.data);
       
-      const notifications = notiRes.data.data || notiRes.data;
-      const unread = Array.isArray(notifications) ? notifications.filter((n: any) => !n.is_read).length : 0;
-      setUnreadCount(unread);
+      setEquipment(eqRes.data?.data || eqRes.data || []);
+      setCategories(catRes.data?.data || catRes.data || []);
+      setUnreadCount(countRes.data?.data?.count || countRes.data?.count || 0);
     } catch (error) {
-      console.error(error);
+      console.error('General Fetch Error:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -1,15 +1,12 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet, Dimensions, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useAlertStore } from '@/store/useAlertStore';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const CustomAlert = () => {
   const { visible, type, title, message, onConfirm, showCancel, hideAlert } = useAlertStore();
-
-  if (!visible) return null;
 
   const getIcon = () => {
     switch (type) {
@@ -23,28 +20,28 @@ const CustomAlert = () => {
   const icon = getIcon();
 
   const handleConfirm = () => {
+    // Hide immediately first
     hideAlert();
+    
+    // Use a safe delay to ensure modal is dismissed before triggering navigation/logout
     if (onConfirm) {
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         onConfirm();
-      });
+      }, 350); // Slightly more than typical modal animation duration
     }
   };
 
   return (
-    <View style={styles.root} pointerEvents="auto">
-      <Animated.View 
-        entering={FadeIn.duration(200)}
-        exiting={FadeOut.duration(200)}
-        style={styles.overlay}
-      >
+    <Modal 
+      visible={visible} 
+      transparent 
+      animationType="fade" 
+      statusBarTranslucent={true}
+      onRequestClose={hideAlert}
+    >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={hideAlert} />
-        
-        <Animated.View 
-          entering={FadeIn.duration(300)}
-          exiting={FadeOut.duration(200)}
-          style={styles.content}
-        >
+        <View style={styles.content}>
           <View style={[styles.iconContainer, { backgroundColor: icon.bg }]}>
             <Feather name={icon.name as any} size={32} color={icon.color} />
           </View>
@@ -68,23 +65,18 @@ const CustomAlert = () => {
               <Text style={styles.confirmButtonText}>Xác nhận</Text>
             </Pressable>
           </View>
-        </Animated.View>
-      </Animated.View>
-    </View>
+        </View>
+      </View>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 9999,
-    elevation: 99,
-  },
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   backdrop: {
@@ -94,18 +86,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 30,
     padding: 24,
-    width: Math.min(width - 40, 340),
+    width: Math.min(width - 48, 340),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 15,
   },
   iconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -115,7 +107,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1C1C1E',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   message: {
     fontSize: 15,
@@ -130,8 +122,8 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    height: 52,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },

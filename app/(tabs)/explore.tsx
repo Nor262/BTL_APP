@@ -28,10 +28,6 @@ export default function ProfileScreen() {
       showCancel: true,
       onConfirm: () => {
         logout();
-        // Force a small delay before replacing to ensure the state has propagated
-        setTimeout(() => {
-          router.replace('/login');
-        }, 50);
       }
     });
   };

@@ -3,11 +3,16 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import api from '@/api/client';
 
+let hasLoggedExpoGoWarning = false;
+
 export async function registerForPushNotificationsAsync() {
   let token;
 
   if (Constants.appOwnership === 'expo') {
-    console.log('Push notifications are not supported in Expo Go. Use a development build.');
+    if (!hasLoggedExpoGoWarning) {
+      console.log('Push notifications are not supported in Expo Go. Use a development build.');
+      hasLoggedExpoGoWarning = true;
+    }
     return;
   }
 
