@@ -2,6 +2,16 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import api from '@/api/client';
+import * as Notifications from 'expo-notifications';
+
+// Cấu hình cách hiển thị thông báo khi app đang mở (Foreground)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 let hasLoggedExpoGoWarning = false;
 
@@ -15,8 +25,6 @@ export async function registerForPushNotificationsAsync() {
     }
     return;
   }
-
-  const Notifications = await import('expo-notifications');
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -39,15 +47,14 @@ export async function registerForPushNotificationsAsync() {
       return;
     }
     
-    // Project ID is required for Expo Push Token
     const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
     token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     console.log('Push Token:', token);
 
-    // Update token to backend
+    // Update token to backend - SỬA ĐÚNG ENDPOINT
     if (token) {
       try {
-        await api.patch('/auth/profile', { fcm_token: token });
+        await api.post('/notifications/register-token', { fcm_token: token });
       } catch (e) {
         console.error('Failed to update push token to backend', e);
       }

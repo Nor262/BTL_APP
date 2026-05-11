@@ -11,6 +11,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { registerForPushNotificationsAsync } from '@/utils/notifications';
+import * as Notifications from 'expo-notifications';
+import { useRef } from 'react';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -50,6 +52,23 @@ export default function RootLayout() {
   useEffect(() => {
     if (isMounted && user) {
       registerForPushNotificationsAsync();
+
+      // Lắng nghe khi thông báo tới lúc đang mở app
+      const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+        console.log('Notification received in foreground:', notification);
+      });
+
+      // Lắng nghe khi người dùng nhấn vào thông báo
+      const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('Notification clicked:', response);
+        // Tự động điều hướng đến trang thông báo
+        router.push('/notifications');
+      });
+
+      return () => {
+        Notifications.removeNotificationSubscription(notificationListener);
+        Notifications.removeNotificationSubscription(responseListener);
+      };
     }
   }, [user, isMounted]);
 
