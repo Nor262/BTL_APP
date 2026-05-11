@@ -15,6 +15,7 @@ const CARD_WIDTH = (width - 48) / 2;
 export default function BorrowerHome() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -25,12 +26,17 @@ export default function BorrowerHome() {
 
   const fetchData = async () => {
     try {
-      const [eqRes, catRes] = await Promise.all([
+      const [eqRes, catRes, notiRes] = await Promise.all([
         api.get('/equipment'),
-        api.get('/categories')
+        api.get('/categories'),
+        api.get('/notifications')
       ]);
       setEquipment(eqRes.data.data || eqRes.data);
       setCategories(catRes.data.data || catRes.data);
+      
+      const notifications = notiRes.data.data || notiRes.data;
+      const unread = Array.isArray(notifications) ? notifications.filter((n: any) => !n.is_read).length : 0;
+      setUnreadCount(unread);
     } catch (error) {
       console.error(error);
     } finally {
@@ -73,7 +79,9 @@ export default function BorrowerHome() {
               contentFit="cover"
             />
           ) : (
-            <Feather name="camera" size={32} color="#D1D1D6" />
+            <View className="items-center justify-center">
+               <Feather name="box" size={32} color="#D1D1D6" />
+            </View>
           )}
           <View className="absolute top-2 right-2">
             <Badge status={item.status} />
@@ -81,10 +89,13 @@ export default function BorrowerHome() {
         </View>
         <View className="p-3">
           <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{item.name}</Text>
-          <Text className="text-xs text-gray-500 mt-1">SN: {item.serial_number}</Text>
+          <View className="flex-row items-center mt-1">
+             <Feather name="tag" size={10} color="#999" />
+             <Text className="text-[10px] text-gray-500 ml-1">{item.category?.name || 'Thiết bị'}</Text>
+          </View>
           <View className="flex-row items-center justify-between mt-3">
-            <Text className="text-primary font-bold text-[10px] uppercase">XEM CHI TIẾT</Text>
-            <Feather name="chevron-right" size={12} color="#CC0D00" />
+            <Text className="text-primary font-bold text-[10px] uppercase">Chi tiết</Text>
+            <Feather name="arrow-right" size={12} color="#CC0D00" />
           </View>
         </View>
       </Pressable>
@@ -96,40 +107,38 @@ export default function BorrowerHome() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="bg-primary pt-16 pb-6 px-6 rounded-b-[30px] shadow-sm">
+    <View className="flex-1 bg-white">
+      {/* Header with Search */}
+      <View className="bg-primary pt-16 pb-8 px-6 rounded-b-[40px] shadow-lg">
         <View className="flex-row justify-between items-center mb-6">
           <View>
-            <Text className="text-white/80 text-sm">Xin chào,</Text>
-            <Text className="text-white text-2xl font-bold">{user?.full_name || 'Thành viên'}</Text>
+            <Text className="text-white/80 text-sm font-medium">Chào ngày mới,</Text>
+            <Text className="text-white text-2xl font-bold tracking-tight">{user?.full_name?.split(' ').pop() || 'Thành viên'}</Text>
           </View>
           <View className="flex-row">
             <Pressable 
-              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center mr-2"
-              onPress={() => router.push('/scan')}
-            >
-              <Feather name="maximize" size={22} color="white" />
-            </Pressable>
-            <Pressable 
-              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center mr-2"
+              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center mr-2 border border-white/10"
               onPress={() => router.push('/notifications')}
             >
-              <Feather name="bell" size={22} color="white" />
+              <Feather name="bell" size={20} color="white" />
+              {unreadCount > 0 && (
+                <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-primary" />
+              )}
             </Pressable>
             <Pressable 
-              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center"
+              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center border border-white/10"
               onPress={() => router.push('/(tabs)/explore')}
             >
-              <Feather name="user" size={22} color="white" />
+              <Feather name="user" size={20} color="white" />
             </Pressable>
           </View>
         </View>
         
-        <View className="flex-row items-center bg-white rounded-xl px-4 py-3 shadow-sm">
+        <View className="flex-row items-center bg-white rounded-2xl px-4 py-3 shadow-xl">
           <Feather name="search" size={20} color="#999" />
           <TextInput 
-            className="flex-1 ml-3 text-gray-900 text-base py-1"
-            placeholder="Tìm kiếm thiết bị..."
+            className="flex-1 ml-3 text-gray-900 text-base font-medium"
+            placeholder="Tìm kiếm thiết bị bạn cần..."
             placeholderTextColor="#999"
             value={search}
             onChangeText={setSearch}
@@ -144,28 +153,30 @@ export default function BorrowerHome() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />
         }
       >
-        <View className="px-6 py-6">
+        <View className="px-6 py-8">
+
+          {/* Categories */}
           <View className="flex-row justify-between items-end mb-4">
-            <Text className="font-bold text-lg text-gray-900">Danh mục</Text>
+            <Text className="font-bold text-xl text-gray-900 tracking-tight">Danh mục</Text>
             <Pressable onPress={() => setSelectedCategory(null)}>
               <Text className="text-primary font-bold text-sm">Tất cả</Text>
             </Pressable>
           </View>
           
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-8">
             <Pressable 
               onPress={() => setSelectedCategory(null)}
-              className={`px-6 py-2.5 rounded-full mr-3 ${selectedCategory === null ? 'bg-primary' : 'bg-white border border-gray-200'}`}
+              className={`px-6 py-3 rounded-2xl mr-3 ${selectedCategory === null ? 'bg-primary shadow-lg shadow-red-200' : 'bg-gray-50 border border-gray-100'}`}
             >
-              <Text className={`font-bold text-xs ${selectedCategory === null ? 'text-white' : 'text-gray-600'}`}>TẤT CẢ</Text>
+              <Text className={`font-bold text-sm ${selectedCategory === null ? 'text-white' : 'text-gray-500'}`}>TẤT CẢ</Text>
             </Pressable>
             {categories.map((cat: any, index: number) => (
               <Animated.View key={cat.id} entering={FadeInRight.delay(index * 100)}>
                 <Pressable 
                   onPress={() => setSelectedCategory(cat.id)}
-                  className={`px-6 py-2.5 rounded-full mr-3 ${selectedCategory === cat.id ? 'bg-primary' : 'bg-white border border-gray-200'}`}
+                  className={`px-6 py-3 rounded-2xl mr-3 ${selectedCategory === cat.id ? 'bg-primary shadow-lg shadow-red-200' : 'bg-gray-50 border border-gray-100'}`}
                 >
-                  <Text className={`font-bold text-xs ${selectedCategory === cat.id ? 'text-white' : 'text-gray-600'}`}>
+                  <Text className={`font-bold text-sm ${selectedCategory === cat.id ? 'text-white' : 'text-gray-500'}`}>
                     {cat.name.toUpperCase()}
                   </Text>
                 </Pressable>
@@ -173,7 +184,8 @@ export default function BorrowerHome() {
             ))}
           </ScrollView>
 
-          <Text className="font-bold text-lg text-gray-900 mb-4">Thiết bị hiện có</Text>
+          {/* Equipment Grid */}
+          <Text className="font-bold text-xl text-gray-900 mb-5 tracking-tight">Thiết bị hiện có</Text>
           <FlatList
             data={filteredEquipment}
             renderItem={renderEquipmentItem}
@@ -182,14 +194,14 @@ export default function BorrowerHome() {
             scrollEnabled={false}
             columnWrapperStyle={{ justifyContent: 'space-between' }}
             ListEmptyComponent={
-              <View className="items-center py-10 bg-white rounded-2xl border border-dashed border-gray-200">
-                <Feather name="inbox" size={48} color="#D1D1D6" />
-                <Text className="text-gray-400 mt-4 text-sm font-medium">Không tìm thấy thiết bị nào</Text>
+              <View className="items-center py-16 bg-gray-50 rounded-[30px] border border-dashed border-gray-200">
+                <Feather name="search" size={48} color="#D1D1D6" />
+                <Text className="text-gray-400 mt-4 text-sm font-medium">Không tìm thấy thiết bị nào phù hợp</Text>
               </View>
             }
           />
         </View>
-        <View className="h-24" />
+        <View className="h-32" />
       </ScrollView>
     </View>
   );

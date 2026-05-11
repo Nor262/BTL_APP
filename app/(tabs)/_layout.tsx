@@ -1,9 +1,10 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 export default function TabLayout() {
+  const router = useRouter();
   return (
     <Tabs
       screenOptions={{
@@ -18,6 +19,10 @@ export default function TabLayout() {
           paddingBottom: Platform.OS === 'ios' ? 35 : 15,
           paddingTop: 12,
           elevation: 0,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
         },
         tabBarLabelStyle: {
           fontFamily: 'System',
@@ -31,6 +36,26 @@ export default function TabLayout() {
         options={{
           title: 'Trang chủ',
           tabBarIcon: ({ color }) => <Feather name="home" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: 'Quét mã',
+          tabBarIcon: ({ color }) => (
+            <View style={{
+              width: 52,
+              height: 52,
+              backgroundColor: '#CC0D00',
+              borderRadius: 26,
+              justifyContent: 'center',
+              alignItems: 'center',
+              top: -15,
+            }}>
+              <Feather name="maximize" size={24} color="white" />
+            </View>
+          ),
+          tabBarLabel: () => null,
         }}
       />
       <Tabs.Screen
