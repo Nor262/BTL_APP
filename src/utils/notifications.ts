@@ -2,29 +2,37 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import api from '@/api/client';
-import * as Notifications from 'expo-notifications';
-
-// Cấu hình cách hiển thị thông báo khi app đang mở (Foreground)
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 let hasLoggedExpoGoWarning = false;
+
+// Hàm khởi tạo handler an toàn
+export async function setupNotificationHandler() {
+  if (Constants.appOwnership === 'expo') return;
+  
+  const Notifications = await import('expo-notifications');
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true, // Thêm cho SDK 53+
+      shouldShowList: true,   // Thêm cho SDK 53+
+    }),
+  });
+}
 
 export async function registerForPushNotificationsAsync() {
   let token;
 
   if (Constants.appOwnership === 'expo') {
     if (!hasLoggedExpoGoWarning) {
-      console.log('Push notifications are not supported in Expo Go. Use a development build.');
+      console.log('Push notifications are not supported in Expo Go (SDK 53+). Use a development build.');
       hasLoggedExpoGoWarning = true;
     }
     return;
   }
+
+  const Notifications = await import('expo-notifications');
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -51,7 +59,7 @@ export async function registerForPushNotificationsAsync() {
     token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     console.log('Push Token:', token);
 
-    // Update token to backend - SỬA ĐÚNG ENDPOINT
+    // Update token to backend
     if (token) {
       try {
         await api.post('/notifications/register-token', { fcm_token: token });

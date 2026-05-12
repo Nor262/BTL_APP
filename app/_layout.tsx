@@ -10,8 +10,8 @@ import { Provider as AntProvider } from '@ant-design/react-native';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
-import { registerForPushNotificationsAsync } from '@/utils/notifications';
-import * as Notifications from 'expo-notifications';
+import { registerForPushNotificationsAsync, setupNotificationHandler } from '@/utils/notifications';
+import Constants from 'expo-constants';
 import { useRef } from 'react';
 
 export const unstable_settings = {
@@ -50,25 +50,36 @@ export default function RootLayout() {
 
   // Handle Notifications Registration (Only when user changes)
   useEffect(() => {
-    if (isMounted && user) {
-      registerForPushNotificationsAsync();
+    // Chỉ chạy nếu không phải Expo Go và user đã đăng nhập
+    if (isMounted && user && Constants.appOwnership !== 'expo') {
+      const setup = async () => {
+        await setupNotificationHandler();
+        await registerForPushNotificationsAsync();
+        
+        const Notifications = await import('expo-notifications');
 
-      // Lắng nghe khi thông báo tới lúc đang mở app
-      const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-        console.log('Notification received in foreground:', notification);
-      });
+        const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+          console.log('Notification received in foreground:', notification);
+        });
 
-      // Lắng nghe khi người dùng nhấn vào thông báo
-      const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-        console.log('Notification clicked:', response);
-        // Tự động điều hướng đến trang thông báo
-        router.push('/notifications');
-      });
+        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+          console.log('Notification clicked:', response);
+          router.push('/notifications');
+        });
 
-      return () => {
-        Notifications.removeNotificationSubscription(notificationListener);
-        Notifications.removeNotificationSubscription(responseListener);
+        return () => {
+          notificationListener.remove();
+          responseListener.remove();
+        };
       };
+
+      const cleanup = setup();
+      return () => {
+        cleanup.then(fn => fn && fn());
+      };
+    } else if (isMounted && user && Constants.appOwnership === 'expo') {
+      // Nếu là Expo Go, vẫn gọi hàm register để in ra cảnh báo nhưng không đăng ký listener
+      registerForPushNotificationsAsync();
     }
   }, [user, isMounted]);
 
