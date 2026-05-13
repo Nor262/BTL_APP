@@ -9,28 +9,36 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { StatusBar } from 'expo-status-bar';
 
+import { handleApiError } from '@/utils/error-handler';
+
+import { useAlertStore } from '@/store/useAlertStore';
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
+  const { showAlert } = useAlertStore();
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ thông tin đăng nhập');
+    if (!email.trim() || !password.trim()) {
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Vui lòng nhập đầy đủ email và mật khẩu'
+      });
       return;
     }
 
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { identifier: email, password });
       const { user, accessToken } = response.data.data;
       setAuth(user, accessToken);
       router.replace('/(tabs)');
     } catch (error: any) {
-      console.error(error);
-      Alert.alert('Đăng nhập thất bại', error.response?.data?.message || 'Email hoặc mật khẩu không chính xác');
+      handleApiError(error, 'Đăng nhập thất bại');
     } finally {
       setLoading(false);
     }
@@ -69,12 +77,11 @@ export default function LoginScreen() {
               className="w-full"
             >
               <Input
-                label="Email"
-                placeholder="example@student.ptit.edu.vn"
+                label="Email hoặc Tên đăng nhập"
+                placeholder="example@mail.com hoặc username"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
-                keyboardType="email-address"
                 icon="mail"
               />
               <Input

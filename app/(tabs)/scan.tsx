@@ -9,6 +9,8 @@ import { useRouter } from 'expo-router';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
 
+import { handleApiError } from '@/utils/error-handler';
+
 export default function BatchScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannedItems, setScannedItems] = useState<any[]>([]);
@@ -59,7 +61,7 @@ export default function BatchScanScreen() {
       setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Lỗi', 'Mã QR không hợp lệ hoặc thiết bị không tồn tại');
+      handleApiError(error, 'Mã QR không hợp lệ');
     } finally {
       if (mode === 'transaction') {
         setTimeout(() => setScanning(true), 1500);
@@ -68,15 +70,19 @@ export default function BatchScanScreen() {
   };
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
 
-    if (!result.canceled) {
-      setEvidenceImage(result.assets[0].uri);
+      if (!result.canceled) {
+        setEvidenceImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      handleApiError(error, 'Không thể chọn ảnh');
     }
   };
 
@@ -110,7 +116,7 @@ export default function BatchScanScreen() {
       router.back();
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể xử lý yêu cầu hàng loạt');
+      handleApiError(error, 'Lỗi xử lý giao dịch');
     }
   };
 

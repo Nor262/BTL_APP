@@ -3,11 +3,32 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import api from '@/api/client';
 
+let hasLoggedExpoGoWarning = false;
+
+// Hàm khởi tạo handler an toàn
+export async function setupNotificationHandler() {
+  if (Constants.appOwnership === 'expo') return;
+  
+  const Notifications = await import('expo-notifications');
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true, // Thêm cho SDK 53+
+      shouldShowList: true,   // Thêm cho SDK 53+
+    }),
+  });
+}
+
 export async function registerForPushNotificationsAsync() {
   let token;
 
   if (Constants.appOwnership === 'expo') {
-    console.log('Push notifications are not supported in Expo Go. Use a development build.');
+    if (!hasLoggedExpoGoWarning) {
+      console.log('Push notifications are not supported in Expo Go (SDK 53+). Use a development build.');
+      hasLoggedExpoGoWarning = true;
+    }
     return;
   }
 
@@ -34,7 +55,6 @@ export async function registerForPushNotificationsAsync() {
       return;
     }
     
-    // Project ID is required for Expo Push Token
     const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
     token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     console.log('Push Token:', token);
@@ -42,7 +62,7 @@ export async function registerForPushNotificationsAsync() {
     // Update token to backend
     if (token) {
       try {
-        await api.patch('/auth/profile', { fcm_token: token });
+        await api.post('/notifications/register-token', { fcm_token: token });
       } catch (e) {
         console.error('Failed to update push token to backend', e);
       }
