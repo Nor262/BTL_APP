@@ -16,13 +16,14 @@ export default function RegisterScreen() {
     password: '',
     email: '',
     full_name: '',
+    phone: '',
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleRegister = async () => {
-    const { username, password, email, full_name } = formData;
-    if (!username.trim() || !password.trim() || !email.trim() || !full_name.trim()) {
+    const { username, password, email, full_name, phone } = formData;
+    if (!username.trim() || !password.trim() || !email.trim() || !full_name.trim() || !phone.trim()) {
       Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin đăng ký');
       return;
     }
@@ -96,6 +97,14 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 icon="mail"
+              />
+              <Input
+                label="Số điện thoại"
+                placeholder="0987654321"
+                value={formData.phone}
+                onChangeText={(v) => updateForm('phone', v)}
+                keyboardType="phone-pad"
+                icon="phone"
               />
               <Input
                 label="Mật khẩu"
