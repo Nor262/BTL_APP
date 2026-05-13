@@ -207,6 +207,7 @@ export default function EquipmentDetailScreen() {
                   />
                 </View>
               </View>
+            )}
             {history.length > 0 && (
               <View className="mt-8">
                 <View className="flex-row items-center mb-3">
