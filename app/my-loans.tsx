@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Badge from '@/components/ui/Badge';
 import { StatusBar } from 'expo-status-bar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import { handleApiError } from '@/utils/error-handler';
 
 export default function MyLoansScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -66,8 +67,36 @@ export default function MyLoansScreen() {
           <Text className="text-xs text-gray-500 ml-1">Tình trạng trả: {item.condition_on_return}</Text>
         </View>
       )}
+
+      {/* Hành động: Gia hạn */}
+      <View className="flex-row justify-end mt-3 border-t border-gray-100 pt-3">
+        {item.status === 'active' && !item.is_extended && (
+          <Pressable 
+            className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+            onPress={() => handleExtend(item)}
+          >
+            <Text className="text-blue-600 font-medium text-xs">Gia hạn (+7 ngày)</Text>
+          </Pressable>
+        )}
+      </View>
     </Animated.View>
   );
+
+  const handleExtend = (tx: any) => {
+    Alert.alert('Xác nhận gia hạn', 'Bạn muốn gia hạn thêm 7 ngày cho thiết bị này?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Gia hạn', onPress: async () => {
+        try {
+          const newDueDate = new Date(new Date(tx.due_date).getTime() + 7 * 24 * 60 * 60 * 1000);
+          await api.patch(`/transactions/${tx.id}/extend`, { new_due_date: newDueDate.toISOString() });
+          Alert.alert('Thành công', 'Gia hạn thành công!');
+          fetchData();
+        } catch (error) {
+          handleApiError(error, 'Lỗi gia hạn');
+        }
+      }}
+    ]);
+  };
 
   if (loading) {
     return <LoadingScreen />;
