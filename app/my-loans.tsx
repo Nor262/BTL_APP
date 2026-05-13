@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Pressable, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
@@ -7,12 +7,18 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Badge from '@/components/ui/Badge';
 import { StatusBar } from 'expo-status-bar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 import { handleApiError } from '@/utils/error-handler';
 
 export default function MyLoansScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<any>(null);
+  const [rating, setRating] = useState('5');
+  const [feedback, setFeedback] = useState('');
   const router = useRouter();
 
   const fetchData = async () => {
@@ -68,19 +74,53 @@ export default function MyLoansScreen() {
         </View>
       )}
 
-      {/* Hành động: Gia hạn */}
+      {/* Hành động: Gia hạn / Đánh giá */}
       <View className="flex-row justify-end mt-3 border-t border-gray-100 pt-3">
         {item.status === 'active' && !item.is_extended && (
           <Pressable 
-            className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+            className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 mr-2"
             onPress={() => handleExtend(item)}
           >
             <Text className="text-blue-600 font-medium text-xs">Gia hạn (+7 ngày)</Text>
           </Pressable>
         )}
+        {item.status === 'completed' && !item.rating && (
+          <Pressable 
+            className="bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100"
+            onPress={() => {
+              setSelectedTx(item);
+              setRating('5');
+              setFeedback('');
+              setRatingModalVisible(true);
+            }}
+          >
+            <Text className="text-orange-600 font-medium text-xs">Đánh giá</Text>
+          </Pressable>
+        )}
+        {item.rating && (
+          <View className="flex-row items-center">
+            <Feather name="star" size={14} color="#F59E0B" />
+            <Text className="text-orange-500 text-xs ml-1 font-bold">{item.rating}/5</Text>
+          </View>
+        )}
       </View>
     </Animated.View>
   );
+
+  const submitRating = async () => {
+    if (!selectedTx) return;
+    try {
+      await api.patch(`/transactions/${selectedTx.id}/rate`, {
+        rating: parseInt(rating, 10),
+        feedback
+      });
+      Alert.alert('Thành công', 'Cảm ơn bạn đã đánh giá!');
+      setRatingModalVisible(false);
+      fetchData();
+    } catch (error) {
+      handleApiError(error, 'Lỗi đánh giá');
+    }
+  };
 
   const handleExtend = (tx: any) => {
     Alert.alert('Xác nhận gia hạn', 'Bạn muốn gia hạn thêm 7 ngày cho thiết bị này?', [
@@ -131,6 +171,44 @@ export default function MyLoansScreen() {
           </View>
         }
       />
+
+      {/* Modal Đánh Giá */}
+      <Modal visible={ratingModalVisible} transparent animationType="fade" statusBarTranslucent>
+        <View className="flex-1">
+          <Pressable className="absolute inset-0 bg-black/40" onPress={() => setRatingModalVisible(false)} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            className="flex-1 justify-center px-6"
+            pointerEvents="box-none"
+          >
+            <Pressable className="bg-white rounded-[30px] p-6 shadow-2xl" onPress={(e) => e.stopPropagation()}>
+              <Text className="text-xl font-bold text-gray-900 mb-2 text-center">Đánh giá thiết bị</Text>
+              <Text className="text-gray-500 text-center mb-6">{selectedTx?.equipment?.name}</Text>
+
+              <Input
+                label="Điểm đánh giá (1-5)"
+                value={rating}
+                onChangeText={setRating}
+                keyboardType="numeric"
+                icon="star"
+              />
+
+              <Input
+                label="Phản hồi (tùy chọn)"
+                value={feedback}
+                onChangeText={setFeedback}
+                placeholder="Máy dùng tốt..."
+                icon="message-circle"
+              />
+
+              <View className="flex-row mt-4">
+                <Button title="Hủy" onPress={() => setRatingModalVisible(false)} containerClassName="flex-1 mr-2" variant="secondary" />
+                <Button title="Gửi đánh giá" onPress={submitRating} containerClassName="flex-1 ml-2" />
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </View>
   );
 }
