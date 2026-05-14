@@ -93,6 +93,13 @@ export default function LoginScreen() {
                 icon="lock"
               />
 
+              <Pressable 
+                onPress={() => router.push('/forgot-password')}
+                className="items-end mb-4"
+              >
+                <Text className="text-primary font-medium">Quên mật khẩu?</Text>
+              </Pressable>
+
               <Button
                 title="Đăng nhập"
                 onPress={handleLogin}
