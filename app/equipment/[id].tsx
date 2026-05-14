@@ -175,13 +175,16 @@ export default function EquipmentDetailScreen() {
 
             <Text className="font-bold text-lg text-gray-900 mb-3">Mục đích sử dụng</Text>
             <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-900 text-base min-h-[100px]"
+              className="bg-gray-50 border border-gray-200 rounded-xl px-4 text-gray-900 text-base min-h-[120px] pt-3 pb-4"
+              style={{ 
+                textAlignVertical: 'top',
+                includeFontPadding: false,
+              }}
               placeholder="VD: Mượn quay phim sự kiện CLB..."
               placeholderTextColor="#999"
               value={notes}
               onChangeText={setNotes}
               multiline
-              textAlignVertical="top"
             />
 
             {occupiedDates.length > 0 && (

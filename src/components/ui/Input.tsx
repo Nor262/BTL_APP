@@ -15,10 +15,14 @@ export default function Input({ label, error, icon, secureTextEntry, ...props }:
   return (
     <View className="mb-4 w-full">
       <Text className="text-sm font-medium text-gray-700 mb-1">{label}</Text>
-      <View className={`flex-row items-center bg-gray-50 px-4 rounded-xl border ${error ? 'border-red-500' : 'border-gray-200 focus:border-primary'}`}>
+      <View className={`flex-row items-center bg-gray-50 px-4 rounded-xl border h-14 ${error ? 'border-red-500' : 'border-gray-200 focus:border-primary'}`}>
         {icon && <Feather name={icon as any} size={20} color="#666" style={{ marginRight: 10 }} />}
         <TextInput
-          className="flex-1 py-3 text-gray-900 text-base"
+          className="flex-1 text-gray-900 text-base h-12 pt-0 pb-1"
+          style={{ 
+            textAlignVertical: 'center',
+            includeFontPadding: false,
+          }}
           placeholderTextColor="#999"
           secureTextEntry={isPasswordField && !showPassword}
           {...props}
