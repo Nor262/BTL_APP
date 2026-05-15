@@ -16,11 +16,11 @@ const expoHost = Constants.expoGoConfig?.debuggerHost?.split(':')[0]
   ?? FALLBACK_IP;
 
 // Detect if we are using an Expo tunnel (exp.direct)
-const isTunnel = expoHost.includes('exp.direct');
+const isExpoTunnel = expoHost.includes('exp.direct');
 
 const DEV_API_URL = Platform.select({
-  ios: `http://${isTunnel ? FALLBACK_IP : expoHost}:3000/v1`,
-  android: `http://${isTunnel ? FALLBACK_IP : expoHost}:3000/v1`,
+  ios: `http://${isExpoTunnel ? FALLBACK_IP : expoHost}:3000/v1`,
+  android: `http://${isExpoTunnel ? FALLBACK_IP : expoHost}:3000/v1`,
   default: `http://localhost:3000/v1`,
 });
 
@@ -32,8 +32,7 @@ export const Config = {
 // Logging configuration for debugging
 console.log('--- [Config] ---');
 console.log('Expo Host:', expoHost);
-console.log('Is Tunnel:', isTunnel);
+console.log('Is Expo Tunnel:', isExpoTunnel);
 console.log('Env API URL:', process.env.EXPO_PUBLIC_API_URL || 'Not Set');
-console.log('Fallback API URL:', DEV_API_URL);
 console.log('FINAL API URL:', Config.API_URL);
 console.log('----------------');
