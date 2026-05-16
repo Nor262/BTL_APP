@@ -134,10 +134,14 @@ export default function BorrowerHome() {
           </View>
         </View>
         
-        <View className="flex-row items-center bg-white rounded-2xl px-4 py-3 shadow-xl">
+        <View className="flex-row items-center bg-white rounded-2xl px-4 h-14 shadow-xl">
           <Feather name="search" size={20} color="#999" />
           <TextInput 
-            className="flex-1 ml-3 text-gray-900 text-base font-medium"
+            className="flex-1 ml-3 text-gray-900 text-base font-medium h-12 pt-0 pb-1"
+            style={{ 
+              textAlignVertical: 'center',
+              includeFontPadding: false,
+            }}
             placeholder="Tìm kiếm thiết bị bạn cần..."
             placeholderTextColor="#999"
             value={search}

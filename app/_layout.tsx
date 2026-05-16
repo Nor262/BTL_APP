@@ -39,7 +39,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isMounted || !navigationState?.key) return;
 
-    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register' || segments[0] === 'forgot-password' || segments[0] === 'reset-password';
 
     if (!user && !inAuthGroup) {
       router.replace('/login');
@@ -90,6 +90,8 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" />
             <Stack.Screen name="register" />
+            <Stack.Screen name="forgot-password" />
+            <Stack.Screen name="reset-password" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>

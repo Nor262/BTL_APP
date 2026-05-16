@@ -1,20 +1,38 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Detected local IP for this machine is 192.168.55.106
+/**
+ * API Configuration
+ * 
+ * To override the API URL, set the EXPO_PUBLIC_API_URL environment variable in your .env file:
+ * EXPO_PUBLIC_API_URL=http://192.168.1.120:3000/v1
+ */
+
+// Hardcoded fallback IP - update this to your machine's local IP if needed
+const FALLBACK_IP = '192.168.1.120'; 
+
 const expoHost = Constants.expoGoConfig?.debuggerHost?.split(':')[0]
   ?? Constants.expoConfig?.hostUri?.split(':')[0]
-  ?? '192.168.55.106'; // Hardcoded fallback for the current environment
+  ?? FALLBACK_IP;
+
+// Detect if we are using an Expo tunnel (exp.direct)
+const isExpoTunnel = expoHost.includes('exp.direct');
 
 const DEV_API_URL = Platform.select({
-  ios: `http://${expoHost}:3000/v1`,
-  android: `http://${expoHost}:3000/v1`,
+  ios: `http://${isExpoTunnel ? FALLBACK_IP : expoHost}:3000/v1`,
+  android: `http://${isExpoTunnel ? FALLBACK_IP : expoHost}:3000/v1`,
   default: `http://localhost:3000/v1`,
 });
 
-console.log('Backend API URL:', DEV_API_URL);
-
 export const Config = {
-  API_URL: process.env.EXPO_PUBLIC_API_URL || DEV_API_URL,
+  API_URL: process.env.EXPO_PUBLIC_API_URL || DEV_API_URL || '',
   PRIMARY_COLOR: '#CC0D00',
 };
+
+// Logging configuration for debugging
+console.log('--- [Config] ---');
+console.log('Expo Host:', expoHost);
+console.log('Is Expo Tunnel:', isExpoTunnel);
+console.log('Env API URL:', process.env.EXPO_PUBLIC_API_URL || 'Not Set');
+console.log('FINAL API URL:', Config.API_URL);
+console.log('----------------');
