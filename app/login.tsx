@@ -93,18 +93,17 @@ export default function LoginScreen() {
                 icon="lock"
               />
 
-              <Pressable 
-                onPress={() => router.push('/forgot-password')}
-                className="items-end mb-4"
-              >
-                <Text className="text-primary font-medium">Quên mật khẩu?</Text>
-              </Pressable>
+              <View className="flex-row justify-end mb-4">
+                <Pressable onPress={() => router.push('/forgot-password')}>
+                  <Text className="text-primary font-medium text-sm">Quên mật khẩu?</Text>
+                </Pressable>
+              </View>
 
-              <Button
-                title="Đăng nhập"
-                onPress={handleLogin}
+              <Button 
+                title="Đăng nhập" 
+                onPress={handleLogin} 
                 loading={loading}
-                className="mt-6"
+                className="mt-2"
               />
 
               <View className="flex-row justify-center mt-8 pb-8">

@@ -17,6 +17,7 @@ export default function ProfileScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +44,7 @@ export default function ProfileScreen() {
     }
     setLoading(true);
     try {
-      const res = await api.patch('/auth/profile', { full_name: fullName.trim() });
+      const res = await api.patch('/auth/profile', { full_name: fullName.trim(), phone: phone.trim() });
       setAuth(res.data.data || res.data, useAuthStore.getState().token!);
       showAlert({
         type: 'success',
@@ -132,6 +133,7 @@ export default function ProfileScreen() {
           </View>
           <Text className="text-white text-2xl font-bold">{user?.full_name}</Text>
           <Text className="text-white/80 mt-1">{user?.email}</Text>
+          {user?.phone && <Text className="text-white/80 mt-1">{user.phone}</Text>}
           <View className="bg-white/20 px-4 py-1.5 rounded-full mt-3">
             <Text className="text-white text-xs font-bold uppercase tracking-wider">
               {user?.role === 'storekeeper' ? 'THỦ KHO' : 'SINH VIÊN'}
@@ -221,6 +223,15 @@ export default function ProfileScreen() {
                 onChangeText={setFullName}
                 placeholder="Nhập họ và tên"
                 icon="user"
+              />
+
+              <Input
+                label="Số điện thoại"
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Nhập số điện thoại"
+                keyboardType="phone-pad"
+                icon="phone"
               />
 
               <View className="flex-row">

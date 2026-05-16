@@ -34,17 +34,20 @@ export default function EquipmentDetailScreen() {
   const [notes, setNotes] = useState('');
   const [occupiedDates, setOccupiedDates] = useState<any[]>([]);
   const [markedDates, setMarkedDates] = useState<any>({});
+  const [history, setHistory] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [eqRes, availRes] = await Promise.all([
+        const [eqRes, availRes, histRes] = await Promise.all([
           api.get(`/equipment/${id}`),
-          api.get(`/equipment/${id}/availability`).catch(() => ({ data: { data: [] } }))
+          api.get(`/equipment/${id}/availability`).catch(() => ({ data: { data: [] } })),
+          api.get(`/transactions/equipment/${id}`).catch(() => ({ data: { data: [] } }))
         ]);
         setEquipment(eqRes.data.data || eqRes.data);
+        setHistory(histRes.data.data || histRes.data || []);
         
         const occupied = availRes.data.data || availRes.data || [];
         setOccupiedDates(occupied);
@@ -205,6 +208,35 @@ export default function EquipmentDetailScreen() {
                       textDayHeaderFontWeight: 'bold',
                     }}
                   />
+                </View>
+              </View>
+            )}
+            {history.length > 0 && (
+              <View className="mt-8">
+                <View className="flex-row items-center mb-3">
+                  <Feather name="list" size={18} color="#CC0D00" />
+                  <Text className="font-bold text-lg text-gray-900 ml-2">Lịch sử mượn trả</Text>
+                </View>
+                <View className="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                  {history.map((item, index) => (
+                    <View key={item.id} className={`p-4 ${index !== history.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                      <View className="flex-row justify-between items-center mb-1">
+                        <Text className="font-bold text-gray-900 text-sm">{item.borrower?.full_name}</Text>
+                        <Text className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                          item.status === 'completed' ? 'bg-green-100 text-green-600' : 
+                          item.status === 'active' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {item.status}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center">
+                        <Feather name="clock" size={10} color="#999" />
+                        <Text className="text-gray-500 text-[10px] ml-1">
+                          {new Date(item.request_date).toLocaleDateString('vi-VN')}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
