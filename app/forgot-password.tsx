@@ -5,6 +5,7 @@ import api from '@/api/client';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import OtpInput from '@/components/ui/OtpInput';
 import { StatusBar } from 'expo-status-bar';
 import { handleApiError } from '@/utils/error-handler';
 
@@ -99,13 +100,11 @@ export default function ForgotPasswordScreen() {
                 </>
               ) : (
                 <>
-                  <Input
-                    label="Mã xác nhận (OTP)"
-                    placeholder="Nhập mã 6 số"
+                  <Text className="text-gray-700 text-sm font-semibold mb-2">Mã xác nhận (OTP)</Text>
+                  <OtpInput
+                    length={6}
                     value={otp}
                     onChangeText={setOtp}
-                    keyboardType="number-pad"
-                    icon="key"
                   />
                   <Input
                     label="Mật khẩu mới"
