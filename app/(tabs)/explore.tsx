@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, Modal, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import api from '@/api/client';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useAlertStore } from '@/store/useAlertStore';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function ProfileScreen() {
   const { user, logout, setAuth } = useAuthStore();
@@ -18,8 +19,23 @@ export default function ProfileScreen() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [studentId, setStudentId] = useState(user?.student_id || '');
+  const [userClass, setUserClass] = useState(user?.class || '');
+  const [department, setDepartment] = useState(user?.department || '');
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  // Sync state values when modal opens or user updates
+  useEffect(() => {
+    if (showEditModal && user) {
+      setFullName(user.full_name || '');
+      setPhone(user.phone || '');
+      setStudentId(user.student_id || '');
+      setUserClass(user.class || '');
+      setDepartment(user.department || '');
+    }
+  }, [showEditModal, user]);
 
   const handleLogout = () => {
     showAlert({
@@ -44,7 +60,13 @@ export default function ProfileScreen() {
     }
     setLoading(true);
     try {
-      const res = await api.patch('/auth/profile', { full_name: fullName.trim(), phone: phone.trim() });
+      const res = await api.patch('/auth/profile', { 
+        full_name: fullName.trim(), 
+        phone: phone.trim(),
+        student_id: studentId.trim() || null,
+        class: userClass.trim() || null,
+        department: department.trim() || null
+      });
       setAuth(res.data.data || res.data, useAuthStore.getState().token!);
       showAlert({
         type: 'success',
@@ -60,6 +82,75 @@ export default function ProfileScreen() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const selectAndUploadAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert({
+        type: 'warning',
+        title: 'Quyền truy cập',
+        message: 'Ứng dụng cần quyền truy cập thư viện ảnh để thay đổi avatar.'
+      });
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const selectedImage = result.assets[0];
+      const localUri = selectedImage.uri;
+      const filename = localUri.split('/').pop() || 'avatar.jpg';
+      
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: localUri,
+        name: filename,
+        type,
+      } as any);
+
+      const res = await api.post('/users/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const updatedUser = res.data.user || res.data.data?.user;
+      if (updatedUser) {
+        setAuth(updatedUser, useAuthStore.getState().token!);
+      } else if (res.data.avatar_url) {
+        const newUser = { ...user, avatar_url: res.data.avatar_url } as any;
+        setAuth(newUser, useAuthStore.getState().token!);
+      }
+
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Cập nhật ảnh đại diện thành công'
+      });
+    } catch (error: any) {
+      console.error('Upload avatar error:', error);
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: error.response?.data?.message || 'Không thể tải lên ảnh đại diện'
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -125,25 +216,69 @@ export default function ProfileScreen() {
   return (
     <Animated.View entering={FadeIn} className="flex-1 bg-gray-50">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        {/* Profile Header */}
         <View className="bg-primary pt-20 pb-8 px-6 items-center rounded-b-[40px] shadow-sm">
-          <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-sm mb-4 border-4 border-white/20">
-            <Text className="text-primary text-4xl font-bold">
-              {user?.full_name?.charAt(0).toUpperCase() || 'U'}
-            </Text>
-          </View>
+          <Pressable 
+            onPress={selectAndUploadAvatar} 
+            className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-md mb-4 border-4 border-white/30 relative overflow-hidden active:scale-95"
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : user?.avatar_url ? (
+              <Image 
+                source={{ uri: user.avatar_url }} 
+                className="w-full h-full rounded-full"
+                resizeMode="cover"
+              />
+            ) : (
+              <Text className="text-primary text-4xl font-bold">
+                {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            )}
+            <View className="absolute bottom-0 right-0 left-0 bg-black/40 py-1 items-center">
+              <Feather name="camera" size={10} color="#fff" />
+            </View>
+          </Pressable>
+
           <Text className="text-white text-2xl font-bold">{user?.full_name}</Text>
           <Text className="text-white/80 mt-1">{user?.email}</Text>
           {user?.phone && <Text className="text-white/80 mt-1">{user.phone}</Text>}
           <View className="bg-white/20 px-4 py-1.5 rounded-full mt-3">
             <Text className="text-white text-xs font-bold uppercase tracking-wider">
-              {user?.role === 'storekeeper' ? 'THỦ KHO' : 'SINH VIÊN'}
+              {user?.role === 'storekeeper' ? 'THỦ KHO' : user?.role === 'admin' ? 'QUẢN TRỊ VIÊN' : 'SINH VIÊN'}
             </Text>
           </View>
         </View>
 
         <View className="px-6 py-6">
-          <Text className="font-bold text-gray-900 text-lg mb-4">Cài đặt tài khoản</Text>
+          {/* Detailed Info Section */}
+          <Animated.View entering={FadeInDown.delay(100)} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+            <View className="flex-row items-center border-b border-gray-100 pb-3 mb-3">
+              <View className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center mr-3">
+                <Feather name="info" size={18} color="#007AFF" />
+              </View>
+              <Text className="font-bold text-gray-900 text-base">Thông tin chi tiết</Text>
+            </View>
+            
+            {user?.role === 'borrower' && (
+              <DetailItem label="Mã sinh viên" value={user?.student_id || 'Chưa cập nhật'} icon="credit-card" />
+            )}
+            {user?.role === 'borrower' && (
+              <DetailItem label="Lớp học" value={user?.class || 'Chưa cập nhật'} icon="layers" />
+            )}
+            {user?.role === 'borrower' && (
+              <DetailItem label="Khoa" value={user?.department || 'Chưa cập nhật'} icon="grid" />
+            )}
+            <DetailItem label="Số điện thoại" value={user?.phone || 'Chưa cập nhật'} icon="phone" />
+            
+            <DetailItem 
+              label="Ngày tham gia" 
+              value={user?.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '...'} 
+              icon="calendar" 
+            />
+          </Animated.View>
 
+          <Text className="font-bold text-gray-900 text-lg mb-4">Cài đặt tài khoản</Text>
           <Animated.View entering={FadeInDown.delay(200)} className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
             <ProfileOption
               icon="user"
@@ -212,27 +347,57 @@ export default function ProfileScreen() {
             pointerEvents="box-none"
           >
             <Pressable 
-              className="bg-white rounded-[30px] p-6 shadow-2xl" 
+              className="bg-white rounded-[30px] p-6 shadow-2xl max-h-[85%]" 
               onPress={(e) => e.stopPropagation()}
             >
               <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Cập nhật thông tin</Text>
 
-              <Input
-                label="Họ và tên"
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Nhập họ và tên"
-                icon="user"
-              />
+              <ScrollView showsVerticalScrollIndicator={false} className="mb-4" style={{ flexGrow: 0 }}>
+                <Input
+                  label="Họ và tên"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Nhập họ và tên"
+                  icon="user"
+                />
 
-              <Input
-                label="Số điện thoại"
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="Nhập số điện thoại"
-                keyboardType="phone-pad"
-                icon="phone"
-              />
+                <Input
+                  label="Số điện thoại"
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Nhập số điện thoại"
+                  keyboardType="phone-pad"
+                  icon="phone"
+                />
+
+                {user?.role === 'borrower' && (
+                  <>
+                    <Input
+                      label="Mã số sinh viên"
+                      value={studentId}
+                      onChangeText={setStudentId}
+                      placeholder="Nhập mã sinh viên"
+                      icon="credit-card"
+                    />
+
+                    <Input
+                      label="Lớp học"
+                      value={userClass}
+                      onChangeText={setUserClass}
+                      placeholder="Nhập lớp học"
+                      icon="layers"
+                    />
+
+                    <Input
+                      label="Khoa"
+                      value={department}
+                      onChangeText={setDepartment}
+                      placeholder="Nhập khoa"
+                      icon="grid"
+                    />
+                  </>
+                )}
+              </ScrollView>
 
               <View className="flex-row">
                 <Button
@@ -321,6 +486,20 @@ export default function ProfileScreen() {
         </View>
       </Modal>
     </Animated.View>
+  );
+}
+
+function DetailItem({ label, value, icon, valueColor = '#1F2937' }: any) {
+  return (
+    <View className="flex-row items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+      <View className="flex-row items-center flex-1 pr-4">
+        <View className="w-6 h-6 items-center justify-center mr-2">
+          <Feather name={icon} size={14} color="#8E8E93" />
+        </View>
+        <Text className="text-gray-500 text-sm">{label}</Text>
+      </View>
+      <Text className="font-semibold text-sm text-right flex-1 text-gray-900" style={{ color: valueColor }}>{value}</Text>
+    </View>
   );
 }
 
