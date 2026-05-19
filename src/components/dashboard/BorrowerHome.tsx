@@ -35,7 +35,7 @@ export default function BorrowerHome() {
       setEquipment(eqRes.data?.data || eqRes.data || []);
       
       const transactions = transRes.data?.data || transRes.data || [];
-      const active = transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue');
+      const active = transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue' || t.status === 'approved');
       setActiveLoans(active);
       
       setUnreadCount(countRes.data?.data?.count || countRes.data?.count || 0);
@@ -191,8 +191,14 @@ export default function BorrowerHome() {
                     <View className="flex-1 ml-4">
                       <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{loan.equipment?.name || 'Thiết bị'}</Text>
                       <View className="flex-row items-center mt-1">
-                        <View className={`w-2 h-2 rounded-full ${loan.status === 'overdue' ? 'bg-red-500' : 'bg-green-500'} mr-2`} />
-                        <Text className="text-gray-500 text-xs font-medium">{loan.status === 'overdue' ? 'Quá hạn trả' : 'Đang sử dụng'}</Text>
+                        <View className={`w-2 h-2 rounded-full ${
+                          loan.status === 'overdue' ? 'bg-red-500' : 
+                          loan.status === 'approved' ? 'bg-orange-500' : 'bg-green-500'
+                        } mr-2`} />
+                        <Text className="text-gray-500 text-xs font-medium">{
+                          loan.status === 'overdue' ? 'Quá hạn trả' : 
+                          loan.status === 'approved' ? 'Chờ nhận thiết bị' : 'Đang sử dụng'
+                        }</Text>
                       </View>
                     </View>
                     <View className="bg-gray-50 w-10 h-10 rounded-full items-center justify-center">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, Dimensions, FlatList } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -7,6 +7,10 @@ import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/api/client';
 import Badge from '../ui/Badge';
 import LoadingScreen from '../ui/LoadingScreen';
+import { Image } from 'expo-image';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 48) / 2;
 
 export default function StorekeeperHome() {
   const [stats, setStats] = useState<any>({
@@ -16,17 +20,20 @@ export default function StorekeeperHome() {
     available: 0
   });
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [equipment, setEquipment] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'available' | 'in_use'>('all');
   
   const { user } = useAuthStore();
   const router = useRouter();
 
   const fetchData = async () => {
     try {
-      const [statsRes, transRes] = await Promise.all([
+      const [statsRes, transRes, eqRes] = await Promise.all([
         api.get('/analytics/dashboard'),
-        api.get('/transactions')
+        api.get('/transactions'),
+        api.get('/equipment').catch(e => { console.error('Eq error:', e.message); return { data: { data: [] } }; })
       ]);
       
       const dashboardData = statsRes.data.data;
@@ -38,6 +45,7 @@ export default function StorekeeperHome() {
       });
       
       setRecentTransactions(transRes.data.data.slice(0, 5));
+      setEquipment(eqRes.data?.data || eqRes.data || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -118,6 +126,7 @@ export default function StorekeeperHome() {
               icon="shield" 
               color="#007AFF" 
               delay={300}
+              onPress={() => router.push({ pathname: '/my-loans', params: { filter: 'pending' } })}
             />
             <StatCard 
               label="Đang mượn" 
@@ -125,6 +134,8 @@ export default function StorekeeperHome() {
               icon="clock" 
               color="#FF9500" 
               delay={400}
+              isActive={equipmentFilter === 'in_use'}
+              onPress={() => setEquipmentFilter(prev => prev === 'in_use' ? 'all' : 'in_use')}
             />
             <StatCard 
               label="Quá hạn" 
@@ -132,6 +143,7 @@ export default function StorekeeperHome() {
               icon="alert-triangle" 
               color="#FF3B30" 
               delay={500}
+              onPress={() => router.push({ pathname: '/my-loans', params: { filter: 'overdue' } })}
             />
             <StatCard 
               label="Sẵn sàng" 
@@ -139,6 +151,8 @@ export default function StorekeeperHome() {
               icon="check-circle" 
               color="#34C759" 
               delay={600}
+              isActive={equipmentFilter === 'available'}
+              onPress={() => setEquipmentFilter(prev => prev === 'available' ? 'all' : 'available')}
             />
           </View>
 
@@ -187,32 +201,114 @@ export default function StorekeeperHome() {
             </View>
           )}
         </View>
+
+        {/* Thiết bị hiện có (Equipment list for storekeeper) */}
+        <View className="px-6 mb-6">
+          <View className="flex-row justify-between items-center mt-6 mb-4">
+            <Text className="font-bold text-xl text-gray-900 tracking-tight">
+              {equipmentFilter === 'available' ? 'Thiết bị sẵn sàng' : 
+               equipmentFilter === 'in_use' ? 'Thiết bị đang mượn' : 'Thiết bị hiện có'}
+            </Text>
+            {equipmentFilter !== 'all' && (
+              <Pressable 
+                onPress={() => setEquipmentFilter('all')} 
+                className="bg-primary/10 px-3 py-1.5 rounded-full active:scale-95"
+              >
+                <Text className="text-primary font-bold text-xs">Xóa bộ lọc</Text>
+              </Pressable>
+            )}
+          </View>
+          
+          <FlatList
+            data={equipment.filter((item: any) => {
+              if (equipmentFilter === 'all') return true;
+              return item.status === equipmentFilter;
+            })}
+            renderItem={({ item, index }) => (
+              <Animated.View 
+                entering={FadeInDown.delay(300 + index * 100).duration(500)}
+                style={{ width: CARD_WIDTH }}
+                className="mb-4"
+              >
+                <Pressable 
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                  onPress={() => router.push(`/equipment/${item.id}`)}
+                >
+                  <View className="w-full h-32 bg-gray-50 items-center justify-center relative">
+                    {item.image_url ? (
+                      <Image 
+                        source={{ uri: item.image_url }}
+                        style={{ width: '100%', height: '100%' }}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View className="items-center justify-center">
+                         <Feather name="box" size={32} color="#D1D1D6" />
+                      </View>
+                    )}
+                    <View className="absolute top-2 right-2">
+                      <Badge status={item.status} />
+                    </View>
+                  </View>
+                  <View className="p-3">
+                    <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{item.name}</Text>
+                    <View className="flex-row items-center mt-1">
+                       <Feather name="tag" size={10} color="#999" />
+                       <Text className="text-[10px] text-gray-500 ml-1" numberOfLines={1}>{item.category?.name || 'Thiết bị'}</Text>
+                    </View>
+                    <View className="flex-row items-center justify-between mt-3">
+                      <Text className="text-primary font-bold text-[10px] uppercase">Chi tiết</Text>
+                      <Feather name="arrow-right" size={12} color="#CC0D00" />
+                    </View>
+                  </View>
+                </Pressable>
+              </Animated.View>
+            )}
+            keyExtractor={item => item.id.toString()}
+            numColumns={2}
+            scrollEnabled={false}
+            columnWrapperStyle={{ justifyContent: 'space-between' }}
+            ListEmptyComponent={
+              <View className="items-center py-12 bg-white rounded-[30px] border border-dashed border-gray-200">
+                <Feather name="box" size={40} color="#eee" />
+                <Text className="text-gray-400 font-medium mt-2">Chưa có thiết bị nào</Text>
+              </View>
+            }
+          />
+        </View>
+
         <View className="h-32" />
       </ScrollView>
     </View>
   );
 }
 
-function StatCard({ label, value, icon, color, delay }: any) {
+function StatCard({ label, value, icon, color, delay, isActive, onPress }: any) {
   return (
     <Animated.View 
       entering={FadeInDown.delay(delay).duration(500)}
       style={{ width: '48%' }} 
-      className="bg-white p-4 rounded-2xl shadow-sm mb-4 border border-gray-100"
+      className="mb-4"
     >
-      <View 
-        className="w-10 h-10 rounded-xl items-center justify-center mb-3"
-        style={{ backgroundColor: `${color}15` }}
+      <Pressable 
+        onPress={onPress}
+        className="bg-white p-4 rounded-2xl shadow-sm active:scale-95 transition-all border"
+        style={isActive ? { borderColor: color, borderWidth: 1.5, shadowColor: color, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 } : { borderColor: '#F2F2F7' }}
       >
-        <Feather name={icon} size={24} color={color} />
-      </View>
-      <Text className="font-bold text-gray-500 text-xs">{label}</Text>
-      <Text 
-        className="text-2xl font-bold mt-1"
-        style={{ color: color }}
-      >
-        {value}
-      </Text>
+        <View 
+          className="w-10 h-10 rounded-xl items-center justify-center mb-3"
+          style={{ backgroundColor: `${color}15` }}
+        >
+          <Feather name={icon} size={24} color={color} />
+        </View>
+        <Text className="font-bold text-gray-500 text-xs">{label}</Text>
+        <Text 
+          className="text-2xl font-bold mt-1"
+          style={{ color: color }}
+        >
+          {value}
+        </Text>
+      </Pressable>
     </Animated.View>
   );
 }

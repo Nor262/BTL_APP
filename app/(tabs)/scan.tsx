@@ -92,7 +92,7 @@ export default function BatchScanScreen() {
     
     try {
       for (const item of scannedItems) {
-        const endpoint = item.status === 'available' ? 'checkout' : 'checkin';
+        const endpoint = item.transaction_status === 'approved' ? 'checkout' : 'checkin';
         const formData = new FormData();
         formData.append('qr_code_data', item.qr_code_data);
         formData.append('condition', condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi');
