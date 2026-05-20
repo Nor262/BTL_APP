@@ -1,8 +1,14 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import '../src/global.css';
+
+// Tắt cảnh báo strict mode của Reanimated khi đọc/ghi shared value trong lúc render
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
