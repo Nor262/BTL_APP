@@ -344,14 +344,14 @@ export default function EquipmentDetailScreen() {
             <View className="flex-1">
               <Pressable
                 className={`h-[52px] rounded-[14px] flex-row items-center justify-center ${
-                  equipment?.status === 'available' && !submitting ? 'bg-[#CC0D00]' : 'bg-[#E2E8F0]'
+                  equipment?.status === 'available' ? 'bg-[#CC0D00]' : 'bg-[#E2E8F0]'
                 }`}
                 style={{ gap: 8 }}
-                onPress={handleBorrow}
-                disabled={equipment?.status !== 'available' || submitting}
+                onPress={() => router.push({ pathname: '/borrow-request', params: { equipment_id: id as string } })}
+                disabled={equipment?.status !== 'available'}
               >
                 <Feather
-                  name="send"
+                  name="arrow-right"
                   size={16}
                   color={equipment?.status === 'available' ? '#FFFFFF' : '#94A3B8'}
                 />
@@ -360,7 +360,7 @@ export default function EquipmentDetailScreen() {
                     equipment?.status === 'available' ? 'text-white' : 'text-[#94A3B8]'
                   }`}
                 >
-                  {submitting ? 'Đang gửi...' : 'Tạo yêu cầu mượn'}
+                  Tạo yêu cầu mượn
                 </Text>
               </Pressable>
             </View>

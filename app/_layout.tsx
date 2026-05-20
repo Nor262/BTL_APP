@@ -14,9 +14,7 @@ import { registerForPushNotificationsAsync, setupNotificationHandler } from '@/u
 import Constants from 'expo-constants';
 import { useRef } from 'react';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+// anchor động theo role được xử lý bằng router.replace trong effect bên dưới
 
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 
@@ -39,12 +37,29 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isMounted || !navigationState?.key) return;
 
-    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+    const inAuthGroup =
+      segments[0] === 'login' ||
+      segments[0] === 'register' ||
+      segments[0] === 'forgot-password';
+
+    const homeForRole =
+      user?.role === 'admin'
+        ? '/admin/dashboard'
+        : user?.role === 'storekeeper'
+        ? '/storekeeper/handover'
+        : '/(tabs)';
 
     if (!user && !inAuthGroup) {
       router.replace('/login');
     } else if (user && inAuthGroup) {
-      router.replace('/(tabs)');
+      router.replace(homeForRole as any);
+    } else if (user) {
+      // Đứng sai tab group theo role → kéo về home đúng
+      const inWrongGroup =
+        (user.role === 'admin' && (segments[0] === '(tabs)' || segments[0] === 'storekeeper')) ||
+        (user.role === 'storekeeper' && (segments[0] === '(tabs)' || segments[0] === 'admin')) ||
+        (user.role === 'borrower' && (segments[0] === 'admin' || segments[0] === 'storekeeper'));
+      if (inWrongGroup) router.replace(homeForRole as any);
     }
   }, [user, segments, navigationState?.key, isMounted]);
 
@@ -90,7 +105,11 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" />
             <Stack.Screen name="register" />
+            <Stack.Screen name="forgot-password" />
+            <Stack.Screen name="borrow-request" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="admin" />
+            <Stack.Screen name="storekeeper" />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />

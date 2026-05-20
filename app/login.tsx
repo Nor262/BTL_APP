@@ -35,7 +35,9 @@ export default function LoginScreen() {
       const response = await api.post('/auth/login', { identifier: email, password });
       const { user, accessToken } = response.data.data;
       setAuth(user, accessToken);
-      router.replace('/(tabs)');
+      if (user?.role === 'admin') router.replace('/admin/dashboard');
+      else if (user?.role === 'storekeeper') router.replace('/storekeeper/handover');
+      else router.replace('/(tabs)');
     } catch (error: any) {
       handleApiError(error, 'Đăng nhập thất bại');
     } finally {

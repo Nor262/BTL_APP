@@ -1,0 +1,178 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, Pressable, FlatList, RefreshControl } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import api from '@/api/client';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { StatusBar } from 'expo-status-bar';
+import LoadingScreen from '@/components/ui/LoadingScreen';
+
+const CHIPS = ['Tất cả', 'Laptop', 'Camera', 'Audio', 'Cable'];
+
+export default function EquipmentListScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
+  const [chip, setChip] = useState('Tất cả');
+
+  const fetchData = async () => {
+    try {
+      const res = await api.get('/equipment');
+      setItems(res.data?.data || res.data || []);
+    } catch {}
+    setLoading(false);
+    setRefreshing(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const filtered = items.filter((it: any) => {
+    if (chip !== 'Tất cả') {
+      const cat = (it.category?.name || '').toLowerCase();
+      if (!cat.includes(chip.toLowerCase())) return false;
+    }
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      if (
+        !(it.name || '').toLowerCase().includes(q) &&
+        !(it.serial_number || '').toLowerCase().includes(q)
+      )
+        return false;
+    }
+    return true;
+  });
+
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
+    const available = item.status === 'available';
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 50)}>
+        <Pressable
+          className="bg-white rounded-[16px] flex-row items-center"
+          style={{ padding: 12, gap: 12, marginBottom: 10 }}
+          onPress={() => router.push(`/equipment/${item.id}`)}
+        >
+          <View
+            className="w-14 h-14 rounded-xl items-center justify-center"
+            style={{ backgroundColor: available ? '#FEE5E3' : '#FEF3C7' }}
+          >
+            <Feather name="box" size={22} color={available ? '#CC0D00' : '#D97706'} />
+          </View>
+          <View className="flex-1" style={{ gap: 4 }}>
+            <Text className="text-[#0F172A] text-sm font-bold" numberOfLines={1}>{item.name}</Text>
+            <Text className="text-[#94A3B8] text-[11px]">
+              SN: {item.serial_number || '---'} · {item.category?.name || 'Khác'}
+            </Text>
+          </View>
+          <View className="items-end" style={{ gap: 6 }}>
+            <View
+              className="flex-row items-center rounded-full"
+              style={{ paddingVertical: 3, paddingHorizontal: 8, gap: 4, backgroundColor: available ? '#DCFCE7' : '#FEF3C7' }}
+            >
+              <View
+                className="rounded-full"
+                style={{ width: 6, height: 6, backgroundColor: available ? '#15803D' : '#D97706' }}
+              />
+              <Text
+                className="text-[10px] font-bold"
+                style={{ color: available ? '#15803D' : '#D97706' }}
+              >
+                {available ? 'Sẵn sàng' : 'Đang mượn'}
+              </Text>
+            </View>
+            {available && (
+              <Text className="text-[#CC0D00] text-[11px] font-bold">Mượn ›</Text>
+            )}
+          </View>
+        </Pressable>
+      </Animated.View>
+    );
+  };
+
+  if (loading) return <LoadingScreen />;
+
+  return (
+    <View className="flex-1 bg-[#F1F5F9]">
+      <StatusBar style="dark" />
+
+      {/* Header */}
+      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, gap: 12, paddingBottom: 10 }}>
+        <View className="flex-row items-center justify-between" style={{ height: 44 }}>
+          <Pressable
+            className="w-10 h-10 bg-white rounded-full items-center justify-center"
+            onPress={() => router.back()}
+          >
+            <Feather name="arrow-left" size={18} color="#0F172A" />
+          </Pressable>
+          <Text className="text-[#0F172A] text-lg font-bold">Tìm thiết bị</Text>
+          <Pressable className="w-10 h-10 bg-white rounded-full items-center justify-center">
+            <Feather name="sliders" size={18} color="#0F172A" />
+          </Pressable>
+        </View>
+
+        {/* Search */}
+        <View
+          className="flex-row items-center bg-white rounded-[14px] h-[46px] px-4"
+          style={{ gap: 10 }}
+        >
+          <Feather name="search" size={16} color="#94A3B8" />
+          <TextInput
+            className="flex-1 text-sm text-[#0F172A]"
+            placeholder="MacBook, Camera, Cable..."
+            placeholderTextColor="#94A3B8"
+            value={query}
+            onChangeText={setQuery}
+          />
+          <Pressable onPress={() => router.push('/(tabs)/scan')}>
+            <Feather name="maximize" size={16} color="#CC0D00" />
+          </Pressable>
+        </View>
+
+        {/* Chips */}
+        <View className="flex-row" style={{ gap: 8 }}>
+          {CHIPS.map((c) => (
+            <Pressable
+              key={c}
+              className={`rounded-full ${chip === c ? 'bg-[#CC0D00]' : 'bg-white'}`}
+              style={{ paddingVertical: 5, paddingHorizontal: 12 }}
+              onPress={() => setChip(c)}
+            >
+              <Text className={`text-[11px] font-semibold ${chip === c ? 'text-white' : 'text-[#64748B]'}`}>
+                {c}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Result count */}
+        <View className="flex-row items-center justify-between">
+          <Text className="text-[#0F172A] text-[12px] font-bold">{filtered.length} thiết bị</Text>
+          <Pressable className="flex-row items-center" style={{ gap: 4 }}>
+            <Text className="text-[#64748B] text-[11px]">Sẵn sàng trước</Text>
+            <Feather name="chevron-down" size={12} color="#64748B" />
+          </Pressable>
+        </View>
+      </View>
+
+      <FlatList
+        data={filtered}
+        renderItem={renderItem}
+        keyExtractor={(it) => it.id.toString()}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor="#CC0D00" />
+        }
+        ListEmptyComponent={
+          <View className="items-center justify-center py-20" style={{ gap: 12 }}>
+            <Feather name="package" size={32} color="#CBD5E1" />
+            <Text className="text-[#94A3B8] text-sm">Không tìm thấy thiết bị nào</Text>
+          </View>
+        }
+      />
+    </View>
+  );
+}
