@@ -40,7 +40,8 @@ export default function RootLayout() {
     const inAuthGroup =
       segments[0] === 'login' ||
       segments[0] === 'register' ||
-      segments[0] === 'forgot-password';
+      segments[0] === 'forgot-password' ||
+      segments[0] === 'reset-password';
 
     const homeForRole =
       user?.role === 'admin'
