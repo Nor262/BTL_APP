@@ -1,68 +1,87 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 export default function TabLayout() {
-  const router = useRouter();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#CC0D00',
-        tabBarInactiveTintColor: '#999',
+        tabBarInactiveTintColor: '#94A3B8',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
-          borderTopColor: '#F2F2F2',
-          height: Platform.OS === 'ios' ? 95 : 75,
-          paddingBottom: Platform.OS === 'ios' ? 35 : 15,
-          paddingTop: 12,
+          borderTopColor: '#F1F5F9',
+          height: Platform.OS === 'ios' ? 92 : 72,
+          paddingBottom: Platform.OS === 'ios' ? 32 : 12,
+          paddingTop: 10,
           elevation: 0,
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.04,
+          shadowRadius: 12,
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
         },
         tabBarLabelStyle: {
-          fontFamily: 'System',
-          fontWeight: '500',
+          fontWeight: '600',
           fontSize: 10,
-          marginTop: -4,
-        }
-      }}>
+          marginTop: -2,
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Trang chủ',
-          tabBarIcon: ({ color }) => <Feather name="home" size={24} color={color} />,
+          title: 'HOME',
+          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'TÌM',
+          tabBarIcon: ({ color }) => <Feather name="search" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="scan"
         options={{
-          title: 'Quét mã',
+          title: 'QUÉT',
           tabBarIcon: ({ color }) => (
-            <View style={{
-              width: 52,
-              height: 52,
-              backgroundColor: '#CC0D00',
-              borderRadius: 26,
-              justifyContent: 'center',
-              alignItems: 'center',
-              top: -15,
-            }}>
-              <Feather name="maximize" size={24} color="white" />
+            <View
+              style={{
+                width: 50,
+                height: 50,
+                backgroundColor: '#CC0D00',
+                borderRadius: 16,
+                justifyContent: 'center',
+                alignItems: 'center',
+                top: -12,
+              }}
+            >
+              <Feather name="maximize" size={22} color="#FFFFFF" />
             </View>
           ),
           tabBarLabel: () => null,
         }}
       />
       <Tabs.Screen
+        name="my-loans"
+        options={{
+          title: 'ĐƠN',
+          tabBarIcon: ({ color }) => <Feather name="clipboard" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="explore"
         options={{
-          title: 'Cá nhân',
-          tabBarIcon: ({ color }) => <Feather name="user" size={24} color={color} />,
+          title: 'TÔI',
+          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
         }}
       />
     </Tabs>

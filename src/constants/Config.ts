@@ -1,22 +1,9 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-/**
- * API Configuration
- * 
- * To override the API URL, set the EXPO_PUBLIC_API_URL environment variable in your .env file:
- * EXPO_PUBLIC_API_URL=http://192.168.1.120:3000/v1
- */
-
-// Hardcoded fallback IP - update this to your machine's local IP if needed
-const FALLBACK_IP = '192.168.1.120'; 
-
 const expoHost = Constants.expoGoConfig?.debuggerHost?.split(':')[0]
   ?? Constants.expoConfig?.hostUri?.split(':')[0]
-  ?? FALLBACK_IP;
-
-// Detect if we are using an Expo tunnel (exp.direct)
-const isExpoTunnel = expoHost.includes('exp.direct');
+  ?? '192.168.1.26'; // Fallback: IP LAN máy dev hiện tại
 
 const DEV_API_URL = Platform.select({
   ios: `http://${isExpoTunnel ? FALLBACK_IP : expoHost}:3000/v1`,

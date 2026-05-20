@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, Text, ActivityIndicator } from 'react-native';
+import { Pressable, Text, ActivityIndicator, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -12,17 +13,19 @@ interface ButtonProps {
   className?: string;
   containerClassName?: string;
   textClassName?: string;
+  icon?: string;
 }
 
-export default function Button({ 
-  onPress, 
-  title, 
-  loading, 
-  disabled, 
-  variant = 'primary', 
-  className = '', 
+export default function Button({
+  onPress,
+  title,
+  loading,
+  disabled,
+  variant = 'primary',
+  className = '',
   containerClassName = '',
-  textClassName = '' 
+  textClassName = '',
+  icon
 }: ButtonProps) {
   const scale = useSharedValue(1);
 
@@ -74,12 +77,15 @@ export default function Button({
         onPressOut={handlePressOut}
         onPress={handlePress}
         disabled={loading || disabled}
-        className={`py-4 items-center justify-center rounded-xl ${getVariantStyles()} ${className}`}
+        className={`h-[52px] items-center justify-center rounded-[14px] ${getVariantStyles()} ${className}`}
       >
         {loading ? (
           <ActivityIndicator color={variant === 'primary' ? 'white' : '#CC0D00'} />
         ) : (
-          <Text className={`${getTextColor()} font-bold text-base ${textClassName}`}>{title}</Text>
+          <View className="flex-row items-center" style={{ gap: 8 }}>
+            <Text className={`${getTextColor()} font-bold text-[15px] ${textClassName}`}>{title}</Text>
+            {icon && <Feather name={icon as any} size={18} color={variant === 'primary' ? '#FFFFFF' : '#CC0D00'} />}
+          </View>
         )}
       </Pressable>
     </Animated.View>

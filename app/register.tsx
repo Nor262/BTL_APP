@@ -1,39 +1,54 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
-import { Alert } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { StatusBar } from 'expo-status-bar';
-
 import { handleApiError } from '@/utils/error-handler';
+import { Feather } from '@expo/vector-icons';
+import { useAlertStore } from '@/store/useAlertStore';
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    confirmPassword: '',
     email: '',
     full_name: '',
     phone: '',
   });
+  const [agreeTerms, setAgreeTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { showAlert } = useAlertStore();
 
   const handleRegister = async () => {
-    const { username, password, email, full_name, phone } = formData;
+    const { username, password, confirmPassword, email, full_name, phone } = formData;
     if (!username.trim() || !password.trim() || !email.trim() || !full_name.trim() || !phone.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin đăng ký');
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng điền đầy đủ thông tin đăng ký' });
+      return;
+    }
+    if (password !== confirmPassword) {
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Mật khẩu xác nhận không khớp' });
+      return;
+    }
+    if (!agreeTerms) {
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng đồng ý với điều khoản sử dụng' });
       return;
     }
 
     setLoading(true);
     try {
-      await api.post('/auth/register', { ...formData, role: 'borrower' });
-      Alert.alert('Thành công', 'Đăng ký tài khoản thành công. Vui lòng đăng nhập.', [
-        { text: 'Đăng nhập ngay', onPress: () => router.replace('/login') }
-      ]);
+      const { confirmPassword: _, ...submitData } = formData;
+      await api.post('/auth/register', { ...submitData, role: 'borrower' });
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Đăng ký tài khoản thành công. Vui lòng đăng nhập.',
+        onConfirm: () => router.replace('/login')
+      });
     } catch (error: any) {
       handleApiError(error, 'Lỗi đăng ký');
     } finally {
@@ -46,66 +61,108 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-[#F8FAFC]">
       <StatusBar style="dark" />
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="px-8 pt-16 pb-12">
-            <Animated.View 
+          <View className="flex-1 items-center pt-20 pb-8 px-6" style={{ gap: 14 }}>
+            {/* Brand */}
+            <Animated.View
               entering={FadeInUp.delay(200).duration(800)}
-              className="items-center mt-10 mb-10"
+              className="items-center"
+              style={{ gap: 10, paddingTop: 12, paddingBottom: 4 }}
             >
-              <Text className="text-gray-900 text-3xl font-bold tracking-tight">Tạo tài khoản</Text>
-              <Text className="text-gray-500 text-base mt-2 text-center">
-                Bắt đầu mượn thiết bị CLB ngay hôm nay
-              </Text>
+              <View className="w-16 h-16 bg-[#CC0D00] rounded-[18px] items-center justify-center">
+                <Feather name="box" size={32} color="#FFFFFF" />
+              </View>
+              <Text className="text-[#0F172A] text-[22px] font-extrabold">Tạo tài khoản</Text>
+              <Text className="text-[#64748B] text-xs">Đăng ký để bắt đầu mượn thiết bị</Text>
             </Animated.View>
 
-            <Animated.View 
+            {/* Segment Control */}
+            <View
+              className="w-[342px] h-[46px] bg-white rounded-[14px] flex-row items-center"
+              style={{ borderWidth: 1.5, borderColor: '#E2E8F0', padding: 4 }}
+            >
+              <Pressable
+                className="flex-1 rounded-[10px] h-[38px] items-center justify-center"
+                onPress={() => router.push('/login')}
+              >
+                <Text className="text-[#94A3B8] text-[13px] font-semibold">Đăng nhập</Text>
+              </Pressable>
+              <View className="flex-1 bg-[#CC0D00] rounded-[10px] h-[38px] items-center justify-center">
+                <Text className="text-white text-[13px] font-bold">Đăng ký</Text>
+              </View>
+            </View>
+
+            {/* Form */}
+            <Animated.View
               entering={FadeInDown.delay(400).duration(800)}
-              className="w-full"
+              className="w-[342px]"
+              style={{ gap: 10 }}
             >
               <Input
                 label="Họ và tên"
-                placeholder="Nguyễn Văn A"
+                placeholder="Nguyễn Văn Minh"
                 value={formData.full_name}
                 onChangeText={(v) => updateForm('full_name', v)}
                 icon="user"
               />
               <Input
-                label="Mã sinh viên"
-                placeholder="B21DCCN001"
-                value={formData.username}
-                onChangeText={(v) => updateForm('username', v)}
-                autoCapitalize="none"
-                icon="credit-card"
-              />
-              <Input
                 label="Email"
-                placeholder="example@student.ptit.edu.vn"
+                placeholder="minh.nv@student.edu.vn"
                 value={formData.email}
                 onChangeText={(v) => updateForm('email', v)}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 icon="mail"
               />
-              <Input
-                label="Số điện thoại"
-                placeholder="0987654321"
-                value={formData.phone}
-                onChangeText={(v) => updateForm('phone', v)}
-                keyboardType="phone-pad"
-                icon="phone"
-              />
+
+              {/* Phone + Student ID Row */}
+              <View className="flex-row" style={{ gap: 10 }}>
+                <View className="flex-1" style={{ gap: 5 }}>
+                  <Text className="text-xs font-semibold text-[#64748B]">Số điện thoại</Text>
+                  <View
+                    className="flex-row items-center bg-white rounded-[14px] h-[46px] px-4"
+                    style={{ borderWidth: 1.5, borderColor: '#E2E8F0', gap: 10 }}
+                  >
+                    <Feather name="phone" size={16} color="#94A3B8" />
+                    <TextInput
+                      className="flex-1 text-sm text-[#0F172A]"
+                      placeholder="0987654321"
+                      placeholderTextColor="#94A3B8"
+                      value={formData.phone}
+                      onChangeText={(v) => updateForm('phone', v)}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+                <View className="flex-1" style={{ gap: 5 }}>
+                  <Text className="text-xs font-semibold text-[#64748B]">MSSV</Text>
+                  <View
+                    className="flex-row items-center bg-white rounded-[14px] h-[46px] px-4"
+                    style={{ borderWidth: 1.5, borderColor: '#E2E8F0', gap: 10 }}
+                  >
+                    <Feather name="credit-card" size={16} color="#94A3B8" />
+                    <TextInput
+                      className="flex-1 text-sm text-[#0F172A]"
+                      placeholder="B23DCCC043"
+                      placeholderTextColor="#94A3B8"
+                      value={formData.username}
+                      onChangeText={(v) => updateForm('username', v)}
+                      autoCapitalize="none"
+                    />
+                  </View>
+                </View>
+              </View>
+
               <Input
                 label="Mật khẩu"
                 placeholder="••••••••"
@@ -114,21 +171,50 @@ export default function RegisterScreen() {
                 secureTextEntry
                 icon="lock"
               />
-
-              <Button 
-                title="Đăng ký" 
-                onPress={handleRegister} 
-                loading={loading}
-                className="mt-6"
+              <Input
+                label="Xác nhận mật khẩu"
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChangeText={(v) => updateForm('confirmPassword', v)}
+                secureTextEntry
+                icon="lock"
               />
-
-              <View className="flex-row justify-center mt-8">
-                <Text className="text-gray-500 text-base">Đã có tài khoản? </Text>
-                <Pressable onPress={() => router.back()}>
-                  <Text className="text-primary font-bold text-base">Đăng nhập</Text>
-                </Pressable>
-              </View>
             </Animated.View>
+
+            {/* Agreement */}
+            <Pressable
+              className="w-[342px] flex-row items-center"
+              style={{ gap: 10 }}
+              onPress={() => setAgreeTerms(!agreeTerms)}
+            >
+              <View
+                className={`w-5 h-5 rounded-md items-center justify-center ${agreeTerms ? 'bg-[#CC0D00]' : 'bg-white'}`}
+                style={{ borderWidth: 1.5, borderColor: agreeTerms ? '#CC0D00' : '#CBD5E1', borderRadius: 6 }}
+              >
+                {agreeTerms && <Feather name="check" size={14} color="#FFFFFF" />}
+              </View>
+              <View className="flex-row items-center" style={{ gap: 4 }}>
+                <Text className="text-[#0F172A] text-[11px]">Tôi đồng ý với</Text>
+                <Text className="text-[#CC0D00] text-[11px] font-bold">Điều khoản & Chính sách</Text>
+              </View>
+            </Pressable>
+
+            {/* Register Button */}
+            <Button
+              title="Tạo tài khoản"
+              onPress={handleRegister}
+              loading={loading}
+              icon="arrow-right"
+              containerClassName="w-[342px]"
+            />
+
+            {/* Footer */}
+            <View className="flex-row items-center justify-center" style={{ gap: 6 }}>
+              <Text className="text-[#64748B] text-xs">Đã có tài khoản?</Text>
+              <Pressable onPress={() => router.back()}>
+                <Text className="text-[#CC0D00] text-xs font-bold">Đăng nhập</Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

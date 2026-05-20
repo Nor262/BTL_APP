@@ -6,30 +6,33 @@ interface InputProps extends TextInputProps {
   label: string;
   error?: string;
   icon?: string;
+  rightLabel?: React.ReactNode;
 }
 
-export default function Input({ label, error, icon, secureTextEntry, ...props }: InputProps) {
+export default function Input({ label, error, icon, secureTextEntry, rightLabel, ...props }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = secureTextEntry;
 
   return (
-    <View className="mb-4 w-full">
-      <Text className="text-sm font-medium text-gray-700 mb-1">{label}</Text>
-      <View className={`flex-row items-center bg-gray-50 px-4 rounded-xl border h-14 ${error ? 'border-red-500' : 'border-gray-200 focus:border-primary'}`}>
-        {icon && <Feather name={icon as any} size={20} color="#666" style={{ marginRight: 10 }} />}
+    <View className="w-full" style={{ gap: 5 }}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-xs font-semibold text-[#64748B]">{label}</Text>
+        {rightLabel}
+      </View>
+      <View
+        className={`flex-row items-center bg-white rounded-[14px] h-[46px] px-4`}
+        style={{ borderWidth: 1.5, borderColor: error ? '#EF4444' : '#E2E8F0', gap: 10 }}
+      >
+        {icon && <Feather name={icon as any} size={16} color="#94A3B8" />}
         <TextInput
-          className="flex-1 text-gray-900 text-base h-12 pt-0 pb-1"
-          style={{ 
-            textAlignVertical: 'center',
-            includeFontPadding: false,
-          }}
-          placeholderTextColor="#999"
+          className="flex-1 text-sm text-[#0F172A]"
+          placeholderTextColor="#94A3B8"
           secureTextEntry={isPasswordField && !showPassword}
           {...props}
         />
         {isPasswordField && (
           <Pressable onPress={() => setShowPassword(!showPassword)}>
-            <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#666" />
+            <Feather name={showPassword ? "eye" : "eye-off"} size={16} color="#94A3B8" />
           </Pressable>
         )}
       </View>

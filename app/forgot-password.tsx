@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -7,6 +7,53 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { StatusBar } from 'expo-status-bar';
 import { handleApiError } from '@/utils/error-handler';
+import { Feather } from '@expo/vector-icons';
+import { useAlertStore } from '@/store/useAlertStore';
+
+function StepIndicator({ currentStep }: { currentStep: number }) {
+  const steps = [
+    { num: '1', label: 'Email' },
+    { num: '2', label: 'Xác nhận' },
+    { num: '3', label: 'Mật khẩu' },
+  ];
+
+  return (
+    <View className="w-[342px] flex-row items-center justify-center">
+      {steps.map((s, i) => (
+        <React.Fragment key={i}>
+          <View className="flex-1 items-center" style={{ gap: 4 }}>
+            <View
+              className={`w-8 h-8 rounded-full items-center justify-center ${
+                i < currentStep ? 'bg-[#CC0D00]' : 'bg-[#E2E8F0]'
+              }`}
+            >
+              <Text
+                className={`text-[13px] font-bold ${
+                  i < currentStep ? 'text-white' : 'text-[#94A3B8]'
+                }`}
+              >
+                {s.num}
+              </Text>
+            </View>
+            <Text
+              className={`text-[10px] ${
+                i < currentStep ? 'text-[#CC0D00] font-semibold' : 'text-[#94A3B8]'
+              }`}
+            >
+              {s.label}
+            </Text>
+          </View>
+          {i < steps.length - 1 && (
+            <View
+              className={`h-0.5 w-[30px] ${i < currentStep - 1 ? 'bg-[#CC0D00]' : 'bg-[#E2E8F0]'}`}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+        </React.Fragment>
+      ))}
+    </View>
+  );
+}
 
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState(1);
@@ -15,15 +62,17 @@ export default function ForgotPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { showAlert } = useAlertStore();
 
   const handleSendOtp = async () => {
     if (!email.trim()) {
-      return Alert.alert('Thông báo', 'Vui lòng nhập Email');
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng nhập Email' });
+      return;
     }
     setLoading(true);
     try {
       await api.post('/auth/forgot-password', { email });
-      Alert.alert('Thành công', 'Mã xác nhận đã được gửi vào Email của bạn.');
+      showAlert({ type: 'success', title: 'Thành công', message: 'Mã xác nhận đã được gửi vào Email của bạn.' });
       setStep(2);
     } catch (error: any) {
       handleApiError(error, 'Lỗi');
@@ -34,14 +83,18 @@ export default function ForgotPasswordScreen() {
 
   const handleResetPassword = async () => {
     if (!otp.trim() || !newPassword.trim()) {
-      return Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ OTP và mật khẩu mới');
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng nhập đầy đủ OTP và mật khẩu mới' });
+      return;
     }
     setLoading(true);
     try {
       await api.post('/auth/reset-password', { email, otp, new_password: newPassword });
-      Alert.alert('Thành công', 'Lấy lại mật khẩu thành công. Vui lòng đăng nhập lại.', [
-        { text: 'Đăng nhập', onPress: () => router.replace('/login') }
-      ]);
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Lấy lại mật khẩu thành công. Vui lòng đăng nhập lại.',
+        onConfirm: () => router.replace('/login')
+      });
     } catch (error: any) {
       handleApiError(error, 'Lỗi');
     } finally {
@@ -50,53 +103,54 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-[#F8FAFC]">
       <StatusBar style="dark" />
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="px-8 pt-16 pb-12">
-            <Animated.View 
+          <View className="flex-1 items-center pt-20 pb-8 px-6" style={{ gap: 14 }}>
+            {/* Brand */}
+            <Animated.View
               entering={FadeInUp.delay(200).duration(800)}
-              className="items-center mt-10 mb-10"
+              className="items-center"
+              style={{ gap: 10, paddingTop: 12, paddingBottom: 4 }}
             >
-              <Text className="text-gray-900 text-3xl font-bold tracking-tight">Quên mật khẩu</Text>
-              <Text className="text-gray-500 text-base mt-2 text-center">
-                {step === 1 ? 'Nhập email để nhận mã xác nhận' : 'Nhập mã xác nhận để đặt lại mật khẩu'}
+              <View className="w-16 h-16 bg-[#CC0D00] rounded-[18px] items-center justify-center">
+                <Feather name="lock" size={32} color="#FFFFFF" />
+              </View>
+              <Text className="text-[#0F172A] text-[22px] font-extrabold">Quên mật khẩu</Text>
+              <Text className="text-[#64748B] text-xs text-center">
+                {step === 1
+                  ? 'Nhập email đã đăng ký để nhận mã xác nhận'
+                  : 'Nhập mã xác nhận đã gửi đến email'}
               </Text>
             </Animated.View>
 
-            <Animated.View 
+            {/* Step Indicator */}
+            <StepIndicator currentStep={step} />
+
+            {/* Form */}
+            <Animated.View
               entering={FadeInDown.delay(400).duration(800)}
-              className="w-full"
+              className="w-[342px]"
+              style={{ gap: 10 }}
             >
               {step === 1 ? (
-                <>
-                  <Input
-                    label="Email"
-                    placeholder="example@student.ptit.edu.vn"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    icon="mail"
-                  />
-
-                  <Button 
-                    title="Gửi mã xác nhận" 
-                    onPress={handleSendOtp} 
-                    loading={loading}
-                    className="mt-6"
-                  />
-                </>
+                <Input
+                  label="Email"
+                  placeholder="minh.nv@student.edu.vn"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  icon="mail"
+                />
               ) : (
                 <>
                   <Input
@@ -115,23 +169,26 @@ export default function ForgotPasswordScreen() {
                     secureTextEntry
                     icon="lock"
                   />
-
-                  <Button 
-                    title="Đặt lại mật khẩu" 
-                    onPress={handleResetPassword} 
-                    loading={loading}
-                    className="mt-6"
-                  />
                 </>
               )}
-
-              <View className="flex-row justify-center mt-8">
-                <Text className="text-gray-500 text-base">Nhớ mật khẩu? </Text>
-                <Pressable onPress={() => router.back()}>
-                  <Text className="text-primary font-bold text-base">Quay lại đăng nhập</Text>
-                </Pressable>
-              </View>
             </Animated.View>
+
+            {/* Action Button */}
+            <Button
+              title={step === 1 ? 'GỬI MÃ XÁC NHẬN' : 'ĐẶT LẠI MẬT KHẨU'}
+              onPress={step === 1 ? handleSendOtp : handleResetPassword}
+              loading={loading}
+              icon={step === 1 ? 'send' : 'check'}
+              containerClassName="w-[342px]"
+            />
+
+            {/* Footer */}
+            <View className="flex-row items-center justify-center" style={{ gap: 6 }}>
+              <Text className="text-[#64748B] text-xs">Quay lại</Text>
+              <Pressable onPress={() => router.back()}>
+                <Text className="text-[#CC0D00] text-xs font-bold">Đăng nhập</Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
