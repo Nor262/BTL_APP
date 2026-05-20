@@ -42,7 +42,14 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const { confirmPassword: _, ...submitData } = formData;
-      await api.post('/auth/register', { ...submitData, role: 'borrower' });
+      await api.post('/auth/register', { 
+        ...submitData, 
+        email: submitData.email.trim(),
+        username: submitData.username.trim(),
+        password: submitData.password.trim(),
+        full_name: submitData.full_name.trim(),
+        role: 'borrower' 
+      });
       showAlert({
         type: 'success',
         title: 'Thành công',

@@ -32,7 +32,10 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { identifier: email, password });
+      const response = await api.post('/auth/login', { 
+        identifier: email.trim(), 
+        password: password.trim() 
+      });
       const { user, accessToken } = response.data.data;
       setAuth(user, accessToken);
       if (user?.role === 'admin') router.replace('/admin/dashboard');
