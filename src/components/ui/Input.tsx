@@ -6,41 +6,48 @@ interface InputProps extends TextInputProps {
   label: string;
   error?: string;
   icon?: string;
+  rightLabel?: React.ReactNode;
 }
 
-export default function Input({ label, error, icon, secureTextEntry, ...props }: InputProps) {
+export default function Input({ label, error, icon, secureTextEntry, rightLabel, ...props }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = secureTextEntry;
   const isMultiline = props.multiline;
 
   return (
-    <View className="mb-4 w-full">
-      <Text className="text-sm font-medium text-gray-700 mb-1">{label}</Text>
-      <View className={`flex-row bg-gray-50 px-4 rounded-xl border ${
-        isMultiline ? 'items-start py-3 min-h-[100px]' : 'items-center h-14'
-      } ${error ? 'border-red-500' : 'border-gray-200 focus:border-primary'}`}>
+    <View className="mb-4 w-full" style={{ gap: 5 }}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-xs font-semibold text-[#64748B]">{label}</Text>
+        {rightLabel}
+      </View>
+      <View
+        className={`flex-row bg-white rounded-[14px] px-4 ${
+          isMultiline ? 'items-start py-3 min-h-[100px]' : 'items-center h-[46px]'
+        }`}
+        style={{ borderWidth: 1.5, borderColor: error ? '#EF4444' : '#E2E8F0', gap: 10 }}
+      >
         {icon && (
           <Feather 
             name={icon as any} 
-            size={20} 
-            color="#666" 
-            style={{ marginRight: 10, marginTop: isMultiline ? 2 : 0 }} 
+            size={16} 
+            color="#94A3B8" 
+            style={{ marginTop: isMultiline ? 2 : 0 }} 
           />
         )}
         <TextInput
-          className={`flex-1 text-gray-900 text-base ${isMultiline ? 'min-h-[80px] pt-0' : 'h-12 pt-0 pb-1'}`}
+          className={`flex-1 text-sm text-[#0F172A] ${isMultiline ? 'min-h-[80px] pt-0' : 'h-full pt-0'}`}
           style={{ 
             textAlignVertical: isMultiline ? 'top' : 'center',
             includeFontPadding: false,
           }}
-          placeholderTextColor="#999"
+          placeholderTextColor="#94A3B8"
           secureTextEntry={isPasswordField && !showPassword}
           multiline={isMultiline || false}
           {...props}
         />
         {isPasswordField && (
           <Pressable onPress={() => setShowPassword(!showPassword)}>
-            <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#666" />
+            <Feather name={showPassword ? "eye" : "eye-off"} size={16} color="#94A3B8" />
           </Pressable>
         )}
       </View>
