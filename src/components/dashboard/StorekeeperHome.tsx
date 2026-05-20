@@ -5,39 +5,30 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/api/client';
-import Badge from '../ui/Badge';
 import LoadingScreen from '../ui/LoadingScreen';
+import Badge from '../ui/Badge';
 
 export default function StorekeeperHome() {
-  const [stats, setStats] = useState<any>({
-    pending: 0,
-    in_use: 0,
-    overdue: 0,
-    available: 0
-  });
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [dashData, setDashData] = useState<any>(null);
+  const [recentTx, setRecentTx] = useState<any[]>([]);
+  const [overdueTx, setOverdueTx] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const { user } = useAuthStore();
   const router = useRouter();
 
   const fetchData = async () => {
     try {
       const [statsRes, transRes] = await Promise.all([
-        api.get('/analytics/dashboard'),
-        api.get('/transactions')
+        api.get('/analytics/dashboard').catch(() => ({ data: { data: null } })),
+        api.get('/transactions').catch(() => ({ data: { data: [] } })),
       ]);
-      
-      const dashboardData = statsRes.data.data;
-      setStats({
-        pending: dashboardData.alerts.pending_requests,
-        in_use: dashboardData.summary.in_use_count,
-        overdue: dashboardData.alerts.overdue_transactions,
-        available: dashboardData.summary.available_count
-      });
-      
-      setRecentTransactions(transRes.data.data.slice(0, 5));
+      const d = statsRes.data?.data;
+      setDashData(d);
+      const txs = transRes.data?.data || [];
+      setRecentTx(txs.slice(0, 5));
+      setOverdueTx(txs.filter((t: any) => t.status === 'overdue').slice(0, 3));
     } catch (error) {
       console.error(error);
     } finally {
@@ -46,173 +37,162 @@ export default function StorekeeperHome() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
+  const onRefresh = () => { setRefreshing(true); fetchData(); };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
-  };
+  const totalEquipment = dashData?.summary?.total_count || 0;
+  const pendingCount = dashData?.alerts?.pending_requests || 0;
+  const initials = user?.full_name?.charAt(0).toUpperCase() || 'A';
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <ScrollView 
+    <View className="flex-1 bg-[#F1F5F9]">
+      <ScrollView
         className="flex-1"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />
-        }
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />}
       >
-        <View className="bg-primary pt-16 pb-20 px-6 rounded-b-[40px] shadow-lg">
-          <View className="flex-row justify-between items-center mb-8">
-            <View>
-              <Text className="text-white/70 text-sm font-medium">Hệ thống Quản lý</Text>
-              <Text className="text-white text-2xl font-bold">Thủ kho PTIT</Text>
+        {/* Dark Header */}
+        <View className="bg-[#0F172A]" style={{ padding: 20, paddingTop: 62, gap: 14 }}>
+          {/* Greeting */}
+          <View className="flex-row items-center justify-between">
+            <View style={{ gap: 2 }}>
+              <Text className="text-[#94A3B8] text-xs">Xin chào, Admin</Text>
+              <Text className="text-white text-lg font-bold">{user?.full_name || 'Admin'}</Text>
             </View>
-            <View className="flex-row items-center">
-              <Pressable 
-                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center mr-3"
-                onPress={() => router.push('/notifications')}
-              >
-                <Feather name="bell" size={20} color="white" />
-              </Pressable>
-              <Pressable 
-                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
-                onPress={() => router.push('/(tabs)/explore')}
-              >
-                <Feather name="user" size={20} color="white" />
-              </Pressable>
-            </View>
+            <Pressable
+              className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center"
+              onPress={() => router.push('/(tabs)/explore')}
+            >
+              <Text className="text-white text-sm font-bold">{initials}</Text>
+            </Pressable>
           </View>
 
-          <Animated.View entering={FadeInDown.delay(200)}>
-            <Pressable 
-              className="bg-white/10 border border-white/20 rounded-3xl p-6 flex-row items-center justify-between"
-              onPress={() => router.push('/scan')}
+          {/* KPI Cards */}
+          <View className="flex-row" style={{ gap: 10 }}>
+            <Animated.View
+              entering={FadeInDown.delay(100)}
+              className="flex-1 bg-white rounded-[14px]"
+              style={{ padding: 14, gap: 6, borderWidth: 1.5, borderColor: '#E2E8F0' }}
             >
-              <View className="flex-row items-center">
-                <View className="w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-lg">
-                  <Feather name="maximize" size={30} color="#CC0D00" />
+              <View className="flex-row items-center justify-between">
+                <View className="w-8 h-8 bg-[#DCFCE7] rounded-lg items-center justify-center">
+                  <Feather name="box" size={16} color="#15803D" />
                 </View>
-                <View className="ml-4">
-                  <Text className="text-white font-bold text-xl">Quét mã QR</Text>
-                  <Text className="text-white/60 text-xs mt-1">Check-in / Check-out nhanh chóng</Text>
+                <Text className="text-[#94A3B8] text-[10px] font-medium">Thiết bị</Text>
+              </View>
+              <Text className="text-[#0F172A] text-[22px] font-bold">{totalEquipment}</Text>
+              <Text className="text-[#15803D] text-[10px]">Tổng kho</Text>
+            </Animated.View>
+
+            <Animated.View
+              entering={FadeInDown.delay(200)}
+              className="flex-1 bg-white rounded-[14px]"
+              style={{ padding: 14, gap: 6, borderWidth: 1.5, borderColor: '#CC0D00' }}
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="w-8 h-8 bg-[#FEE5E3] rounded-lg items-center justify-center">
+                  <Feather name="clock" size={16} color="#CC0D00" />
                 </View>
+                <Text className="text-[#94A3B8] text-[10px] font-medium">Chờ duyệt</Text>
               </View>
-              <View className="w-8 h-8 bg-white/10 rounded-full items-center justify-center">
-                <Feather name="chevron-right" size={20} color="white" />
+              <Text className="text-[#CC0D00] text-[22px] font-bold">{pendingCount}</Text>
+              <Text className="text-[#94A3B8] text-[10px]">Cần xử lý</Text>
+            </Animated.View>
+          </View>
+        </View>
+
+        {/* Content */}
+        <View style={{ padding: 20, paddingBottom: 110, gap: 12 }}>
+          {/* Quick Actions */}
+          <Animated.View entering={FadeInDown.delay(300)} className="flex-row" style={{ gap: 10 }}>
+            {[
+              { icon: 'check-square' as const, iconColor: '#7C3AED', bg: '#F3E8FF', label: 'Phê duyệt', badge: pendingCount, onPress: () => router.push('/my-loans') },
+              { icon: 'package' as const, iconColor: '#CC0D00', bg: '#FEE5E3', label: 'Quản lý kho', sub: `${totalEquipment} thiết bị`, onPress: () => {} },
+              { icon: 'users' as const, iconColor: '#16A34A', bg: '#DCFCE7', label: 'Người dùng', sub: 'Quản lý', onPress: () => {} },
+            ].map((item, i) => (
+              <Pressable
+                key={i}
+                className="flex-1 bg-white rounded-[14px] items-center"
+                style={{ padding: 12, paddingHorizontal: 10, gap: 6 }}
+                onPress={item.onPress}
+              >
+                <View
+                  className="w-9 h-9 rounded-[10px] items-center justify-center"
+                  style={{ backgroundColor: item.bg }}
+                >
+                  <Feather name={item.icon} size={18} color={item.iconColor} />
+                </View>
+                <Text className="text-[#0F172A] text-[11px] font-semibold">{item.label}</Text>
+                {item.badge ? (
+                  <View className="bg-[#CC0D00] rounded-full" style={{ paddingVertical: 1, paddingHorizontal: 7 }}>
+                    <Text className="text-white text-[10px] font-bold">{item.badge}</Text>
+                  </View>
+                ) : (
+                  <Text className="text-[#94A3B8] text-[10px]">{item.sub}</Text>
+                )}
+              </Pressable>
+            ))}
+          </Animated.View>
+
+          {/* Overdue Section */}
+          {overdueTx.length > 0 && (
+            <Animated.View
+              entering={FadeInDown.delay(400)}
+              className="bg-white rounded-2xl"
+              style={{ padding: 12, gap: 8 }}
+            >
+              <View className="flex-row items-center justify-between" style={{ paddingHorizontal: 2 }}>
+                <Text className="text-[#0F172A] text-[13px] font-bold">Quá hạn cần xử lý</Text>
+                <Pressable><Text className="text-[#CC0D00] text-[11px] font-semibold">Xem tất cả</Text></Pressable>
               </View>
-            </Pressable>
+              {overdueTx.map((item: any) => (
+                <View
+                  key={item.id}
+                  className="bg-[#FEF2F2] rounded-xl flex-row items-center"
+                  style={{ padding: 10, gap: 10 }}
+                >
+                  <View className="w-8 h-8 bg-[#FEE2E2] rounded-lg items-center justify-center">
+                    <Feather name="alert-triangle" size={16} color="#DC2626" />
+                  </View>
+                  <View className="flex-1" style={{ gap: 1 }}>
+                    <Text className="text-[#0F172A] text-xs font-semibold" numberOfLines={1}>{item.equipment?.name}</Text>
+                    <Text className="text-[#94A3B8] text-[10px]">{item.borrower?.full_name}</Text>
+                  </View>
+                  <Text className="text-[#DC2626] text-[11px] font-bold">Nhắc</Text>
+                </View>
+              ))}
+            </Animated.View>
+          )}
+
+          {/* Recent Transactions */}
+          <Animated.View entering={FadeInDown.delay(500)} className="bg-white rounded-2xl" style={{ padding: 12, gap: 8 }}>
+            <View className="flex-row items-center justify-between" style={{ paddingHorizontal: 2 }}>
+              <Text className="text-[#0F172A] text-[13px] font-bold">Giao dịch gần đây</Text>
+              <Pressable onPress={() => router.push('/my-loans')}>
+                <Text className="text-[#CC0D00] text-[11px] font-semibold">Xem tất cả</Text>
+              </Pressable>
+            </View>
+            {recentTx.length > 0 ? recentTx.map((item: any) => (
+              <View key={item.id} className="flex-row items-center" style={{ gap: 10, paddingVertical: 6 }}>
+                <View className="w-9 h-9 bg-[#F1F5F9] rounded-lg items-center justify-center">
+                  <Feather name="monitor" size={16} color="#64748B" />
+                </View>
+                <View className="flex-1" style={{ gap: 2 }}>
+                  <Text className="text-[#0F172A] text-xs font-semibold" numberOfLines={1}>{item.equipment?.name}</Text>
+                  <Text className="text-[#94A3B8] text-[10px]">{item.borrower?.full_name}</Text>
+                </View>
+                <Badge status={item.status} />
+              </View>
+            )) : (
+              <View className="items-center py-6">
+                <Text className="text-[#94A3B8] text-xs">Không có giao dịch</Text>
+              </View>
+            )}
           </Animated.View>
         </View>
-
-        <View className="px-6 -mt-8">
-          <View className="flex-row flex-wrap justify-between">
-            <StatCard 
-              label="Chờ duyệt" 
-              value={stats.pending} 
-              icon="shield" 
-              color="#007AFF" 
-              delay={300}
-            />
-            <StatCard 
-              label="Đang mượn" 
-              value={stats.in_use} 
-              icon="clock" 
-              color="#FF9500" 
-              delay={400}
-            />
-            <StatCard 
-              label="Quá hạn" 
-              value={stats.overdue} 
-              icon="alert-triangle" 
-              color="#FF3B30" 
-              delay={500}
-            />
-            <StatCard 
-              label="Sẵn sàng" 
-              value={stats.available} 
-              icon="check-circle" 
-              color="#34C759" 
-              delay={600}
-            />
-          </View>
-
-          <View className="flex-row justify-between items-center mt-6 mb-4">
-            <Text className="font-bold text-xl text-gray-900">Yêu cầu mới nhất</Text>
-            <Pressable onPress={() => router.push('/my-loans')}>
-              <Text className="text-primary font-bold text-sm">Xem tất cả</Text>
-            </Pressable>
-          </View>
-
-          {recentTransactions.map((item, index) => (
-            <Animated.View 
-              key={item.id} 
-              entering={FadeInDown.delay(700 + index * 100)}
-              className="bg-white p-4 rounded-2xl shadow-sm mb-3 border border-gray-100 flex-row items-center"
-            >
-              <View className="w-12 h-12 bg-gray-50 rounded-xl items-center justify-center mr-4">
-                <View className="w-10 h-10 bg-white rounded-lg items-center justify-center shadow-sm">
-                  <Feather name="monitor" size={20} color="#CC0D00" />
-                </View>
-              </View>
-              <View className="flex-1">
-                <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>
-                  {item.equipment?.name}
-                </Text>
-                <View className="flex-row items-center mt-1">
-                  <Feather name="user" size={10} color="#999" />
-                  <Text className="text-[10px] text-gray-500 ml-1">
-                    {item.borrower?.full_name}
-                  </Text>
-                </View>
-              </View>
-              <View className="items-end">
-                <Badge status={item.status} />
-                <Text className="text-[9px] text-gray-400 mt-1 italic">
-                  {new Date(item.created_at).toLocaleDateString('vi-VN')}
-                </Text>
-              </View>
-            </Animated.View>
-          ))}
-          
-          {recentTransactions.length === 0 && (
-            <View className="items-center py-12 bg-white rounded-[30px] border border-dashed border-gray-200">
-              <Feather name="inbox" size={40} color="#eee" />
-              <Text className="text-gray-400 font-medium mt-2">Không có giao dịch gần đây</Text>
-            </View>
-          )}
-        </View>
-        <View className="h-32" />
       </ScrollView>
     </View>
-  );
-}
-
-function StatCard({ label, value, icon, color, delay }: any) {
-  return (
-    <Animated.View 
-      entering={FadeInDown.delay(delay).duration(500)}
-      style={{ width: '48%' }} 
-      className="bg-white p-4 rounded-2xl shadow-sm mb-4 border border-gray-100"
-    >
-      <View 
-        className="w-10 h-10 rounded-xl items-center justify-center mb-3"
-        style={{ backgroundColor: `${color}15` }}
-      >
-        <Feather name={icon} size={24} color={color} />
-      </View>
-      <Text className="font-bold text-gray-500 text-xs">{label}</Text>
-      <Text 
-        className="text-2xl font-bold mt-1"
-        style={{ color: color }}
-      >
-        {value}
-      </Text>
-    </Animated.View>
   );
 }

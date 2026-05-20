@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, FlatList, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/api/client';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
-import Badge from '../ui/Badge';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/store/useAuthStore';
 import LoadingScreen from '../ui/LoadingScreen';
+import Badge from '../ui/Badge';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
-
-// Updated Dashboard with Active Loans - Forcing re-bundle
 export default function BorrowerHome() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [activeLoans, setActiveLoans] = useState<any[]>([]);
@@ -20,213 +17,231 @@ export default function BorrowerHome() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  
+
   const { user } = useAuthStore();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const fetchData = async () => {
     try {
       const [eqRes, transRes, countRes] = await Promise.all([
-        api.get('/equipment').catch(e => { console.error('Eq error:', e.message); return { data: { data: [] } }; }),
-        api.get('/transactions/my').catch(e => { console.error('Trans error:', e.message); return { data: { data: [] } }; }),
-        api.get('/notifications/unread-count').catch(e => { console.error('Noti error:', e.message); return { data: { data: { count: 0 } } }; })
+        api.get('/equipment').catch(() => ({ data: { data: [] } })),
+        api.get('/transactions/my').catch(() => ({ data: { data: [] } })),
+        api.get('/notifications/unread-count').catch(() => ({ data: { data: { count: 0 } } }))
       ]);
-      
+
       setEquipment(eqRes.data?.data || eqRes.data || []);
-      
       const transactions = transRes.data?.data || transRes.data || [];
-      const active = transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue');
-      setActiveLoans(active);
-      
+      setActiveLoans(transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue'));
       setUnreadCount(countRes.data?.data?.count || countRes.data?.count || 0);
     } catch (error) {
-      console.error('General Fetch Error:', error);
+      console.error('Fetch Error:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
-  };
+  const onRefresh = () => { setRefreshing(true); fetchData(); };
 
-  const filteredEquipment = equipment.filter((item: any) => {
-    return item.name.toLowerCase().includes(search.toLowerCase()) ||
-           item.serial_number.toLowerCase().includes(search.toLowerCase());
-  });
+  const firstName = user?.full_name?.split(' ').pop() || 'bạn';
+  const avatarChar = firstName.charAt(0).toUpperCase();
 
-  const renderEquipmentItem = ({ item, index }: { item: any, index: number }) => (
-    <Animated.View 
-      entering={FadeInDown.delay(index * 100).duration(500)}
-      style={{ width: CARD_WIDTH }}
-      className="mb-4"
-    >
-      <Pressable 
-        className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
-        onPress={() => router.push(`/equipment/${item.id}`)}
-      >
-        <View className="w-full h-32 bg-gray-50 items-center justify-center">
-          {item.image_url ? (
-            <Image 
-              source={{ uri: item.image_url }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-          ) : (
-            <View className="items-center justify-center">
-               <Feather name="box" size={32} color="#D1D1D6" />
-            </View>
-          )}
-          <View className="absolute top-2 right-2">
-            <Badge status={item.status} />
-          </View>
-        </View>
-        <View className="p-3">
-          <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{item.name}</Text>
-          <View className="flex-row items-center mt-1">
-             <Feather name="tag" size={10} color="#999" />
-             <Text className="text-[10px] text-gray-500 ml-1">{item.category?.name || 'Thiết bị'}</Text>
-          </View>
-          <View className="flex-row items-center justify-between mt-3">
-            <Text className="text-primary font-bold text-[10px] uppercase">Chi tiết</Text>
-            <Feather name="arrow-right" size={12} color="#CC0D00" />
-          </View>
-        </View>
-      </Pressable>
-    </Animated.View>
-  );
+  const categories = [
+    { name: 'Laptop', icon: 'monitor' as const, bg: '#FEE5E3' },
+    { name: 'Camera', icon: 'camera' as const, bg: '#FEF3C7' },
+    { name: 'Mic & Audio', icon: 'mic' as const, bg: '#DCFCE7' },
+    { name: 'Cable', icon: 'link' as const, bg: '#FCE7F3' },
+  ];
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
 
   return (
-    <View className="flex-1 bg-white">
-      {/* Header with Search */}
-      <View className="bg-primary pt-16 pb-8 px-6 rounded-b-[40px] shadow-lg">
-        <View className="flex-row justify-between items-center mb-6">
-          <View>
-            <Text className="text-white/80 text-sm font-medium">Chào ngày mới,</Text>
-            <Text className="text-white text-2xl font-bold tracking-tight">{user?.full_name?.split(' ').pop() || 'Thành viên'}</Text>
-          </View>
-          <View className="flex-row">
-            <Pressable 
-              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center mr-2 border border-white/10"
-              onPress={() => router.push('/notifications')}
-            >
-              <Feather name="bell" size={20} color="white" />
-              {unreadCount > 0 && (
-                <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-primary" />
-              )}
-            </Pressable>
-            <Pressable 
-              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center border border-white/10"
-              onPress={() => router.push('/(tabs)/explore')}
-            >
-              <Feather name="user" size={20} color="white" />
-            </Pressable>
-          </View>
-        </View>
-        
-        <View className="flex-row items-center bg-white rounded-2xl px-4 py-3 shadow-xl">
-          <Feather name="search" size={20} color="#999" />
-          <TextInput 
-            className="flex-1 ml-3 text-gray-900 text-base font-medium"
-            placeholder="Tìm kiếm thiết bị bạn cần..."
-            placeholderTextColor="#999"
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
-      </View>
-
-      <ScrollView 
+    <View className="flex-1 bg-[#F8FAFC]">
+      <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />
-        }
+        contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 140, paddingHorizontal: 20 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />}
       >
-        <View className="px-6 py-6">
-          {/* Active Loans Horizontal Section */}
-          <View className="flex-row justify-between items-center mb-5">
-            <Text className="font-bold text-xl text-gray-900 tracking-tight">Thiết bị đang mượn</Text>
-            {activeLoans.length > 0 && (
-              <Pressable onPress={() => router.push('/my-loans')}>
-                <Text className="text-primary font-bold text-sm">Xem tất cả</Text>
+        <View style={{ gap: 24 }}>
+          {/* Greeting Row */}
+          <Animated.View entering={FadeInDown.delay(100)} className="flex-row items-center justify-between" style={{ width: '100%' }}>
+            <View style={{ gap: 2 }}>
+              <Text className="text-[#64748B] text-[13px]">Xin chào, {firstName} 👋</Text>
+              <Text className="text-[#0F172A] text-2xl font-bold">Hôm nay mượn gì?</Text>
+            </View>
+            <View className="flex-row items-center" style={{ gap: 12 }}>
+              <Pressable
+                className="w-11 h-11 bg-white rounded-full items-center justify-center"
+                onPress={() => router.push('/notifications')}
+              >
+                <Feather name="bell" size={20} color="#0F172A" />
+                {unreadCount > 0 && (
+                  <View className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#CC0D00] rounded-full" />
+                )}
               </Pressable>
-            )}
-          </View>
+              <Pressable
+                className="w-11 h-11 bg-[#CC0D00] rounded-full items-center justify-center"
+                onPress={() => router.push('/(tabs)/explore')}
+              >
+                <Text className="text-white text-[17px] font-bold">
+                  {avatarChar}
+                </Text>
+              </Pressable>
+            </View>
+          </Animated.View>
 
-          {activeLoans.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-10 -mx-6 px-6">
-              {activeLoans.map((loan: any, index: number) => (
-                <Animated.View 
-                  key={loan.id} 
-                  entering={FadeInRight.delay(index * 100)}
-                  className="mr-4"
+          {/* Search Bar */}
+          <Animated.View entering={FadeInDown.delay(200)}>
+            <View
+              className="flex-row items-center bg-white rounded-[14px] h-[52px] px-4"
+              style={{ gap: 10, width: '100%' }}
+            >
+              <Feather name="search" size={16} color="#94A3B8" />
+              <TextInput
+                className="flex-1 text-sm text-[#0F172A]"
+                placeholder="Tìm thiết bị, mã QR..."
+                placeholderTextColor="#94A3B8"
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
+          </Animated.View>
+
+          {/* Quick Actions */}
+          <Animated.View entering={FadeInDown.delay(300)} className="flex-row justify-between" style={{ width: '100%', gap: 12 }}>
+            <Pressable
+              className="bg-[#CC0D00] rounded-[18px] justify-between"
+              style={{ flex: 1, height: 96, padding: 14, paddingHorizontal: 12 }}
+              onPress={() => router.push('/(tabs)/scan')}
+            >
+              <Feather name="maximize" size={26} color="#FFFFFF" />
+              <Text className="text-white text-[13px] font-semibold">Quét QR</Text>
+            </Pressable>
+            <Pressable
+              className="bg-white rounded-[18px] justify-between"
+              style={{ flex: 1, height: 96, padding: 14, paddingHorizontal: 12 }}
+              onPress={() => router.push('/(tabs)' as any)}
+            >
+              <Feather name="help-circle" size={26} color="#0F172A" />
+              <Text className="text-[#0F172A] text-[13px] font-semibold">Mượn mới</Text>
+            </Pressable>
+            <Pressable
+              className="bg-white rounded-[18px] justify-between"
+              style={{ flex: 1, height: 96, padding: 14, paddingHorizontal: 12 }}
+              onPress={() => router.push('/my-loans')}
+            >
+              <Feather name="clipboard" size={26} color="#0F172A" />
+              <Text className="text-[#0F172A] text-[13px] font-semibold">Lịch sử</Text>
+            </Pressable>
+          </Animated.View>
+
+          {/* Active Loans */}
+          <Animated.View entering={FadeInDown.delay(400)} style={{ gap: 12, width: '100%' }}>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[#0F172A] text-[17px] font-bold">Đang mượn</Text>
+              {activeLoans.length > 0 && (
+                <Pressable onPress={() => router.push('/my-loans')}>
+                  <Text className="text-[#CC0D00] text-xs font-medium">Xem tất cả →</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {activeLoans.length > 0 ? (
+              activeLoans.slice(0, 2).map((loan: any) => (
+                <Pressable
+                  key={loan.id}
+                  className="bg-white rounded-[18px] p-4"
+                  style={{ gap: 14 }}
+                  onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
                 >
-                  <Pressable 
-                    onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
-                    className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
-                    style={{ width: width * 0.75 }}
-                  >
-                    <View className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center overflow-hidden">
+                  {/* Card Top */}
+                  <View className="flex-row items-center" style={{ gap: 12 }}>
+                    <View className="w-14 h-14 bg-[#FEE5E3] rounded-xl items-center justify-center overflow-hidden">
                       {loan.equipment?.image_url ? (
-                        <Image source={{ uri: loan.equipment.image_url }} style={{ width: '100%', height: '100%' }} />
+                        <Image source={{ uri: loan.equipment.image_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                       ) : (
-                        <Feather name="box" size={24} color="#D1D1D6" />
+                        <Feather name="box" size={24} color="#CC0D00" />
                       )}
                     </View>
-                    <View className="flex-1 ml-4">
-                      <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{loan.equipment?.name || 'Thiết bị'}</Text>
-                      <View className="flex-row items-center mt-1">
-                        <View className={`w-2 h-2 rounded-full ${loan.status === 'overdue' ? 'bg-red-500' : 'bg-green-500'} mr-2`} />
-                        <Text className="text-gray-500 text-xs font-medium">{loan.status === 'overdue' ? 'Quá hạn trả' : 'Đang sử dụng'}</Text>
-                      </View>
+                    <View className="flex-1" style={{ gap: 4 }}>
+                      <Text className="text-[#0F172A] text-sm font-bold" numberOfLines={1}>
+                        {loan.equipment?.name || 'Thiết bị'}
+                      </Text>
+                      <Text className="text-[#64748B] text-xs">
+                        SN: {loan.equipment?.serial_number || '---'}
+                      </Text>
                     </View>
-                    <View className="bg-gray-50 w-10 h-10 rounded-full items-center justify-center">
-                      <Feather name="chevron-right" size={18} color="#999" />
+                    <Badge status={loan.status} />
+                  </View>
+                  {/* Divider */}
+                  <View className="h-px bg-[#F1F5F9]" />
+                  {/* Card Footer */}
+                  <View className="flex-row items-center justify-between">
+                    <View style={{ gap: 2 }}>
+                      <Text className="text-[#94A3B8] text-[10px]">Hạn trả</Text>
+                      <Text className="text-[#0F172A] text-xs font-semibold">
+                        {loan.due_date ? (() => {
+                          const d = new Date(loan.due_date);
+                          const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+                          return `${d.toLocaleDateString('vi-VN')} · còn ${days} ngày`;
+                        })() : '---'}
+                      </Text>
                     </View>
-                  </Pressable>
-                </Animated.View>
-              ))}
-            </ScrollView>
-          ) : (
-            <View className="bg-gray-50 rounded-[30px] p-6 items-center mb-10 border border-dashed border-gray-200">
-               <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mb-3 shadow-sm">
-                  <Feather name="info" size={20} color="#D1D1D6" />
-               </View>
-               <Text className="text-gray-400 text-sm font-medium">Bạn hiện không mượn thiết bị nào</Text>
-            </View>
-          )}
-
-          {/* Equipment Grid */}
-          <View className="flex-row justify-between items-center mb-5">
-            <Text className="font-bold text-xl text-gray-900 tracking-tight">Thiết bị hiện có</Text>
-          </View>
-          <FlatList
-            data={filteredEquipment}
-            renderItem={renderEquipmentItem}
-            keyExtractor={item => item.id.toString()}
-            numColumns={2}
-            scrollEnabled={false}
-            columnWrapperStyle={{ justifyContent: 'space-between' }}
-            ListEmptyComponent={
-              <View className="items-center py-16 bg-gray-50 rounded-[30px] border border-dashed border-gray-200">
-                <Feather name="search" size={48} color="#D1D1D6" />
-                <Text className="text-gray-400 mt-4 text-sm font-medium">Không tìm thấy thiết bị nào phù hợp</Text>
+                    <Pressable
+                      className="bg-[#0F172A] rounded-[10px] flex-row items-center"
+                      style={{ gap: 6, paddingVertical: 8, paddingHorizontal: 14 }}
+                    >
+                      <Feather name="rotate-ccw" size={12} color="#FFFFFF" />
+                      <Text className="text-white text-xs font-semibold">Trả thiết bị</Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+              ))
+            ) : (
+              <View className="bg-white rounded-[18px] p-6 items-center" style={{ gap: 8 }}>
+                <Feather name="inbox" size={32} color="#E2E8F0" />
+                <Text className="text-[#94A3B8] text-sm">Bạn hiện không mượn thiết bị nào</Text>
               </View>
-            }
-          />
+            )}
+          </Animated.View>
+
+          {/* Categories */}
+          <Animated.View entering={FadeInDown.delay(500)} style={{ gap: 12, width: '100%' }}>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[#0F172A] text-[17px] font-bold">Danh mục</Text>
+              <Pressable>
+                <Text className="text-[#CC0D00] text-xs font-medium">Tất cả →</Text>
+              </Pressable>
+            </View>
+            <View className="flex-row justify-between" style={{ gap: 10 }}>
+              {categories.map((cat) => (
+                <Pressable
+                  key={cat.name}
+                  className="bg-white rounded-2xl items-center justify-center"
+                  style={{ flex: 1, height: 86, gap: 6, padding: 10 }}
+                >
+                  <View
+                    className="w-10 h-10 rounded-[10px] items-center justify-center"
+                    style={{ backgroundColor: cat.bg }}
+                  >
+                    <Feather name={cat.icon} size={20} color="#0F172A" />
+                  </View>
+                  <Text
+                    className="text-[#0F172A] text-[11px] font-semibold"
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {cat.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
         </View>
-        <View className="h-32" />
       </ScrollView>
     </View>
   );
