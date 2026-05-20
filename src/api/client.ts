@@ -5,6 +5,10 @@ import { useAuthStore } from '../store/useAuthStore';
 const api = axios.create({
   baseURL: Config.API_URL,
   timeout: 10000,
+  headers: {
+    'Bypass-Tunnel-Reminder': 'true',
+    'ngrok-skip-browser-warning': 'true',
+  },
 });
 
 api.interceptors.request.use(
