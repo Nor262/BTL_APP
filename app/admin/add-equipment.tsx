@@ -48,7 +48,7 @@ export default function AddEquipment() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showPeriod, setShowPeriod] = useState(false);
 
-  const update = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }));
+  const update = (k: string, v: string | boolean) => setForm((s: any) => ({ ...s, [k]: v }));
 
   const resetForm = () => {
     setStep(1);

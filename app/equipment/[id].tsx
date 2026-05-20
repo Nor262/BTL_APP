@@ -117,8 +117,8 @@ export default function EquipmentDetailScreen() {
   if (loading) return <LoadingScreen />;
 
   const specs = equipment?.specifications || {};
-  const specEntries = Object.keys(specs).length > 0
-    ? Object.entries(specs)
+  const specEntries: [string, any][] = Object.keys(specs).length > 0
+    ? (Object.entries(specs) as [string, any][])
     : [['Thương hiệu', 'Chưa cập nhật']];
 
   return (
