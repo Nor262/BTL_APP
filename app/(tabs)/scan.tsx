@@ -4,17 +4,22 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { handleApiError } from '@/utils/error-handler';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function BatchScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
+  const { user } = useAuthStore();
+  const isBorrower = user?.role === 'borrower';
+  const { mode: initialMode } = useLocalSearchParams<{ mode?: 'checkout' | 'checkin' }>();
+
   const [scannedItems, setScannedItems] = useState<any[]>([]);
   const [scanning, setScanning] = useState(true);
-  const [mode, setMode] = useState<'checkout' | 'checkin'>('checkout');
+  const [mode, setMode] = useState<'checkout' | 'checkin'>(isBorrower ? 'checkin' : (initialMode || 'checkout'));
   const [condition, setCondition] = useState<'Good' | 'Broken'>('Good');
   const [evidenceImage, setEvidenceImage] = useState<string | null>(null);
   const [flashOn, setFlashOn] = useState(false);
@@ -68,6 +73,18 @@ export default function BatchScanScreen() {
 
       if (mode === 'checkout' && itemData.status !== 'available') {
         router.push(`/equipment/${itemData.equipment_id || itemData.id}`);
+        return;
+      }
+
+      if (mode === 'checkin' && !itemData.transaction_id) {
+        Alert.alert('Lỗi', 'Thiết bị này hiện không có giao dịch mượn nào cần trả.');
+        setTimeout(() => setScanning(true), 1500);
+        return;
+      }
+
+      if (isBorrower && mode === 'checkin' && itemData.borrower_id !== user?.id) {
+        Alert.alert('Lỗi', 'Thiết bị này không phải do bạn đăng ký mượn.');
+        setTimeout(() => setScanning(true), 1500);
         return;
       }
 
@@ -177,29 +194,42 @@ export default function BatchScanScreen() {
       </View>
 
       {/* Segment Control */}
-      <View className="items-center" style={{ paddingBottom: 16 }}>
-        <View
-          className="bg-[#1E293B] rounded-full flex-row"
-          style={{ height: 40, padding: 3, width: 260 }}
-        >
-          <Pressable
-            className={`flex-1 rounded-full items-center justify-center ${mode === 'checkout' ? 'bg-[#CC0D00]' : ''}`}
-            onPress={() => { setMode('checkout'); setScannedItems([]); }}
+      {isBorrower ? (
+        <View className="items-center" style={{ paddingBottom: 16 }}>
+          <View
+            className="bg-[#1E293B] rounded-full items-center justify-center"
+            style={{ height: 40, paddingHorizontal: 24 }}
           >
-            <Text className={`text-xs font-bold ${mode === 'checkout' ? 'text-white' : 'text-[#94A3B8]'}`}>
-              Check-out
+            <Text className="text-white text-xs font-bold">
+              Chế độ: Trả thiết bị (Check-in)
             </Text>
-          </Pressable>
-          <Pressable
-            className={`flex-1 rounded-full items-center justify-center ${mode === 'checkin' ? 'bg-[#CC0D00]' : ''}`}
-            onPress={() => { setMode('checkin'); setScannedItems([]); }}
-          >
-            <Text className={`text-xs font-bold ${mode === 'checkin' ? 'text-white' : 'text-[#94A3B8]'}`}>
-              Check-in
-            </Text>
-          </Pressable>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View className="items-center" style={{ paddingBottom: 16 }}>
+          <View
+            className="bg-[#1E293B] rounded-full flex-row"
+            style={{ height: 40, padding: 3, width: 260 }}
+          >
+            <Pressable
+              className={`flex-1 rounded-full items-center justify-center ${mode === 'checkout' ? 'bg-[#CC0D00]' : ''}`}
+              onPress={() => { setMode('checkout'); setScannedItems([]); }}
+            >
+              <Text className={`text-xs font-bold ${mode === 'checkout' ? 'text-white' : 'text-[#94A3B8]'}`}>
+                Check-out
+              </Text>
+            </Pressable>
+            <Pressable
+              className={`flex-1 rounded-full items-center justify-center ${mode === 'checkin' ? 'bg-[#CC0D00]' : ''}`}
+              onPress={() => { setMode('checkin'); setScannedItems([]); }}
+            >
+              <Text className={`text-xs font-bold ${mode === 'checkin' ? 'text-white' : 'text-[#94A3B8]'}`}>
+                Check-in
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {/* Camera Viewfinder */}
       <View className="items-center" style={{ paddingHorizontal: 20 }}>

@@ -1,28 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, RefreshControl } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, RefreshControl, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '@/api/client';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
-const CHIPS = ['Tất cả', 'Laptop', 'Camera', 'Audio', 'Cable'];
+
 
 export default function EquipmentListScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string }>();
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState('Tất cả');
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (params?.category && categoriesList.length > 0) {
+      const matchedChip = categoriesList.find(c => 
+        c.name.toLowerCase() === params.category!.toLowerCase() || 
+        params.category!.toLowerCase().includes(c.name.toLowerCase()) ||
+        c.name.toLowerCase().includes(params.category!.toLowerCase())
+      );
+      if (matchedChip) {
+        setChip(matchedChip.name);
+      }
+    }
+  }, [params?.category, categoriesList]);
 
   const fetchData = async () => {
     try {
-      const res = await api.get('/equipment');
-      setItems(res.data?.data || res.data || []);
+      const [eqRes, catRes] = await Promise.all([
+        api.get('/equipment'),
+        api.get('/categories').catch(() => ({ data: [] }))
+      ]);
+      setItems(eqRes.data?.data || eqRes.data || []);
+      setCategoriesList(catRes.data?.data || catRes.data || []);
     } catch {}
     setLoading(false);
     setRefreshing(false);
@@ -132,8 +151,13 @@ export default function EquipmentListScreen() {
         </View>
 
         {/* Chips */}
-        <View className="flex-row" style={{ gap: 8 }}>
-          {CHIPS.map((c) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingRight: 20 }}
+          style={{ maxHeight: 32 }}
+        >
+          {['Tất cả', ...categoriesList.map((c) => c.name)].map((c) => (
             <Pressable
               key={c}
               className={`rounded-full ${chip === c ? 'bg-[#CC0D00]' : 'bg-white'}`}
@@ -145,7 +169,7 @@ export default function EquipmentListScreen() {
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
 
         {/* Result count */}
         <View className="flex-row items-center justify-between">

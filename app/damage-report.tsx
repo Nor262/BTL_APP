@@ -7,6 +7,9 @@ import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { useAlertStore } from '@/store/useAlertStore';
+import api from '@/api/client';
+import { useAuthStore } from '@/store/useAuthStore';
+import { handleApiError } from '@/utils/error-handler';
 
 const LEVELS = [
   { key: 'minor', label: 'Nhẹ', sub: 'Trầy xước', color: '#15803D', bg: '#DCFCE7' },
@@ -45,8 +48,16 @@ export default function DamageReportScreen() {
       return;
     }
     setSubmitting(true);
-    // TODO: backend chưa có endpoint damage report; có thể gọi POST /maintenance hoặc /transactions/.../report
-    setTimeout(() => {
+    try {
+      const { user } = useAuthStore.getState();
+      
+      await api.post('/maintenance', {
+        equipment_id: equipment_id ? Number(equipment_id) : undefined,
+        performed_by: user?.full_name || 'Người dùng',
+        details: `[${LEVELS.find(l => l.key === level)?.label || 'Trung bình'}] ${note.trim()}`,
+        maintenance_date: new Date().toISOString(),
+      });
+
       setSubmitting(false);
       showAlert({
         type: 'success',
@@ -54,7 +65,10 @@ export default function DamageReportScreen() {
         message: 'Báo cáo sự cố đã được ghi nhận. Kho sẽ liên hệ trong 30 ngày.',
         onConfirm: () => router.back(),
       });
-    }, 600);
+    } catch (error: any) {
+      setSubmitting(false);
+      handleApiError(error, 'Không thể gửi báo cáo sự cố');
+    }
   };
 
   return (

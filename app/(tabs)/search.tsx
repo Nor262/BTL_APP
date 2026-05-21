@@ -2,38 +2,61 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, FlatList } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '@/api/client';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 
-const CHIPS = ['Tất cả', 'Laptop', 'Camera', 'Audio', 'Cable'];
-
 export default function SearchScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string }>();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState('Tất cả');
   const [items, setItems] = useState<any[]>([]);
   const [recent, setRecent] = useState<string[]>(['Sony A7 IV', 'HDMI Cable 2m']);
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
 
   useEffect(() => {
-    api.get('/equipment').then((res) => {
-      setItems(res.data?.data || res.data || []);
+    if (params?.category !== undefined) {
+      if (params.category === '' || params.category.toLowerCase() === 'tất cả') {
+        setChip('Tất cả');
+      } else if (categoriesList.length > 0) {
+        const matchedChip = categoriesList.find(c => 
+          c.name.toLowerCase() === params.category!.toLowerCase() || 
+          params.category!.toLowerCase().includes(c.name.toLowerCase()) ||
+          c.name.toLowerCase().includes(params.category!.toLowerCase())
+        );
+        if (matchedChip) {
+          setChip(matchedChip.name);
+        }
+      }
+    }
+  }, [params?.category, categoriesList]);
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/equipment'),
+      api.get('/categories').catch(() => ({ data: [] }))
+    ]).then(([eqRes, catRes]) => {
+      setItems(eqRes.data?.data || eqRes.data || []);
+      setCategoriesList(catRes.data?.data || catRes.data || []);
     }).catch(() => {});
   }, []);
 
   const filtered = items.filter((it: any) => {
     if (chip !== 'Tất cả') {
       const cat = (it.category?.name || '').toLowerCase();
-      if (!cat.includes(chip.toLowerCase())) return false;
+      if (cat !== chip.toLowerCase()) return false;
     }
-    if (!query.trim()) return false;
-    const q = query.toLowerCase();
-    return (
-      (it.name || '').toLowerCase().includes(q) ||
-      (it.serial_number || '').toLowerCase().includes(q)
-    );
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      return (
+        (it.name || '').toLowerCase().includes(q) ||
+        (it.serial_number || '').toLowerCase().includes(q)
+      );
+    }
+    return true;
   });
 
   return (
@@ -76,8 +99,13 @@ export default function SearchScreen() {
           </View>
 
           {/* Chips */}
-          <View className="flex-row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            {CHIPS.map((c) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingRight: 20 }}
+            style={{ maxHeight: 36 }}
+          >
+            {['Tất cả', ...categoriesList.map((c) => c.name)].map((c) => (
               <Pressable
                 key={c}
                 className={`rounded-full ${chip === c ? 'bg-[#CC0D00]' : 'bg-white'}`}
@@ -87,7 +115,7 @@ export default function SearchScreen() {
                 <Text className={`text-[12px] font-semibold ${chip === c ? 'text-white' : 'text-[#64748B]'}`}>{c}</Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
 
           {/* Recent searches */}
           {query.trim() === '' && recent.length > 0 && (
@@ -99,20 +127,26 @@ export default function SearchScreen() {
                 </Pressable>
               </View>
               {recent.map((r) => (
-                <Pressable
+                <View
                   key={r}
                   className="bg-white rounded-[14px] flex-row items-center justify-between"
                   style={{ paddingVertical: 12, paddingHorizontal: 14 }}
-                  onPress={() => setQuery(r)}
                 >
-                  <View className="flex-row items-center" style={{ gap: 10 }}>
+                  <Pressable
+                    className="flex-1 flex-row items-center"
+                    style={{ gap: 10 }}
+                    onPress={() => setQuery(r)}
+                  >
                     <Feather name="clock" size={14} color="#94A3B8" />
                     <Text className="text-[#0F172A] text-sm">{r}</Text>
-                  </View>
-                  <Pressable onPress={() => setRecent((prev) => prev.filter((x) => x !== r))}>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setRecent((prev) => prev.filter((x) => x !== r))}
+                    style={{ padding: 4 }}
+                  >
                     <Feather name="x" size={14} color="#94A3B8" />
                   </Pressable>
-                </Pressable>
+                </View>
               ))}
             </Animated.View>
           )}
@@ -122,7 +156,7 @@ export default function SearchScreen() {
             <Text className="text-[#0F172A] text-xs font-bold">
               {query.trim() ? `Kết quả (${filtered.length})` : 'Gợi ý cho bạn'}
             </Text>
-            {(query.trim() ? filtered : items.slice(0, 6)).map((it: any) => (
+            {(query.trim() ? filtered : filtered.slice(0, 6)).map((it: any) => (
               <Pressable
                 key={it.id}
                 className="bg-white rounded-[14px] flex-row items-center"

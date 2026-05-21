@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import Input from '@/components/ui/Input';
 import { useAlertStore } from '@/store/useAlertStore';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import { useFocusEffect } from '@react-navigation/native';
 
 const MENU_ITEMS = [
   { key: 'profile', icon: 'user' as const, iconColor: '#CC0D00', bg: '#FEE5E3', label: 'Thông tin cá nhân' },
@@ -66,6 +67,12 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchData();
   }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const handleLogout = () => {
     showAlert({
