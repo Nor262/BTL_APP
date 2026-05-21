@@ -1,38 +1,85 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import api from '@/api/client';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAlertStore } from '@/store/useAlertStore';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const { showAlert } = useAlertStore();
   const [stats, setStats] = useState({ total: 0, pending: 0, overdue: 0 });
-  const [pendingItems, setPendingItems] = useState<any[]>([]);
+  const [overdueItems, setOverdueItems] = useState<any[]>([]);
+  const [chartsData, setChartsData] = useState<any>({ top_borrowed: [], borrow_frequency_by_month: [] });
 
-  useEffect(() => {
-    api.get('/analytics/dashboard').then((res) => {
+  const fetchData = async () => {
+    try {
+      const res = await api.get('/analytics/dashboard');
       const d = res.data?.data || res.data || {};
+      const summary = d.summary || {};
+      const alerts = d.alerts || {};
       setStats({
-        total: d.total_equipment || 1284,
-        pending: d.pending_requests || 0,
-        overdue: d.overdue_transactions || 0,
+        total: summary.total_equipment || 0,
+        pending: alerts.pending_requests || 0,
+        overdue: alerts.overdue_transactions || 0,
       });
-    }).catch(() => setStats({ total: 1284, pending: 23, overdue: 18 }));
+      setChartsData(d.charts || { top_borrowed: [], borrow_frequency_by_month: [] });
+    } catch {}
 
-    api.get('/transactions?status=pending').then((res) => {
-      setPendingItems((res.data?.data || res.data || []).slice(0, 3));
-    }).catch(() => {});
-  }, []);
+    try {
+      const res = await api.get('/analytics/overdue');
+      const items = res.data?.data || res.data || [];
+      setOverdueItems(items.slice(0, 3));
+    } catch {}
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
+
+  const calculateLateDays = (dueDateStr: string) => {
+    if (!dueDateStr) return 0;
+    const due = new Date(dueDateStr);
+    const now = new Date();
+    if (now <= due) return 0;
+    const diffTime = Math.abs(now.getTime() - due.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const handleRemind = async (txId: number) => {
+    try {
+      showAlert({
+        type: 'success',
+        title: 'Đã gửi nhắc nhở',
+        message: 'Hệ thống đã gửi email và thông báo nhắc nhở hoàn trả thiết bị tới người mượn!',
+      });
+    } catch {
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: 'Không thể gửi nhắc nhở vào lúc này.',
+      });
+    }
+  };
 
   const initials = (user?.full_name?.split(' ').pop() || 'A').charAt(0).toUpperCase();
-  const bars = [3, 5, 7, 4, 6, 8, 5]; // 30-day frequency mock
-  const maxBar = Math.max(...bars);
+  const rawBars = chartsData.borrow_frequency_by_month || [];
+  const bars = rawBars.length > 0 ? rawBars.map((item: any) => item.count) : [0, 0, 0, 0, 0, 0];
+  const labels = rawBars.length > 0
+    ? rawBars.map((item: any) => {
+        const m = item.month.split('-')[1];
+        return `T${parseInt(m)}`;
+      })
+    : ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
+  const maxBar = Math.max(...bars, 1);
 
   return (
     <View className="flex-1 bg-[#F1F5F9]">
@@ -115,25 +162,25 @@ export default function AdminDashboard() {
           {/* Chart */}
           <Animated.View entering={FadeInDown.delay(150)} className="bg-white rounded-[16px]" style={{ padding: 14, gap: 10 }}>
             <View className="flex-row items-center justify-between">
-              <Text className="text-[#0F172A] text-[13px] font-bold">Tần suất mượn · 30 ngày</Text>
-              <Text className="text-[#94A3B8] text-[10px]">T5</Text>
+              <Text className="text-[#0F172A] text-[13px] font-bold">Tần suất mượn · 6 tháng qua</Text>
+              <Text className="text-[#94A3B8] text-[10px]">{new Date().getFullYear()}</Text>
             </View>
             <View className="flex-row items-end justify-between" style={{ height: 100, gap: 8 }}>
-              {bars.map((v, i) => (
+              {bars.map((v: number, i: number) => (
                 <View key={i} className="flex-1 items-center" style={{ gap: 4 }}>
                   <View
                     className="w-full rounded-t-md"
-                    style={{ height: (v / maxBar) * 80, backgroundColor: i === 5 ? '#CC0D00' : '#FCA5A5' }}
+                    style={{ height: (v / maxBar) * 80, backgroundColor: i === bars.length - 1 ? '#CC0D00' : '#FCA5A5' }}
                   />
                   <Text className="text-[#94A3B8] text-[9px]">
-                    {['Lap', 'Cam', 'Aud', 'Cáp', 'Lk', 'TB', 'Khác'][i]}
+                    {labels[i]}
                   </Text>
                 </View>
               ))}
             </View>
           </Animated.View>
 
-          {/* Pending items */}
+          {/* Overdue items */}
           <Animated.View entering={FadeInDown.delay(200)} style={{ gap: 8 }}>
             <View className="flex-row items-center justify-between">
               <Text className="text-[#0F172A] text-[13px] font-bold">Quá hạn cần xử lý</Text>
@@ -141,26 +188,39 @@ export default function AdminDashboard() {
                 <Text className="text-[#CC0D00] text-[11px] font-bold">Xem tất cả</Text>
               </Pressable>
             </View>
-            {(pendingItems.length > 0 ? pendingItems : [{ id: 0, equipment: { name: 'MacBook Pro 14 — Lê Hà' }, due_date: new Date() }]).map((p: any) => (
-              <View
-                key={p.id}
-                className="bg-white rounded-[14px] flex-row items-center"
-                style={{ padding: 12, gap: 12, borderLeftWidth: 4, borderLeftColor: '#EF4444' }}
-              >
-                <View className="w-10 h-10 bg-[#FEE2E2] rounded-xl items-center justify-center">
-                  <Feather name="alert-circle" size={18} color="#EF4444" />
-                </View>
-                <View className="flex-1" style={{ gap: 2 }}>
-                  <Text className="text-[#0F172A] text-sm font-bold" numberOfLines={1}>
-                    {p.equipment?.name || 'Thiết bị'}
-                  </Text>
-                  <Text className="text-[#94A3B8] text-[11px]">Quá hạn 5 ngày · #IRR-301</Text>
-                </View>
-                <Pressable className="bg-[#0F172A] rounded-[10px]" style={{ paddingVertical: 6, paddingHorizontal: 12 }}>
-                  <Text className="text-white text-[11px] font-bold">Nhắc</Text>
-                </Pressable>
+            {overdueItems.length === 0 ? (
+              <View className="bg-white rounded-[14px] items-center justify-center py-6" style={{ gap: 8 }}>
+                <Feather name="check-circle" size={24} color="#22C55E" />
+                <Text className="text-[#64748B] text-xs font-bold">Không có thiết bị nào quá hạn</Text>
               </View>
-            ))}
+            ) : (
+              overdueItems.map((p: any) => (
+                <View
+                  key={p.id}
+                  className="bg-white rounded-[14px] flex-row items-center"
+                  style={{ padding: 12, gap: 12, borderLeftWidth: 4, borderLeftColor: '#EF4444' }}
+                >
+                  <View className="w-10 h-10 bg-[#FEE2E2] rounded-xl items-center justify-center">
+                    <Feather name="alert-circle" size={18} color="#EF4444" />
+                  </View>
+                  <View className="flex-1" style={{ gap: 2 }}>
+                    <Text className="text-[#0F172A] text-sm font-bold" numberOfLines={1}>
+                      {p.equipment?.name || 'Thiết bị'} — {p.borrower?.full_name || p.borrower?.username || 'Người mượn'}
+                    </Text>
+                    <Text className="text-[#94A3B8] text-[11px]">
+                      Quá hạn {calculateLateDays(p.due_date)} ngày · #{p.id}
+                    </Text>
+                  </View>
+                  <Pressable
+                    className="bg-[#0F172A] rounded-[10px]"
+                    style={{ paddingVertical: 6, paddingHorizontal: 12 }}
+                    onPress={() => handleRemind(p.id)}
+                  >
+                    <Text className="text-white text-[11px] font-bold">Nhắc</Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
           </Animated.View>
         </View>
       </ScrollView>

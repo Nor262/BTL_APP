@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import api from '@/api/client';
@@ -13,6 +13,26 @@ const TABS = [
   { key: 'approved', label: 'Đã duyệt' },
   { key: 'rejected', label: 'Từ chối' },
 ];
+
+const formatTime = (dateStr: string) => {
+  if (!dateStr) return '---';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = (now.getTime() - date.getTime()) / 1000;
+  if (diff < 60) return 'Vừa xong';
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  return date.toLocaleDateString('vi-VN');
+};
+
+const getBorrowerMetadata = (borrower: any) => {
+  if (!borrower) return 'Sinh viên';
+  const parts = [];
+  if (borrower.class) parts.push(borrower.class);
+  if (borrower.department) parts.push(borrower.department);
+  if (parts.length === 0) return 'Sinh viên';
+  return parts.join(' · ');
+};
 
 export default function AdminApproval() {
   const insets = useSafeAreaInsets();
@@ -31,7 +51,11 @@ export default function AdminApproval() {
     setRefreshing(false);
   };
 
-  useEffect(() => { fetchData(); }, [tab]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [tab])
+  );
 
   const review = async (id: number, status: 'approved' | 'rejected') => {
     try {
@@ -117,9 +141,9 @@ export default function AdminApproval() {
                     </Text>
                   </View>
                   <View className="flex-1" style={{ gap: 2 }}>
-                    <Text className="text-[#0F172A] text-sm font-bold">{it.borrower?.full_name || 'Lê Thanh Hà'}</Text>
+                    <Text className="text-[#0F172A] text-sm font-bold">{it.borrower?.full_name || it.borrower?.username || 'Người mượn'}</Text>
                     <Text className="text-[#94A3B8] text-[10px]">
-                      CNTT K23 · Vừa nãy
+                      {getBorrowerMetadata(it.borrower)} · {formatTime(it.request_date)}
                     </Text>
                   </View>
                   {tab === 'pending' && (

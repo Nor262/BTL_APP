@@ -119,7 +119,7 @@ export default function BatchScanScreen() {
 
     try {
       for (const item of scannedItems) {
-        const endpoint = item.transaction_status === 'approved' ? 'checkout' : 'checkin';
+        const endpoint = mode;
         const formData = new FormData();
         formData.append('qr_code_data', item.qr_code_data);
         formData.append('condition', condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi');
@@ -235,7 +235,11 @@ export default function BatchScanScreen() {
       <View className="items-center" style={{ paddingHorizontal: 20 }}>
         <View
           className="overflow-hidden"
-          style={{ width: 300, height: 300, borderRadius: 24 }}
+          style={{ 
+            width: manualOpen ? 120 : 300, 
+            height: manualOpen ? 120 : 300, 
+            borderRadius: 24
+          }}
         >
           <CameraView
             style={StyleSheet.absoluteFill}
@@ -443,7 +447,7 @@ export default function BatchScanScreen() {
         </ScrollView>
 
         {/* Confirm Button */}
-        <View style={{ paddingTop: 4 }}>
+        <View style={{ paddingTop: 4, paddingBottom: 90 }}>
           <Pressable
             className={`h-[52px] rounded-[14px] flex-row items-center justify-center ${scannedItems.length > 0 ? 'bg-[#CC0D00]' : 'bg-[#334155]'}`}
             style={{ gap: 8 }}
