@@ -62,7 +62,7 @@ export default function StorekeeperHome() {
               <Text className="text-white text-lg font-bold">{user?.full_name || 'Admin'}</Text>
             </View>
             <Pressable
-              className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center"
+              className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center active:scale-95"
               onPress={() => router.push('/(tabs)/explore')}
             >
               <Text className="text-white text-sm font-bold">{initials}</Text>
@@ -114,7 +114,7 @@ export default function StorekeeperHome() {
             ].map((item, i) => (
               <Pressable
                 key={i}
-                className="flex-1 bg-white rounded-[14px] items-center"
+                className="flex-1 bg-white rounded-[14px] items-center active:scale-95"
                 style={{ padding: 12, paddingHorizontal: 10, gap: 6 }}
                 onPress={item.onPress}
               >
@@ -140,7 +140,7 @@ export default function StorekeeperHome() {
           {overdueTx.length > 0 && (
             <Animated.View
               entering={FadeInDown.delay(400)}
-              className="bg-white rounded-2xl"
+              className="bg-white rounded-2xl border border-[#E2E8F0]"
               style={{ padding: 12, gap: 8 }}
             >
               <View className="flex-row items-center justify-between" style={{ paddingHorizontal: 2 }}>
@@ -167,7 +167,7 @@ export default function StorekeeperHome() {
           )}
 
           {/* Recent Transactions */}
-          <Animated.View entering={FadeInDown.delay(500)} className="bg-white rounded-2xl" style={{ padding: 12, gap: 8 }}>
+          <Animated.View entering={FadeInDown.delay(500)} className="bg-white rounded-2xl border border-[#E2E8F0]" style={{ padding: 12, gap: 8 }}>
             <View className="flex-row items-center justify-between" style={{ paddingHorizontal: 2 }}>
               <Text className="text-[#0F172A] text-[13px] font-bold">Giao dịch gần đây</Text>
               <Pressable onPress={() => router.push('/my-loans')}>

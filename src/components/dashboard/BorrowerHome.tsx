@@ -1,14 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/api/client';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/store/useAuthStore';
 import LoadingScreen from '../ui/LoadingScreen';
 import Badge from '../ui/Badge';
+import { useAlertStore } from '@/store/useAlertStore';
+
+const getCategoryStyle = (name: string) => {
+  const normalized = (name || '').toLowerCase();
+  if (normalized.includes('laptop') || normalized.includes('máy tính')) {
+    return { icon: 'monitor' as const, bg: '#FEE5E3' };
+  }
+  if (normalized.includes('camera') || normalized.includes('ảnh') || normalized.includes('quay')) {
+    return { icon: 'camera' as const, bg: '#FEF3C7' };
+  }
+  if (normalized.includes('mic') || normalized.includes('audio') || normalized.includes('âm thanh') || normalized.includes('microphone') || normalized.includes('loa')) {
+    return { icon: 'mic' as const, bg: '#DCFCE7' };
+  }
+  if (normalized.includes('cable') || normalized.includes('cáp') || normalized.includes('dây')) {
+    return { icon: 'link' as const, bg: '#FCE7F3' };
+  }
+  if (normalized.includes('chiếu') || normalized.includes('projector')) {
+    return { icon: 'tv' as const, bg: '#E0F2FE' };
+  }
+  return { icon: 'box' as const, bg: '#F1F5F9' };
+};
 
 export default function BorrowerHome() {
   const [equipment, setEquipment] = useState<any[]>([]);
@@ -17,23 +39,28 @@ export default function BorrowerHome() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [categories, setCategories] = useState<any[]>([]);
 
   const { user } = useAuthStore();
+  const { showAlert } = useAlertStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const fetchData = async () => {
     try {
-      const [eqRes, transRes, countRes] = await Promise.all([
+      const [eqRes, transRes, countRes, catRes] = await Promise.all([
         api.get('/equipment').catch(() => ({ data: { data: [] } })),
         api.get('/transactions/my').catch(() => ({ data: { data: [] } })),
-        api.get('/notifications/unread-count').catch(() => ({ data: { data: { count: 0 } } }))
+        api.get('/notifications/unread-count').catch(() => ({ data: { data: { count: 0 } } })),
+        api.get('/categories').catch(() => ({ data: [] }))
       ]);
 
       setEquipment(eqRes.data?.data || eqRes.data || []);
       const transactions = transRes.data?.data || transRes.data || [];
-      setActiveLoans(transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue'));
+      const active = transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue' || t.status === 'approved');
+      setActiveLoans(active);
       setUnreadCount(countRes.data?.data?.count || countRes.data?.count || 0);
+      setCategories(catRes.data?.data || catRes.data || []);
     } catch (error) {
       console.error('Fetch Error:', error);
     } finally {
@@ -44,17 +71,17 @@ export default function BorrowerHome() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Refresh data (especially unread count) when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
+
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   const firstName = user?.full_name?.split(' ').pop() || 'bạn';
   const avatarChar = firstName.charAt(0).toUpperCase();
-
-  const categories = [
-    { name: 'Laptop', icon: 'monitor' as const, bg: '#FEE5E3' },
-    { name: 'Camera', icon: 'camera' as const, bg: '#FEF3C7' },
-    { name: 'Mic & Audio', icon: 'mic' as const, bg: '#DCFCE7' },
-    { name: 'Cable', icon: 'link' as const, bg: '#FCE7F3' },
-  ];
 
   if (loading) return <LoadingScreen />;
 
@@ -124,9 +151,9 @@ export default function BorrowerHome() {
             <Pressable
               className="bg-white rounded-[18px] justify-between"
               style={{ flex: 1, height: 96, padding: 14, paddingHorizontal: 12 }}
-              onPress={() => router.push('/(tabs)' as any)}
+              onPress={() => router.push('/equipment')}
             >
-              <Feather name="help-circle" size={26} color="#0F172A" />
+              <Feather name="plus-circle" size={26} color="#0F172A" />
               <Text className="text-[#0F172A] text-[13px] font-semibold">Mượn mới</Text>
             </Pressable>
             <Pressable
@@ -171,9 +198,16 @@ export default function BorrowerHome() {
                       <Text className="text-[#0F172A] text-sm font-bold" numberOfLines={1}>
                         {loan.equipment?.name || 'Thiết bị'}
                       </Text>
-                      <Text className="text-[#64748B] text-xs">
-                        SN: {loan.equipment?.serial_number || '---'}
-                      </Text>
+                      <View className="flex-row items-center" style={{ gap: 6 }}>
+                        <Text className="text-[#64748B] text-xs">
+                          SN: {loan.equipment?.serial_number || '---'}
+                        </Text>
+                        <View className="w-1 h-1 rounded-full bg-[#94A3B8]" />
+                        <Text className="text-[#64748B] text-xs font-medium">
+                          {loan.status === 'overdue' ? 'Quá hạn trả' : 
+                           loan.status === 'approved' ? 'Chờ nhận' : 'Đang sử dụng'}
+                        </Text>
+                      </View>
                     </View>
                     <Badge status={loan.status} />
                   </View>
@@ -192,8 +226,17 @@ export default function BorrowerHome() {
                       </Text>
                     </View>
                     <Pressable
-                      className="bg-[#0F172A] rounded-[10px] flex-row items-center"
+                      className="bg-[#0F172A] rounded-[10px] flex-row items-center active:scale-95"
                       style={{ gap: 6, paddingVertical: 8, paddingHorizontal: 14 }}
+                      onPress={() => {
+                        showAlert({
+                          type: 'info',
+                          title: 'Trả thiết bị',
+                          message: 'Vui lòng mang thiết bị đến phòng quản lý để thủ kho xác nhận trả. Hoặc quét mã QR thiết bị tại quầy.',
+                          showCancel: false,
+                          onConfirm: () => router.push({ pathname: '/(tabs)/scan', params: { mode: 'checkin' } }),
+                        });
+                      }}
                     >
                       <Feather name="rotate-ccw" size={12} color="#FFFFFF" />
                       <Text className="text-white text-xs font-semibold">Trả thiết bị</Text>
@@ -213,32 +256,36 @@ export default function BorrowerHome() {
           <Animated.View entering={FadeInDown.delay(500)} style={{ gap: 12, width: '100%' }}>
             <View className="flex-row items-center justify-between">
               <Text className="text-[#0F172A] text-[17px] font-bold">Danh mục</Text>
-              <Pressable>
+              <Pressable onPress={() => router.push({ pathname: '/(tabs)/search', params: { category: '' } })}>
                 <Text className="text-[#CC0D00] text-xs font-medium">Tất cả →</Text>
               </Pressable>
             </View>
             <View className="flex-row justify-between" style={{ gap: 10 }}>
-              {categories.map((cat) => (
-                <Pressable
-                  key={cat.name}
-                  className="bg-white rounded-2xl items-center justify-center"
-                  style={{ flex: 1, height: 86, gap: 6, padding: 10 }}
-                >
-                  <View
-                    className="w-10 h-10 rounded-[10px] items-center justify-center"
-                    style={{ backgroundColor: cat.bg }}
+              {categories.slice(0, 4).map((cat) => {
+                const style = getCategoryStyle(cat.name);
+                return (
+                  <Pressable
+                    key={cat.id}
+                    className="bg-white rounded-2xl items-center justify-center active:scale-95"
+                    style={{ flex: 1, height: 86, gap: 6, padding: 10 }}
+                    onPress={() => router.push({ pathname: '/(tabs)/search', params: { category: cat.name } })}
                   >
-                    <Feather name={cat.icon} size={20} color="#0F172A" />
-                  </View>
-                  <Text
-                    className="text-[#0F172A] text-[11px] font-semibold"
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                  >
-                    {cat.name}
-                  </Text>
-                </Pressable>
-              ))}
+                    <View
+                      className="w-10 h-10 rounded-[10px] items-center justify-center"
+                      style={{ backgroundColor: style.bg }}
+                    >
+                      <Feather name={style.icon} size={20} color="#0F172A" />
+                    </View>
+                    <Text
+                      className="text-[#0F172A] text-[11px] font-semibold"
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </Animated.View>
         </View>
