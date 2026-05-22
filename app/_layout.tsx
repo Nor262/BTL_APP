@@ -93,6 +93,14 @@ export default function RootLayout() {
             <Stack.Screen name="forgot-password" />
             <Stack.Screen name="reset-password" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="storekeeper/scan" />
+            <Stack.Screen name="storekeeper/requests" />
+            <Stack.Screen name="storekeeper/request-detail" />
+            <Stack.Screen name="admin/categories/index" />
+            <Stack.Screen name="admin/locations/index" />
+            <Stack.Screen name="admin/suppliers/index" />
+            <Stack.Screen name="admin/maintenance/index" />
+            <Stack.Screen name="admin/audit/index" />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />
