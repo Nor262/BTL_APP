@@ -1,27 +1,37 @@
-import React, { useState } from 'react';
-import { StyleSheet, ActivityIndicator, Alert, Dimensions, View as RNView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, ActivityIndicator, Alert, View as RNView, Pressable, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
-import { View, Text, Pressable, ScrollView, Image } from 'react-native';
+import { View, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
-
+import Input from '@/components/ui/Input';
 import { handleApiError } from '@/utils/error-handler';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-export default function BatchScanScreen() {
+const { width } = Dimensions.get('window');
+
+export default function BorrowerScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
-  const [scannedItems, setScannedItems] = useState<any[]>([]);
   const [scanning, setScanning] = useState(true);
-  const [mode, setMode] = useState<'transaction' | 'info'>('transaction');
-  const [condition, setCondition] = useState<'Good' | 'Broken'>('Good');
-  const [evidenceImage, setEvidenceImage] = useState<string | null>(null);
+  const [serialNumber, setSerialNumber] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    // Reset scanner state when screen gets focus
+    setScanning(true);
+  }, []);
+
   if (!permission) {
-    return <View className="flex-1 justify-center items-center bg-white"><ActivityIndicator color="#CC0D00" /></View>;
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#CC0D00" />
+      </View>
+    );
   }
 
   if (!permission.granted) {
@@ -31,8 +41,8 @@ export default function BatchScanScreen() {
           <Feather name="camera" size={32} color="#666" />
         </View>
         <Text className="text-gray-900 text-xl font-bold text-center mb-2">Truy cập Camera</Text>
-        <Text className="text-gray-500 text-center mb-8">Cần cấp quyền camera để quét mã QR thiết bị.</Text>
-        <Button title="CẤP QUYỀN CAMERA" onPress={requestPermission} />
+        <Text className="text-gray-500 text-center mb-8">Cần cấp quyền camera để quét mã QR tra cứu thiết bị.</Text>
+        <Button title="CAP QUYEN CAMERA" onPress={requestPermission} />
       </View>
     );
   }
@@ -42,225 +52,141 @@ export default function BatchScanScreen() {
 
     setScanning(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setLoading(true);
 
     try {
-      if (mode === 'info') {
-        const response = await api.get(`/equipment/verify?qr_data=${data}`);
-        router.push(`/equipment/${response.data.data?.equipment_id || response.data.equipment_id}`);
-        return;
-      }
-
-      if (scannedItems.find(item => item.qr_code_data === data)) {
-        Alert.alert('Thông báo', 'Thiết bị này đã được quét');
-        setTimeout(() => setScanning(true), 1500);
-        return;
-      }
-
       const response = await api.get(`/equipment/verify?qr_data=${data}`);
-      const itemData = response.data.data || response.data;
-      setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
+      const eqData = response.data.data || response.data;
+      const eqId = eqData.equipment_id || eqData.id;
+      
+      if (eqId) {
+        router.push(`/equipment/${eqId}`);
+      } else {
+        throw new Error('Khong tim thay thiet bi');
+      }
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Mã QR không hợp lệ');
+      handleApiError(error, 'Ma QR khong hop le');
+      setTimeout(() => setScanning(true), 2000);
     } finally {
-      if (mode === 'transaction') {
-        setTimeout(() => setScanning(true), 1500);
-      }
+      setLoading(false);
     }
   };
 
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
+  const handleManualSubmit = async () => {
+    if (!serialNumber.trim()) {
+      Alert.alert('Thong bao', 'Vui long nhap so Serial');
+      return;
+    }
 
-      if (!result.canceled) {
-        setEvidenceImage(result.assets[0].uri);
+    setLoading(true);
+    try {
+      const response = await api.post('/transactions/verify-item', { serial_number: serialNumber.trim() });
+      const eqData = response.data.data || response.data;
+      const eqId = eqData.id;
+      if (eqId) {
+        setShowManualInput(false);
+        setSerialNumber('');
+        router.push(`/equipment/${eqId}`);
+      } else {
+        throw new Error('Khong tim thay thiet bi');
       }
     } catch (error) {
-      handleApiError(error, 'Không thể chọn ảnh');
-    }
-  };
-
-  const handleConfirm = async () => {
-    if (scannedItems.length === 0) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    
-    try {
-      for (const item of scannedItems) {
-        const endpoint = item.status === 'available' ? 'checkout' : 'checkin';
-        const formData = new FormData();
-        formData.append('qr_code_data', item.qr_code_data);
-        formData.append('condition', condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi');
-        
-        if (evidenceImage) {
-          const filename = evidenceImage.split('/').pop() || 'image.jpg';
-          const match = /\.(\w+)$/.exec(filename);
-          const type = match ? `image/${match[1]}` : `image`;
-          
-          formData.append('image', { uri: evidenceImage, name: filename, type } as any);
-        }
-
-        await api.put(`/transactions/${item.transaction_id}/${endpoint}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-      }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Thành công', `Đã xử lý ${scannedItems.length} thiết bị!`);
-      router.back();
-    } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Lỗi xử lý giao dịch');
+      handleApiError(error, 'Khong tim thay thiet bi voi so Serial da nhap');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const removeItem = (index: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setScannedItems(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="h-[50%] relative">
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      className="flex-1 bg-black"
+    >
+      <View className="flex-1 relative">
         <CameraView
-          style={StyleSheet.absoluteFill}
+          style={StyleSheet.absoluteFillObject}
           onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         />
-        
+
+        {/* Semi-transparent dark overlay */}
+        <View className="absolute inset-0 bg-black/40" />
+
+        {/* Scan Frame */}
         <View className="absolute inset-0 items-center justify-center">
-          <View className="w-64 h-64 border-2 border-white/50 rounded-2xl" />
-          {!scanning && (
-            <View className="absolute bg-green-500 px-4 py-2 rounded-full">
-              <Text className="text-white font-bold">ĐÃ QUÉT!</Text>
+          <Animated.View entering={FadeIn.duration(600)} className="items-center">
+            <View className="w-64 h-64 border-4 border-white rounded-3xl items-center justify-center">
+              <View className="w-56 h-56 border border-white/20 rounded-2xl" />
             </View>
-          )}
+            <Text className="text-white font-medium text-center mt-6 px-8 leading-6 bg-black/60 py-2.5 rounded-full overflow-hidden">
+              Dat ma QR vao khung hinh de tra cuu
+            </Text>
+          </Animated.View>
         </View>
 
-        <Pressable 
-          className="absolute top-12 left-4 w-10 h-10 bg-black/50 rounded-full items-center justify-center"
-          onPress={() => router.back()}
-        >
-          <Feather name="arrow-left" size={20} color="white" />
-        </Pressable>
-
-        <View className="absolute top-12 right-4 flex-row bg-black/50 p-1 rounded-full">
+        {/* Header Options */}
+        <View className="absolute top-12 left-4 right-4 flex-row justify-between items-center">
           <Pressable 
-            className={`px-4 py-1.5 rounded-full ${mode === 'transaction' ? 'bg-primary' : ''}`}
-            onPress={() => { setMode('transaction'); setScannedItems([]); }}
+            className="w-11 h-11 bg-black/50 rounded-full items-center justify-center"
+            onPress={() => router.back()}
           >
-            <Text className="text-white text-xs font-bold">GIAO DỊCH</Text>
+            <Feather name="arrow-left" size={20} color="white" />
           </Pressable>
+          
+          <Text className="text-white text-lg font-bold">Tra cuu thiet bi</Text>
+
           <Pressable 
-            className={`px-4 py-1.5 rounded-full ${mode === 'info' ? 'bg-primary' : ''}`}
-            onPress={() => { setMode('info'); setScannedItems([]); }}
+            className="w-11 h-11 bg-black/50 rounded-full items-center justify-center"
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowManualInput(!showManualInput);
+            }}
           >
-            <Text className="text-white text-xs font-bold">TRA CỨU</Text>
+            <Feather name={showManualInput ? 'camera' : 'edit'} size={20} color="white" />
           </Pressable>
         </View>
-      </View>
 
-      <View className="flex-1 bg-white rounded-t-[30px] -mt-6 shadow-sm p-6">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-xl font-bold text-gray-900">
-            {mode === 'transaction' ? `Đã quét (${scannedItems.length})` : 'Thông tin'}
-          </Text>
-          {scannedItems.length > 0 && mode === 'transaction' && (
-            <Pressable onPress={() => setScannedItems([])}>
-              <Text className="text-red-500 font-medium">Xóa</Text>
-            </Pressable>
-          )}
-        </View>
-
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          {mode === 'transaction' && scannedItems.length === 0 ? (
-            <View className="items-center justify-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              <Feather name="maximize" size={40} color="#D1D1D6" />
-              <Text className="text-gray-400 mt-2 text-center text-sm">Đưa mã QR vào khung hình camera</Text>
-            </View>
-          ) : (
-            <>
-              {mode === 'transaction' && (
-                <View className="mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <Text className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-widest">Tình trạng thiết bị</Text>
-                  <View className="flex-row">
-                    <Pressable 
-                      className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg mr-2 ${condition === 'Good' ? 'bg-green-50 border-green-500' : 'bg-white border-transparent shadow-sm'} border`}
-                      onPress={() => setCondition('Good')}
-                    >
-                      <Feather name="check-circle" size={16} color={condition === 'Good' ? '#34C759' : '#C7C7CC'} />
-                      <Text className={`ml-2 font-bold text-xs ${condition === 'Good' ? 'text-green-600' : 'text-gray-500'}`}>TỐT</Text>
-                    </Pressable>
-                    <Pressable 
-                      className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${condition === 'Broken' ? 'bg-red-50 border-red-500' : 'bg-white border-transparent shadow-sm'} border`}
-                      onPress={() => setCondition('Broken')}
-                    >
-                      <Feather name="alert-triangle" size={16} color={condition === 'Broken' ? '#FF3B30' : '#C7C7CC'} />
-                      <Text className={`ml-2 font-bold text-xs ${condition === 'Broken' ? 'text-red-600' : 'text-gray-500'}`}>HỎNG</Text>
-                    </Pressable>
-                  </View>
-                  
-                  {condition === 'Broken' && (
-                    <View className="mt-4">
-                      <Text className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Hình ảnh minh chứng</Text>
-                      {evidenceImage ? (
-                        <View className="relative h-32 w-full rounded-xl overflow-hidden mb-2">
-                          <Image source={{ uri: evidenceImage }} className="w-full h-full bg-gray-200" resizeMode="cover" />
-                          <Pressable 
-                            className="absolute top-2 right-2 bg-black/50 w-8 h-8 rounded-full items-center justify-center"
-                            onPress={() => setEvidenceImage(null)}
-                          >
-                            <Feather name="x" size={16} color="white" />
-                          </Pressable>
-                        </View>
-                      ) : (
-                        <Pressable 
-                          className="h-20 w-full border border-dashed border-gray-300 rounded-xl items-center justify-center bg-white"
-                          onPress={pickImage}
-                        >
-                          <Feather name="camera" size={24} color="#007AFF" />
-                          <Text className="text-xs text-primary font-medium mt-1">Tải ảnh lên</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {scannedItems.map((item, index) => (
-                <View key={index} className="flex-row items-center bg-white p-3 rounded-xl mb-2 shadow-sm border border-gray-100">
-                  <View className="w-10 h-10 bg-red-50 rounded-lg items-center justify-center mr-3">
-                    <Feather name="monitor" size={20} color="#CC0D00" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{item.name}</Text>
-                    <Text className="text-xs text-gray-500 mt-1">SN: {item.serial_number}</Text>
-                  </View>
-                  <Pressable onPress={() => removeItem(index)} className="p-2">
-                    <Feather name="delete" size={16} color="#FF3B30" />
-                  </Pressable>
-                </View>
-              ))}
-            </>
-          )}
-        </ScrollView>
-
-        {mode === 'transaction' && (
-          <View className="pt-2">
-            <Button 
-              title={`Xác nhận (${scannedItems.length})`} 
-              onPress={handleConfirm} 
-              disabled={scannedItems.length === 0}
-            />
+        {/* Loading overlay */}
+        {loading && (
+          <View className="absolute inset-0 bg-black/60 items-center justify-center">
+            <ActivityIndicator size="large" color="#CC0D00" />
+            <Text className="text-white font-bold mt-4">Dang xu ly...</Text>
           </View>
         )}
+
+        {/* Manual Input Dialog */}
+        {showManualInput && (
+          <Animated.View 
+            entering={FadeInDown} 
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[30px] p-6 shadow-2xl"
+          >
+            <Text className="text-lg font-bold text-gray-900 mb-4">Nhap so Serial thiet bi</Text>
+            <Input
+              label="So Serial"
+              placeholder="VD: SN-123456"
+              value={serialNumber}
+              onChangeText={setSerialNumber}
+              autoCapitalize="characters"
+              icon="tag"
+            />
+            <View className="flex-row mt-4">
+              <Button 
+                title="Huy" 
+                variant="secondary" 
+                onPress={() => setShowManualInput(false)} 
+                containerClassName="flex-1 mr-2"
+              />
+              <Button 
+                title="Tra cuu" 
+                onPress={handleManualSubmit} 
+                containerClassName="flex-1 ml-2"
+              />
+            </View>
+          </Animated.View>
+        )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
