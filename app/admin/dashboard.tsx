@@ -30,13 +30,13 @@ export default function AdminDashboard() {
         overdue: alerts.overdue_transactions || 0,
       });
       setChartsData(d.charts || { top_borrowed: [], borrow_frequency_by_month: [] });
-    } catch {}
+    } catch { }
 
     try {
       const res = await api.get('/analytics/overdue');
       const items = res.data?.data || res.data || [];
       setOverdueItems(items.slice(0, 3));
-    } catch {}
+    } catch { }
   };
 
   useFocusEffect(
@@ -75,9 +75,9 @@ export default function AdminDashboard() {
   const bars = rawBars.length > 0 ? rawBars.map((item: any) => item.count) : [0, 0, 0, 0, 0, 0];
   const labels = rawBars.length > 0
     ? rawBars.map((item: any) => {
-        const m = item.month.split('-')[1];
-        return `T${parseInt(m)}`;
-      })
+      const m = item.month.split('-')[1];
+      return `T${parseInt(m)}`;
+    })
     : ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
   const maxBar = Math.max(...bars, 1);
 
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
               <Feather name="box" size={12} color="#94A3B8" />
             </View>
             <Text className="text-white text-2xl font-bold">{stats.total.toLocaleString()}</Text>
-            <Text className="text-[#22C55E] text-[10px] font-bold">+24 tháng này</Text>
+
           </View>
           <View className="flex-1 bg-[#1E293B] rounded-[14px]" style={{ padding: 12, gap: 4 }}>
             <View className="flex-row items-center justify-between">
@@ -112,7 +112,6 @@ export default function AdminDashboard() {
               <Feather name="alert-triangle" size={12} color="#EF4444" />
             </View>
             <Text className="text-[#EF4444] text-2xl font-bold">{stats.overdue}</Text>
-            <Text className="text-[#94A3B8] text-[10px] font-bold">cần xử lý ngay</Text>
           </View>
         </View>
       </View>

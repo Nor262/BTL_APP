@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, ActivityIndicator, Alert, View, Text, Pressable, ScrollView, Image, TextInput } from 'react-native';
+import { StyleSheet, ActivityIndicator, Alert, View, Text, Pressable, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,8 +24,9 @@ export default function BatchScanScreen() {
   const [evidenceImage, setEvidenceImage] = useState<string | null>(null);
   const [flashOn, setFlashOn] = useState(false);
   const [remoteSync, setRemoteSync] = useState(true);
-  const [manualOpen, setManualOpen] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const remoteSessionId = React.useMemo(
     () => '#' + Math.random().toString(36).slice(2, 6).toUpperCase(),
     [],
@@ -71,13 +72,14 @@ export default function BatchScanScreen() {
       const response = await api.post('/transactions/verify-item', { serial_number: data });
       const itemData = response.data.data || response.data;
 
-      if (mode === 'checkout' && itemData.status !== 'available') {
-        router.push(`/equipment/${itemData.equipment_id || itemData.id}`);
+      if (mode === 'checkout' && itemData.transaction_status !== 'approved') {
+        Alert.alert('Lỗi', 'Thiết bị này không có yêu cầu mượn đã duyệt để bàn giao.');
+        setTimeout(() => setScanning(true), 1500);
         return;
       }
 
-      if (mode === 'checkin' && !itemData.transaction_id) {
-        Alert.alert('Lỗi', 'Thiết bị này hiện không có giao dịch mượn nào cần trả.');
+      if (mode === 'checkin' && itemData.transaction_status !== 'active') {
+        Alert.alert('Lỗi', 'Thiết bị này hiện không có giao dịch mượn nào đang mượn để trả.');
         setTimeout(() => setScanning(true), 1500);
         return;
       }
@@ -114,7 +116,8 @@ export default function BatchScanScreen() {
   };
 
   const handleConfirm = async () => {
-    if (scannedItems.length === 0) return;
+    if (scannedItems.length === 0 || isSubmitting) return;
+    setIsSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
     try {
@@ -141,6 +144,8 @@ export default function BatchScanScreen() {
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       handleApiError(error, 'Lỗi xử lý giao dịch');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -150,7 +155,11 @@ export default function BatchScanScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#0F172A]">
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView className="flex-1 bg-[#0F172A]" showsVerticalScrollIndicator={false}>
       {/* Top Bar */}
       <View
         className="flex-row items-center justify-between px-5"
@@ -236,8 +245,9 @@ export default function BatchScanScreen() {
         <View
           className="overflow-hidden"
           style={{ 
-            width: manualOpen ? 120 : 300, 
-            height: manualOpen ? 120 : 300, 
+            width: 280, 
+            height: isFocused ? 0 : 280,
+            opacity: isFocused ? 0 : 1,
             borderRadius: 24
           }}
         >
@@ -304,48 +314,46 @@ export default function BatchScanScreen() {
             </Text>
           </View>
         </View>
-        <Pressable
-          onPress={() => setManualOpen((v) => !v)}
-          className="flex-row items-center rounded-[12px] bg-[#1E293B]"
-          style={{ marginTop: 4, paddingVertical: 8, paddingHorizontal: 14, gap: 8 }}
+        <View
+          className="flex-row items-center bg-[#1E293B] rounded-[12px] border border-[#334155]"
+          style={{ marginTop: 12, paddingHorizontal: 16, gap: 12, width: '100%', maxWidth: 320 }}
         >
-          <Feather name="edit-3" size={12} color="#FCA5A5" />
-          <Text className="text-white text-xs font-bold">Nhập mã thủ công</Text>
-        </Pressable>
-        {manualOpen && (
-          <View
-            className="flex-row items-center bg-[#1E293B] rounded-[12px]"
-            style={{ marginTop: 4, paddingHorizontal: 12, gap: 8, width: 280 }}
+          <Feather name="edit-3" size={16} color="#94A3B8" />
+          <TextInput
+            className="flex-1 text-white text-sm"
+            style={{ paddingVertical: 14 }}
+            placeholder="Hoặc nhập mã thiết bị thủ công..."
+            placeholderTextColor="#64748B"
+            value={manualCode}
+            onChangeText={setManualCode}
+            autoCapitalize="characters"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onSubmitEditing={() => {
+              if (manualCode.trim()) {
+                handleBarCodeScanned({ data: manualCode.trim() });
+                setManualCode('');
+              }
+            }}
+          />
+          <Pressable
+            className={`w-8 h-8 rounded-lg items-center justify-center ${manualCode.trim() ? 'bg-[#CC0D00]' : 'bg-[#334155]'}`}
+            onPress={() => {
+              if (manualCode.trim()) {
+                handleBarCodeScanned({ data: manualCode.trim() });
+                setManualCode('');
+              }
+            }}
           >
-            <Feather name="hash" size={14} color="#94A3B8" />
-            <TextInput
-              className="flex-1 text-white text-sm"
-              style={{ paddingVertical: 10 }}
-              placeholder="VD: MBP-2024-00128"
-              placeholderTextColor="#64748B"
-              value={manualCode}
-              onChangeText={setManualCode}
-              autoCapitalize="characters"
-            />
-            <Pressable
-              onPress={() => {
-                if (manualCode.trim()) {
-                  handleBarCodeScanned({ data: manualCode.trim() });
-                  setManualCode('');
-                  setManualOpen(false);
-                }
-              }}
-            >
-              <Feather name="arrow-right" size={16} color="#CC0D00" />
-            </Pressable>
-          </View>
-        )}
+            <Feather name="arrow-right" size={16} color={manualCode.trim() ? '#FFFFFF' : '#94A3B8'} />
+          </Pressable>
+        </View>
       </View>
 
       {/* Bottom Panel */}
       <View
-        className="flex-1 bg-[#1E293B]"
-        style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 12 }}
+        className="bg-[#1E293B]"
+        style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 12, minHeight: 500 }}
       >
         {/* Panel Header */}
         <View className="flex-row items-center justify-between">
@@ -359,7 +367,7 @@ export default function BatchScanScreen() {
           )}
         </View>
 
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View style={{ flex: 1 }}>
           {scannedItems.length === 0 ? (
             <View
               className="items-center justify-center rounded-2xl"
@@ -426,41 +434,62 @@ export default function BatchScanScreen() {
                     className="bg-[#0F172A] rounded-xl flex-row items-center"
                     style={{ padding: 12, gap: 10 }}
                   >
-                    <View className="w-10 h-10 bg-[#FEE5E3] rounded-lg items-center justify-center">
-                      <Feather name="monitor" size={18} color="#CC0D00" />
-                    </View>
-                    <View className="flex-1" style={{ gap: 2 }}>
-                      <Text className="text-white text-xs font-bold" numberOfLines={1}>{item.name}</Text>
-                      <Text className="text-[#64748B] text-[10px]">SN: {item.serial_number}</Text>
+                    {item.image_url ? (
+                      <Image source={{ uri: item.image_url }} style={{ width: 44, height: 44, borderRadius: 10 }} />
+                    ) : (
+                      <View className="w-11 h-11 bg-[#FEE5E3] rounded-[10px] items-center justify-center">
+                        <Feather name="monitor" size={20} color="#CC0D00" />
+                      </View>
+                    )}
+                    <View className="flex-1" style={{ gap: 4 }}>
+                      <Text className="text-white text-[14px] font-bold" numberOfLines={1}>{item.name}</Text>
+                      <View className="flex-row items-center" style={{ gap: 6 }}>
+                        <Text className="text-[#94A3B8] text-xs">SN: {item.serial_number}</Text>
+                        <View className="w-1 h-1 rounded-full bg-[#475569]" />
+                        <Text className={`text-[11px] font-bold ${
+                          item.transaction_status === 'approved' ? 'text-[#60A5FA]' : 
+                          item.transaction_status === 'active' ? 'text-[#FBBF24]' : 
+                          'text-[#34D399]'
+                        }`}>
+                          {item.transaction_status === 'approved' ? 'Chờ nhận' : 
+                           item.transaction_status === 'active' ? 'Đang mượn' : 
+                           'Hợp lệ'}
+                        </Text>
+                      </View>
                     </View>
                     <Pressable
-                      className="w-8 h-8 rounded-lg items-center justify-center"
+                      className="w-9 h-9 rounded-lg items-center justify-center"
                       onPress={() => removeItem(index)}
                     >
-                      <Feather name="trash-2" size={14} color="#EF4444" />
+                      <Feather name="trash-2" size={16} color="#EF4444" />
                     </Pressable>
                   </View>
                 </Animated.View>
               ))}
             </View>
           )}
-        </ScrollView>
+        </View>
 
         {/* Confirm Button */}
-        <View style={{ paddingTop: 4, paddingBottom: 90 }}>
+        <View style={{ paddingTop: 4, paddingBottom: 40 }}>
           <Pressable
-            className={`h-[52px] rounded-[14px] flex-row items-center justify-center ${scannedItems.length > 0 ? 'bg-[#CC0D00]' : 'bg-[#334155]'}`}
+            className={`h-[52px] rounded-[14px] flex-row items-center justify-center ${scannedItems.length > 0 && !isSubmitting ? 'bg-[#CC0D00]' : 'bg-[#334155]'}`}
             style={{ gap: 8 }}
             onPress={handleConfirm}
-            disabled={scannedItems.length === 0}
+            disabled={scannedItems.length === 0 || isSubmitting}
           >
-            <Feather name="check" size={18} color={scannedItems.length > 0 ? '#FFFFFF' : '#64748B'} />
-            <Text className={`text-[15px] font-bold ${scannedItems.length > 0 ? 'text-white' : 'text-[#64748B]'}`}>
-              Xác nhận ({scannedItems.length})
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Feather name="check" size={18} color={scannedItems.length > 0 ? '#FFFFFF' : '#64748B'} />
+            )}
+            <Text className={`text-[15px] font-bold ${scannedItems.length > 0 && !isSubmitting ? 'text-white' : 'text-[#64748B]'}`}>
+              {isSubmitting ? 'Đang xử lý...' : `Xác nhận (${scannedItems.length})`}
             </Text>
           </Pressable>
         </View>
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
