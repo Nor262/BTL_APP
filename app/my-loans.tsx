@@ -10,6 +10,7 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { handleApiError } from '@/utils/error-handler';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function MyLoansScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -19,11 +20,13 @@ export default function MyLoansScreen() {
   const [selectedTx, setSelectedTx] = useState<any>(null);
   const [rating, setRating] = useState('5');
   const [feedback, setFeedback] = useState('');
+  const { user } = useAuthStore();
   const router = useRouter();
 
   const fetchData = async () => {
     try {
-      const response = await api.get('/transactions');
+      const endpoint = (user?.role === 'admin' || user?.role === 'storekeeper') ? '/transactions' : '/transactions/my';
+      const response = await api.get(endpoint);
       setTransactions(response.data.data || response.data);
     } catch (error) {
       console.error(error);
@@ -35,7 +38,7 @@ export default function MyLoansScreen() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
 
   const renderItem = ({ item, index }: { item: any, index: number }) => (
     <Animated.View 
