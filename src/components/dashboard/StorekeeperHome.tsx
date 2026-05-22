@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/api/client';
 import Badge from '../ui/Badge';
 import LoadingScreen from '../ui/LoadingScreen';
+import { downloadAndShareReport } from '@/utils/file-downloader';
 
 export default function StorekeeperHome() {
   const [stats, setStats] = useState<any>({
@@ -21,6 +22,27 @@ export default function StorekeeperHome() {
   
   const { user } = useAuthStore();
   const router = useRouter();
+
+  const handleExportReports = () => {
+    Alert.alert(
+      'Xuat bao cao',
+      'Chon loai bao cao ban muon tai ve may:',
+      [
+        {
+          text: 'Danh sach thiet bi (Excel)',
+          onPress: () => downloadAndShareReport('/reports/excel', 'bao_cao_thiet_bi.xlsx')
+        },
+        {
+          text: 'Lich su giao dich (CSV)',
+          onPress: () => downloadAndShareReport('/analytics/export-csv', 'bao_cao_giao_dich.csv')
+        },
+        {
+          text: 'Huy',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
 
   const fetchData = async () => {
     try {
@@ -92,7 +114,7 @@ export default function StorekeeperHome() {
           <Animated.View entering={FadeInDown.delay(200)}>
             <Pressable 
               className="bg-white/10 border border-white/20 rounded-3xl p-6 flex-row items-center justify-between"
-              onPress={() => router.push('/scan')}
+              onPress={() => router.push('/storekeeper/scan')}
             >
               <View className="flex-row items-center">
                 <View className="w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-lg">
@@ -140,6 +162,53 @@ export default function StorekeeperHome() {
               color="#34C759" 
               delay={600}
             />
+          </View>
+
+          <Text className="font-bold text-xl text-gray-900 mt-6 mb-4">Quản lý hệ thống</Text>
+          <View className="flex-row flex-wrap justify-start">
+            <ShortcutCard 
+              label="Duyệt yêu cầu" 
+              icon="check-square" 
+              onPress={() => router.push('/storekeeper/requests')}
+              badge={stats.pending > 0 ? stats.pending : undefined}
+            />
+            <ShortcutCard 
+              label="Bảo trì" 
+              icon="tool" 
+              onPress={() => router.push('/admin/maintenance')}
+            />
+            <ShortcutCard 
+              label="Danh mục" 
+              icon="folder" 
+              onPress={() => router.push('/admin/categories')}
+            />
+            <ShortcutCard 
+              label="Vị trí kho" 
+              icon="map-pin" 
+              onPress={() => router.push('/admin/locations')}
+            />
+            <ShortcutCard 
+              label="Nhà cung cấp" 
+              icon="truck" 
+              onPress={() => router.push('/admin/suppliers')}
+            />
+            <ShortcutCard 
+              label="Giao dịch" 
+              icon="list" 
+              onPress={() => router.push('/my-loans')}
+            />
+            <ShortcutCard 
+              label="Báo cáo" 
+              icon="download" 
+              onPress={handleExportReports}
+            />
+            {user?.role === 'admin' && (
+              <ShortcutCard 
+                label="Nhật ký" 
+                icon="file-text" 
+                onPress={() => router.push('/admin/audit')}
+              />
+            )}
           </View>
 
           <View className="flex-row justify-between items-center mt-6 mb-4">
@@ -214,5 +283,25 @@ function StatCard({ label, value, icon, color, delay }: any) {
         {value}
       </Text>
     </Animated.View>
+  );
+}
+
+function ShortcutCard({ label, icon, onPress, badge }: any) {
+  return (
+    <Pressable 
+      onPress={onPress}
+      style={{ width: '31%', marginBottom: 12, marginRight: '2.33%' }} 
+      className="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 items-center justify-center relative active:scale-95"
+    >
+      <View className="w-10 h-10 bg-red-50 rounded-xl items-center justify-center mb-2">
+        <Feather name={icon} size={18} color="#CC0D00" />
+      </View>
+      <Text className="text-gray-800 text-[10px] font-bold text-center" numberOfLines={1}>{label}</Text>
+      {badge !== undefined && (
+        <View className="absolute -top-1 -right-1 bg-[#CC0D00] px-1.5 py-0.5 rounded-full items-center justify-center min-w-[18px]">
+          <Text className="text-white text-[8px] font-bold">{badge}</Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
