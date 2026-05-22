@@ -8,6 +8,7 @@ interface User {
   email: string;
   full_name: string;
   role: 'admin' | 'storekeeper' | 'borrower';
+  phone?: string;
 }
 
 interface AuthState {
