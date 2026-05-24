@@ -42,7 +42,7 @@ export default function BorrowerScanScreen() {
         </View>
         <Text className="text-gray-900 text-xl font-bold text-center mb-2">Truy cập Camera</Text>
         <Text className="text-gray-500 text-center mb-8">Cần cấp quyền camera để quét mã QR tra cứu thiết bị.</Text>
-        <Button title="CAP QUYEN CAMERA" onPress={requestPermission} />
+        <Button title="CẤP QUYỀN CAMERA" onPress={requestPermission} />
       </View>
     );
   }
@@ -62,11 +62,11 @@ export default function BorrowerScanScreen() {
       if (eqId) {
         router.push(`/equipment/${eqId}`);
       } else {
-        throw new Error('Khong tim thay thiet bi');
+        throw new Error('Không tìm thấy thiết bị');
       }
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Ma QR khong hop le');
+      handleApiError(error, 'Mã QR không hợp lệ');
       setTimeout(() => setScanning(true), 2000);
     } finally {
       setLoading(false);
@@ -75,7 +75,7 @@ export default function BorrowerScanScreen() {
 
   const handleManualSubmit = async () => {
     if (!serialNumber.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap so Serial');
+      Alert.alert('Thông báo', 'Vui lòng nhập số Serial');
       return;
     }
 
@@ -89,11 +89,11 @@ export default function BorrowerScanScreen() {
         setSerialNumber('');
         router.push(`/equipment/${eqId}`);
       } else {
-        throw new Error('Khong tim thay thiet bi');
+        throw new Error('Không tìm thấy thiết bị');
       }
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Khong tim thay thiet bi voi so Serial da nhap');
+      handleApiError(error, 'Không tìm thấy thiết bị với số Serial đã nhập');
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ export default function BorrowerScanScreen() {
               <View className="w-56 h-56 border border-white/20 rounded-2xl" />
             </View>
             <Text className="text-white font-medium text-center mt-6 px-8 leading-6 bg-black/60 py-2.5 rounded-full overflow-hidden">
-              Dat ma QR vao khung hinh de tra cuu
+              Đặt mã QR vào khung hình để tra cứu
             </Text>
           </Animated.View>
         </View>
@@ -135,7 +135,7 @@ export default function BorrowerScanScreen() {
             <Feather name="arrow-left" size={20} color="white" />
           </Pressable>
           
-          <Text className="text-white text-lg font-bold">Tra cuu thiet bi</Text>
+          <Text className="text-white text-lg font-bold">Tra cứu thiết bị</Text>
 
           <Pressable 
             className="w-11 h-11 bg-black/50 rounded-full items-center justify-center"
@@ -152,7 +152,7 @@ export default function BorrowerScanScreen() {
         {loading && (
           <View className="absolute inset-0 bg-black/60 items-center justify-center">
             <ActivityIndicator size="large" color="#CC0D00" />
-            <Text className="text-white font-bold mt-4">Dang xu ly...</Text>
+            <Text className="text-white font-bold mt-4">Đang xử lý...</Text>
           </View>
         )}
 
@@ -162,9 +162,9 @@ export default function BorrowerScanScreen() {
             entering={FadeInDown} 
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[30px] p-6 shadow-2xl"
           >
-            <Text className="text-lg font-bold text-gray-900 mb-4">Nhap so Serial thiet bi</Text>
+            <Text className="text-lg font-bold text-gray-900 mb-4">Nhập số Serial thiết bị</Text>
             <Input
-              label="So Serial"
+              label="Số Serial"
               placeholder="VD: SN-123456"
               value={serialNumber}
               onChangeText={setSerialNumber}
@@ -173,13 +173,13 @@ export default function BorrowerScanScreen() {
             />
             <View className="flex-row mt-4">
               <Button 
-                title="Huy" 
+                title="Hủy" 
                 variant="secondary" 
                 onPress={() => setShowManualInput(false)} 
                 containerClassName="flex-1 mr-2"
               />
               <Button 
-                title="Tra cuu" 
+                title="Tra cứu" 
                 onPress={handleManualSubmit} 
                 containerClassName="flex-1 ml-2"
               />
