@@ -26,14 +26,14 @@ export default function StorekeeperRequestDetailScreen() {
       const allTx = response.data.data || response.data;
       const tx = allTx.find((t: any) => t.id === parseInt(id as string, 10));
       if (!tx) {
-        Alert.alert('Loi', 'Khong tim thay don muon nay');
+        Alert.alert('Lỗi', 'Không tìm thấy đơn mượn này');
         router.back();
         return;
       }
       setRequest(tx);
     } catch (error) {
       console.error(error);
-      handleApiError(error, 'Khong the tai chi tiet don muon');
+      handleApiError(error, 'Không thể tải chi tiết đơn mượn');
       router.back();
     } finally {
       setLoading(false);
@@ -47,17 +47,17 @@ export default function StorekeeperRequestDetailScreen() {
   }, [id]);
 
   const handleApprove = () => {
-    Alert.alert('Xac nhan duyet', 'Ban dong y cho phep muon thiet bi nay?', [
-      { text: 'Huy', style: 'cancel' },
-      { text: 'Duyet', onPress: async () => {
+    Alert.alert('Xác nhận duyệt', 'Bạn đồng ý cho phép mượn thiết bị này?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Duyệt', onPress: async () => {
         setSubmitting(true);
         try {
           await api.put(`/transactions/${id}/review`, { status: 'approved' });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert('Thanh cong', 'Da duyet don muon thiet bi!');
+          Alert.alert('Thành công', 'Đã duyệt đơn mượn thiết bị!');
           router.replace('/storekeeper/requests');
         } catch (error) {
-          handleApiError(error, 'Loi khi duyet don');
+          handleApiError(error, 'Lỗi khi duyệt đơn');
         } finally {
           setSubmitting(false);
         }
@@ -67,7 +67,7 @@ export default function StorekeeperRequestDetailScreen() {
 
   const handleRejectSubmit = async () => {
     if (!rejectReason.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap ly do tu choi');
+      Alert.alert('Thông báo', 'Vui lòng nhập lý do từ chối');
       return;
     }
 
@@ -79,10 +79,10 @@ export default function StorekeeperRequestDetailScreen() {
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setRejectModalVisible(false);
-      Alert.alert('Thanh cong', 'Da tu choi don muon thiet bi');
+      Alert.alert('Thành công', 'Đã từ chối đơn mượn thiết bị');
       router.replace('/storekeeper/requests');
     } catch (error) {
-      handleApiError(error, 'Loi khi tu choi don');
+      handleApiError(error, 'Lỗi khi từ chối đơn');
     } finally {
       setSubmitting(false);
     }
@@ -99,20 +99,20 @@ export default function StorekeeperRequestDetailScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <View className="bg-white pt-16 pb-4 px-6 border-b border-gray-100 flex-row items-center shadow-sm">
+      <View className="bg-white pt-16 pb-4 px-6 border-b border-gray-100 flex-row items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 }}>
         <Pressable 
           className="w-10 h-10 items-center justify-center mr-2"
           onPress={() => router.back()}
         >
           <Feather name="arrow-left" size={20} color="#333" />
         </Pressable>
-        <Text className="text-xl font-bold text-gray-900">Chi tiet yeu cau</Text>
+        <Text className="text-xl font-bold text-gray-900">Chi tiết yêu cầu</Text>
       </View>
 
       <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
         {/* Nguoi muon */}
-        <Animated.View entering={FadeInUp.delay(100)} className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
-          <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Thong tin nguoi muon</Text>
+        <Animated.View entering={FadeInUp.delay(100)} className="bg-white rounded-2xl p-5 mb-4 border border-gray-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 }}>
+          <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Thông tin người mượn</Text>
           <View className="flex-row items-center mb-4">
             <View className="w-12 h-12 bg-red-50 rounded-full items-center justify-center mr-4">
               <Feather name="user" size={24} color="#CC0D00" />
@@ -121,22 +121,22 @@ export default function StorekeeperRequestDetailScreen() {
               <Text className="text-base font-bold text-gray-900">
                 {request.borrower?.full_name || request.borrower?.username}
               </Text>
-              <Text className="text-xs text-gray-500 mt-1">MSV: {request.borrower?.student_id || 'Chua cap nhat'}</Text>
+              <Text className="text-xs text-gray-500 mt-1">MSV: {request.borrower?.student_id || 'Chưa cập nhật'}</Text>
             </View>
           </View>
           
           <View className="border-t border-gray-50 pt-3">
             <View className="flex-row justify-between mb-2">
               <Text className="text-xs text-gray-500">Lop học</Text>
-              <Text className="text-xs text-gray-900 font-medium">{request.borrower?.class || 'Chua cap nhat'}</Text>
+              <Text className="text-xs text-gray-900 font-medium">{request.borrower?.class || 'Chưa cập nhật'}</Text>
             </View>
             <View className="flex-row justify-between mb-2">
               <Text className="text-xs text-gray-500">Khoa / Phong ban</Text>
-              <Text className="text-xs text-gray-900 font-medium">{request.borrower?.department || 'Chua cap nhat'}</Text>
+              <Text className="text-xs text-gray-900 font-medium">{request.borrower?.department || 'Chưa cập nhật'}</Text>
             </View>
             {request.borrower?.phone && (
               <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-50">
-                <Text className="text-xs text-gray-500">So dien thoai</Text>
+                <Text className="text-xs text-gray-500">Số điện thoại</Text>
                 <Pressable 
                   className="flex-row items-center bg-green-50 px-2.5 py-1 rounded-lg border border-green-100"
                   onPress={() => makeCall(request.borrower.phone)}
@@ -150,8 +150,8 @@ export default function StorekeeperRequestDetailScreen() {
         </Animated.View>
 
         {/* Thiet bi */}
-        <Animated.View entering={FadeInUp.delay(200)} className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
-          <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Thong tin thiet bi</Text>
+        <Animated.View entering={FadeInUp.delay(200)} className="bg-white rounded-2xl p-5 mb-4 border border-gray-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 }}>
+          <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Thông tin thiết bị</Text>
           <View className="flex-row items-center mb-3">
             <View className="w-12 h-12 bg-red-50 rounded-full items-center justify-center mr-4">
               <Feather name="monitor" size={24} color="#CC0D00" />
@@ -164,18 +164,18 @@ export default function StorekeeperRequestDetailScreen() {
         </Animated.View>
 
         {/* Thoi gian va ly do */}
-        <Animated.View entering={FadeInUp.delay(300)} className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-gray-100">
-          <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Thoi gian va muc dich</Text>
+        <Animated.View entering={FadeInUp.delay(300)} className="bg-white rounded-2xl p-5 mb-6 border border-gray-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 }}>
+          <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Thời gian và mục đích</Text>
           
           <View className="flex-row justify-between bg-gray-50 p-3 rounded-xl border border-gray-100 mb-4">
             <View>
-              <Text className="text-[10px] text-gray-500 uppercase font-bold mb-1">Ngay bat dau</Text>
+              <Text className="text-[10px] text-gray-500 uppercase font-bold mb-1">Ngày bắt đầu</Text>
               <Text className="text-sm font-medium text-gray-900">
                 {new Date(request.start_date).toLocaleDateString('vi-VN')}
               </Text>
             </View>
             <View className="items-end">
-              <Text className="text-[10px] text-gray-500 uppercase font-bold mb-1">Ngay tra du kien</Text>
+              <Text className="text-[10px] text-gray-500 uppercase font-bold mb-1">Ngày trả dự kiến</Text>
               <Text className="text-sm font-medium text-gray-900">
                 {new Date(request.due_date).toLocaleDateString('vi-VN')}
               </Text>
@@ -184,7 +184,7 @@ export default function StorekeeperRequestDetailScreen() {
 
           {request.notes && (
             <View className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-              <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1">Muc dich muon</Text>
+              <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1">Mục đích mượn</Text>
               <Text className="text-xs text-gray-700 leading-5">
                 {request.notes}
               </Text>
@@ -196,14 +196,14 @@ export default function StorekeeperRequestDetailScreen() {
       {/* Button Actions */}
       <View className="p-6 bg-white border-t border-gray-100 flex-row">
         <Button 
-          title="Tu choi" 
+          title="Từ chối" 
           variant="secondary" 
           onPress={() => setRejectModalVisible(true)} 
           containerClassName="flex-1 mr-2 bg-gray-50"
           disabled={submitting}
         />
         <Button 
-          title="Phe duyet" 
+          title="Phê duyệt" 
           onPress={handleApprove} 
           containerClassName="flex-1 ml-2"
           disabled={submitting}
@@ -214,34 +214,34 @@ export default function StorekeeperRequestDetailScreen() {
       {/* Modal Tu Choi */}
       <Modal visible={rejectModalVisible} transparent animationType="fade" statusBarTranslucent>
         <View className="flex-1">
-          <Pressable className="absolute inset-0 bg-black/40" onPress={() => setRejectModalVisible(false)} />
+          <Pressable className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }} onPress={() => setRejectModalVisible(false)} />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
-            <Pressable className="bg-white rounded-[30px] p-6 shadow-2xl" onPress={(e) => e.stopPropagation()}>
-              <Text className="text-xl font-bold text-gray-900 mb-2 text-center">Tu choi yeu cau</Text>
-              <Text className="text-gray-500 text-center mb-6">Vui long nhap ly do tu choi don muon</Text>
+            <Pressable className="bg-white rounded-[30px] p-6" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 }} onPress={(e) => e.stopPropagation()}>
+              <Text className="text-xl font-bold text-gray-900 mb-2 text-center">Từ chối yêu cầu</Text>
+              <Text className="text-gray-500 text-center mb-6">Vui lòng nhập lý do từ chối đơn mượn</Text>
 
               <Input
-                label="Ly do tu choi"
+                label="Lý do từ chối"
                 value={rejectReason}
                 onChangeText={setRejectReason}
-                placeholder="Khong du thiet bi, thiet bi dang bao tri..."
+                placeholder="Không đủ thiết bị, thiết bị đang bảo trì..."
                 icon="message-circle"
               />
 
               <View className="flex-row mt-4">
                 <Button 
-                  title="Huy" 
+                  title="Hủy" 
                   onPress={() => setRejectModalVisible(false)} 
                   containerClassName="flex-1 mr-2" 
                   variant="secondary" 
                   disabled={submitting}
                 />
                 <Button 
-                  title="Gui tu choi" 
+                  title="Gửi từ chối" 
                   onPress={handleRejectSubmit} 
                   containerClassName="flex-1 ml-2" 
                   loading={submitting}

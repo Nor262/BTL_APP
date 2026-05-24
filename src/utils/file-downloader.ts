@@ -6,8 +6,8 @@ import { Alert } from 'react-native';
 
 export const downloadAndShareReport = async (endpoint: string, fileName: string) => {
   const { token } = useAuthStore.getState();
-  if (!token) {
-    Alert.alert('Thong bao', 'Ban can dang nhap de thuc hien chuc nang nay');
+    if (!token) {
+    Alert.alert('Thông báo', 'Bạn cần đăng nhập để thực hiện chức năng này');
     return;
   }
 
@@ -26,16 +26,16 @@ export const downloadAndShareReport = async (endpoint: string, fileName: string)
       if (isSharingAvailable) {
         await Sharing.shareAsync(downloadResult.uri, {
           mimeType: fileName.endsWith('.csv') ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          dialogTitle: `Tai file bao cao: ${fileName}`,
+          dialogTitle: `Tải file báo cáo: ${fileName}`,
         });
       } else {
-        Alert.alert('Thong bao', `File da duoc tai ve tai: ${downloadResult.uri}`);
+        Alert.alert('Thông báo', `File đã được tải về tại: ${downloadResult.uri}`);
       }
     } else {
-      Alert.alert('Loi', `Tai bao cao that bai: ma loi ${downloadResult.status}`);
+      Alert.alert('Lỗi', `Tải báo cáo thất bại: mã lỗi ${downloadResult.status}`);
     }
   } catch (error) {
     console.error(error);
-    Alert.alert('Loi', 'Khong the tai bao cao do loi mang hoac may chu');
+    Alert.alert('Lỗi', 'Không thể tải báo cáo do lỗi mạng hoặc máy chủ');
   }
 };

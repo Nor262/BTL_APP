@@ -25,7 +25,7 @@ export default function AdminAuditScreen() {
       filterLogs(data, searchQuery);
     } catch (error) {
       console.error(error);
-      handleApiError(error, 'Khong the tai nhat ky he thong');
+      handleApiError(error, 'Không thể tải nhật ký hệ thống');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -66,7 +66,7 @@ export default function AdminAuditScreen() {
             {item.action}
           </Text>
           <Text className="text-xs text-gray-500 mt-0.5">
-            Doi tuong: {item.target_type} {item.target_id ? `#${item.target_id}` : ''}
+            Đối tượng: {item.target_type} {item.target_id ? `#${item.target_id}` : ''}
           </Text>
         </View>
         <View className="bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
@@ -109,13 +109,13 @@ export default function AdminAuditScreen() {
         >
           <Feather name="arrow-left" size={20} color="#333" />
         </Pressable>
-        <Text className="text-xl font-bold text-gray-900">Nhat ky He thong</Text>
+        <Text className="text-xl font-bold text-gray-900">Nhật ký Hệ thống</Text>
       </View>
 
       <View className="px-6 pt-4 pb-2">
         <Input
-          label="Tim kiem nhat ky"
-          placeholder="Tim kiem theo hanh dong, chi tiet, user..."
+          label="Tìm kiếm nhật ký"
+          placeholder="Tìm kiếm theo hành động, chi tiết, user..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           icon="search"
@@ -138,7 +138,7 @@ export default function AdminAuditScreen() {
         ListEmptyComponent={
           <View className="items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <Feather name="file-text" size={48} color="#D1D1D6" />
-            <Text className="text-gray-400 mt-4 font-bold text-base">Khong co log nao phu hop</Text>
+            <Text className="text-gray-400 mt-4 font-bold text-base">Không có log nào phù hợp</Text>
           </View>
         }
       />

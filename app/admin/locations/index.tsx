@@ -28,7 +28,7 @@ export default function AdminLocationsScreen() {
       setLocations(response.data.data || response.data);
     } catch (error) {
       console.error(error);
-      handleApiError(error, 'Khong the tai danh sach vi tri');
+      handleApiError(error, 'Không thể tải danh sách vị trí');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -55,7 +55,7 @@ export default function AdminLocationsScreen() {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap ten vi tri');
+      Alert.alert('Thông báo', 'Vui lòng nhập tên vị trí');
       return;
     }
 
@@ -64,32 +64,32 @@ export default function AdminLocationsScreen() {
       if (editingLocation) {
         await api.put(`/locations/${editingLocation.id}`, { name: name.trim(), address: address.trim() });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Thanh cong', 'Da cap nhat vi tri');
+        Alert.alert('Thành công', 'Đã cập nhật vị trí');
       } else {
         await api.post('/locations', { name: name.trim(), address: address.trim() });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Thanh cong', 'Da tao vi tri moi');
+        Alert.alert('Thành công', 'Đã tạo vị trí mới');
       }
       setModalVisible(false);
       fetchLocations();
     } catch (error) {
-      handleApiError(error, 'Loi khi luu vi tri');
+      handleApiError(error, 'Lỗi khi lưu vị trí');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert('Xac nhan xoa', 'Ban co chac chan muon xoa vi tri nay? Hanh dong nay khong the hoan tac.', [
-      { text: 'Huy', style: 'cancel' },
-      { text: 'Xoa', style: 'destructive', onPress: async () => {
+    Alert.alert('Xác nhận xóa', 'Bạn có chắc chắn muốn xóa vị trí này? Hành động này không thể hoàn tác.', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Xóa', style: 'destructive', onPress: async () => {
         try {
           await api.delete(`/locations/${id}`);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert('Thanh cong', 'Da xoa vi tri');
+          Alert.alert('Thành công', 'Đã xóa vị trí');
           fetchLocations();
         } catch (error) {
-          handleApiError(error, 'Loi khi xoa vi tri');
+          handleApiError(error, 'Lỗi khi xóa vị trí');
         }
       }}
     ]);
@@ -138,7 +138,7 @@ export default function AdminLocationsScreen() {
           >
             <Feather name="arrow-left" size={20} color="#333" />
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900">Quan ly Vi tri kho</Text>
+          <Text className="text-xl font-bold text-gray-900">Quản lý Vị trí kho</Text>
         </View>
         <Pressable 
           className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center"
@@ -164,8 +164,8 @@ export default function AdminLocationsScreen() {
         ListEmptyComponent={
           <View className="items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <Feather name="map-pin" size={48} color="#D1D1D6" />
-            <Text className="text-gray-400 mt-4 font-bold text-base">Chua co vi tri nao</Text>
-            <Text className="text-gray-400 text-xs text-center mt-1">An nut dau cong o goc tren de tao moi.</Text>
+            <Text className="text-gray-400 mt-4 font-bold text-base">Chưa có vị trí nào</Text>
+            <Text className="text-gray-400 text-xs text-center mt-1">Ấn nút dấu cộng ở góc trên để tạo mới.</Text>
           </View>
         }
       />
@@ -174,41 +174,41 @@ export default function AdminLocationsScreen() {
         <View className="flex-1">
           <Pressable className="absolute inset-0 bg-black/40" onPress={() => setModalVisible(false)} />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
             <Pressable className="bg-white rounded-[30px] p-6 shadow-2xl" onPress={(e) => e.stopPropagation()}>
               <Text className="text-xl font-bold text-gray-900 mb-6 text-center">
-                {editingLocation ? 'Cap nhat vi tri' : 'Them vi tri moi'}
+                {editingLocation ? 'Cập nhật vị trí' : 'Thêm vị trí mới'}
               </Text>
 
               <Input
-                label="Ten vi tri"
+                label="Tên vị trí"
                 value={name}
                 onChangeText={setName}
-                placeholder="VD: Phong kho A1, Tu do A-01..."
+                placeholder="VD: Phòng kho A1, Tủ đồ A-01..."
                 icon="map-pin"
               />
 
               <Input
-                label="Mo ta / Dia chi (tuy chon)"
+                label="Mô tả / Địa chỉ (tùy chọn)"
                 value={address}
                 onChangeText={setAddress}
-                placeholder="Nhap mo ta chi tiet..."
+                placeholder="Nhập mô tả chi tiết..."
                 icon="map"
               />
 
               <View className="flex-row mt-6">
                 <Button 
-                  title="Huy" 
+                  title="Hủy" 
                   onPress={() => setModalVisible(false)} 
                   containerClassName="flex-1 mr-2" 
                   variant="secondary" 
                   disabled={submitting}
                 />
                 <Button 
-                  title={editingLocation ? 'Luu' : 'Tao'} 
+                  title={editingLocation ? 'Lưu' : 'Tạo'} 
                   onPress={handleSubmit} 
                   containerClassName="flex-1 ml-2" 
                   loading={submitting}

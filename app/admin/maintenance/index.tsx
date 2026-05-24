@@ -39,7 +39,7 @@ export default function AdminMaintenanceScreen() {
       setEquipmentList(eRes.data.data || eRes.data);
     } catch (error) {
       console.error(error);
-      handleApiError(error, 'Khong the tai du lieu bao tri');
+      handleApiError(error, 'Không thể tải dữ liệu bảo trì');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -66,15 +66,15 @@ export default function AdminMaintenanceScreen() {
 
   const handleSubmit = async () => {
     if (!selectedEq) {
-      Alert.alert('Thong bao', 'Vui long chon thiet bi bao tri');
+      Alert.alert('Thông báo', 'Vui lòng chọn thiết bị bảo trì');
       return;
     }
     if (!performedBy.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap nguoi thuc hien');
+      Alert.alert('Thông báo', 'Vui lòng nhập người thực hiện');
       return;
     }
     if (!details.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap noi dung bao tri');
+      Alert.alert('Thông báo', 'Vui lòng nhập nội dung bảo trì');
       return;
     }
 
@@ -96,27 +96,27 @@ export default function AdminMaintenanceScreen() {
 
       await api.post('/maintenance', payload);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Thanh cong', 'Da ghi nhan bao tri thiet bi');
+      Alert.alert('Thành công', 'Đã ghi nhận bảo trì thiết bị');
       setModalVisible(false);
       fetchData();
     } catch (error) {
-      handleApiError(error, 'Loi khi luu ghi nhan bao tri');
+      handleApiError(error, 'Lỗi khi lưu ghi nhận bảo trì');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleComplete = (eqId: number, eqName: string) => {
-    Alert.alert('Xac nhan hoan thanh', `Danh dau thiet bi "${eqName}" da hoan thanh bao tri va san sang su dung?`, [
-      { text: 'Huy', style: 'cancel' },
-      { text: 'Hoan thanh', onPress: async () => {
+    Alert.alert('Xác nhận hoàn thành', `Đánh dấu thiết bị "${eqName}" đã hoàn thành bảo trì và sẵn sàng sử dụng?`, [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Hoàn thành', onPress: async () => {
         try {
           await api.put(`/maintenance/complete/${eqId}`);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert('Thanh cong', 'Thiet bi da chuyen ve trang thai san sang');
+          Alert.alert('Thành công', 'Thiết bị đã chuyển về trạng thái sẵn sàng');
           fetchData();
         } catch (error) {
-          handleApiError(error, 'Loi khi hoan thanh bao tri');
+          handleApiError(error, 'Lỗi khi hoàn thành bảo trì');
         }
       }}
     ]);
@@ -142,7 +142,7 @@ export default function AdminMaintenanceScreen() {
       <View className="border-t border-b border-gray-50 py-3 my-1">
         <View className="flex-row items-center mb-1.5">
           <Feather name="user" size={14} color="#666" />
-          <Text className="text-xs text-gray-700 ml-2 font-medium">Nguoi lam: {item.performed_by}</Text>
+          <Text className="text-xs text-gray-700 ml-2 font-medium">Người làm: {item.performed_by}</Text>
         </View>
         <View className="flex-row items-center mb-1.5">
           <Feather name="tool" size={14} color="#666" />
@@ -152,21 +152,21 @@ export default function AdminMaintenanceScreen() {
           <View className="flex-row items-center mb-1.5">
             <Feather name="dollar-sign" size={14} color="#666" />
             <Text className="text-xs text-gray-700 ml-2 font-bold">
-              Chi phi: {parseFloat(item.cost).toLocaleString('vi-VN')} VND
+              Chi phí: {parseFloat(item.cost).toLocaleString('vi-VN')} VND
             </Text>
           </View>
         ) : null}
         <View className="flex-row items-center">
           <Feather name="calendar" size={14} color="#666" />
           <Text className="text-xs text-gray-500 ml-2">
-            Ngay bao tri: {item.maintenance_date ? new Date(item.maintenance_date).toLocaleDateString('vi-VN') : 'N/A'}
+            Ngày bảo trì: {item.maintenance_date ? new Date(item.maintenance_date).toLocaleDateString('vi-VN') : 'N/A'}
           </Text>
         </View>
         {item.next_maintenance_date ? (
           <View className="flex-row items-center mt-1.5">
             <Feather name="alert-circle" size={14} color="#EAB308" />
             <Text className="text-xs text-yellow-600 ml-2 font-medium">
-              Bao tri tiep theo: {new Date(item.next_maintenance_date).toLocaleDateString('vi-VN')}
+              Bảo trì tiếp theo: {new Date(item.next_maintenance_date).toLocaleDateString('vi-VN')}
             </Text>
           </View>
         ) : null}
@@ -179,7 +179,7 @@ export default function AdminMaintenanceScreen() {
             onPress={() => handleComplete(item.equipment.id, item.equipment.name)}
           >
             <Feather name="check" size={14} color="#34C759" />
-            <Text className="text-green-600 font-bold text-xs ml-1.5">Hoan thanh bao tri</Text>
+            <Text className="text-green-600 font-bold text-xs ml-1.5">Hoàn thành bảo trì</Text>
           </Pressable>
         </View>
       )}
@@ -201,7 +201,7 @@ export default function AdminMaintenanceScreen() {
           >
             <Feather name="arrow-left" size={20} color="#333" />
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900">Nhat ky Bao tri</Text>
+          <Text className="text-xl font-bold text-gray-900">Nhật ký Bảo trì</Text>
         </View>
         <Pressable 
           className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center"
@@ -227,8 +227,8 @@ export default function AdminMaintenanceScreen() {
         ListEmptyComponent={
           <View className="items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <Feather name="tool" size={48} color="#D1D1D6" />
-            <Text className="text-gray-400 mt-4 font-bold text-base">Chua co lich su bao tri</Text>
-            <Text className="text-gray-400 text-xs text-center mt-1">An nut dau cong o goc tren de tao ghi nhan bao tri.</Text>
+            <Text className="text-gray-400 mt-4 font-bold text-base">Chưa có lịch sử bảo trì</Text>
+            <Text className="text-gray-400 text-xs text-center mt-1">Ấn nút dấu cộng ở góc trên để tạo ghi nhận bảo trì.</Text>
           </View>
         }
       />
@@ -238,16 +238,16 @@ export default function AdminMaintenanceScreen() {
         <View className="flex-1">
           <Pressable className="absolute inset-0 bg-black/40" onPress={() => setModalVisible(false)} />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
             <Pressable className="bg-white rounded-[30px] p-6 shadow-2xl" onPress={(e) => e.stopPropagation()}>
-              <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Ghi nhan bao tri thiet bi</Text>
+              <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Ghi nhận bảo trì thiết bị</Text>
 
               <ScrollView className="max-h-[350px]" showsVerticalScrollIndicator={false}>
                 <View className="mb-4">
-                  <Text className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Thiet bi bao tri</Text>
+                  <Text className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Thiết bị bảo trì</Text>
                   {selectedEq ? (
                     <Pressable 
                       className="flex-row items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-3.5"
@@ -264,30 +264,30 @@ export default function AdminMaintenanceScreen() {
                       className="flex-row items-center justify-between border border-dashed border-gray-300 rounded-xl p-3.5 bg-gray-50"
                       onPress={() => setEqModalVisible(true)}
                     >
-                      <Text className="text-sm text-gray-400">Chon thiet bi...</Text>
+                      <Text className="text-sm text-gray-400">Chọn thiết bị...</Text>
                       <Feather name="chevron-down" size={16} color="#999" />
                     </Pressable>
                   )}
                 </View>
 
                 <Input
-                  label="Nguoi thuc hien"
+                  label="Người thực hiện"
                   value={performedBy}
                   onChangeText={setPerformedBy}
-                  placeholder="Nhap ten nguoi sua chua..."
+                  placeholder="Nhập tên người sửa chữa..."
                   icon="user"
                 />
 
                 <Input
-                  label="Noi dung bao tri"
+                  label="Nội dung bảo trì"
                   value={details}
                   onChangeText={setDetails}
-                  placeholder="Thay linh kien, ve sinh thiet bi..."
+                  placeholder="Thay linh kiện, vệ sinh thiết bị..."
                   icon="tool"
                 />
 
                 <Input
-                  label="Chi phi (VND, tuy chon)"
+                  label="Chi phí (VND, tùy chọn)"
                   value={cost}
                   onChangeText={setCost}
                   placeholder="VD: 500000"
@@ -296,7 +296,7 @@ export default function AdminMaintenanceScreen() {
                 />
 
                 <Input
-                  label="Ngay bao tri tiep theo (YYYY-MM-DD, tuy chon)"
+                  label="Ngày bảo trì tiếp theo (YYYY-MM-DD, tùy chọn)"
                   value={nextDate}
                   onChangeText={setNextDate}
                   placeholder="VD: 2026-08-15"
@@ -306,14 +306,14 @@ export default function AdminMaintenanceScreen() {
 
               <View className="flex-row mt-6">
                 <Button 
-                  title="Huy" 
+                  title="Hủy" 
                   onPress={() => setModalVisible(false)} 
                   containerClassName="flex-1 mr-2" 
                   variant="secondary" 
                   disabled={submitting}
                 />
                 <Button 
-                  title="Ghi nhan" 
+                  title="Ghi nhận" 
                   onPress={handleSubmit} 
                   containerClassName="flex-1 ml-2" 
                   loading={submitting}
@@ -330,7 +330,7 @@ export default function AdminMaintenanceScreen() {
         <View className="flex-1">
           <Pressable className="absolute inset-0 bg-black/40" onPress={() => setEqModalVisible(false)} />
           <View className="bg-white rounded-t-[30px] absolute bottom-0 left-0 right-0 h-[60%] p-6">
-            <Text className="text-lg font-bold text-gray-900 mb-4">Chon thiet bi bao tri</Text>
+            <Text className="text-lg font-bold text-gray-900 mb-4">Chọn thiết bị bảo trì</Text>
             <FlatList
               data={equipmentList}
               keyExtractor={item => item.id.toString()}
@@ -349,12 +349,12 @@ export default function AdminMaintenanceScreen() {
               ListEmptyComponent={
                 <View className="items-center justify-center py-20">
                   <Feather name="inbox" size={40} color="#D1D1D6" />
-                  <Text className="text-gray-400 mt-2 text-sm">Khong co thiet bi nao</Text>
+                  <Text className="text-gray-400 mt-2 text-sm">Không có thiết bị nào</Text>
                 </View>
               }
             />
             <Button 
-              title="Dong" 
+              title="Đóng" 
               variant="secondary" 
               onPress={() => setEqModalVisible(false)} 
               containerClassName="mt-4"
