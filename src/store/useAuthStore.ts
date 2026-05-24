@@ -10,6 +10,9 @@ interface User {
   role: 'admin' | 'storekeeper' | 'borrower';
   phone?: string;
   avatar_url?: string;
+  student_id?: string;
+  class?: string;
+  department?: string;
 }
 
 interface AuthState {
