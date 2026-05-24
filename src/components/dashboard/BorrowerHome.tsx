@@ -126,10 +126,18 @@ export default function BorrowerHome() {
               )}
             </Pressable>
             <Pressable 
-              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center border border-white/10"
+              className="w-11 h-11 bg-white/20 rounded-full items-center justify-center border border-white/10 overflow-hidden"
               onPress={() => router.push('/(tabs)/explore')}
             >
-              <Feather name="user" size={20} color="white" />
+              {user?.avatar_url ? (
+                <Image 
+                  source={{ uri: user.avatar_url }} 
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              ) : (
+                <Feather name="user" size={20} color="white" />
+              )}
             </Pressable>
           </View>
         </View>
