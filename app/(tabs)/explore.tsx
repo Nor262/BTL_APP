@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,8 @@ import api from '@/api/client';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useAlertStore } from '@/store/useAlertStore';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 
 export default function ProfileScreen() {
   const { user, logout, setAuth } = useAuthStore();
@@ -20,6 +22,80 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState(user?.phone || '');
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handlePickAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert({
+          type: 'warning',
+          title: 'Quyền truy cập',
+          message: 'Ứng dụng cần quyền truy cập thư viện ảnh để thay đổi avatar.'
+        });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+        await handleUploadAvatar(selectedImage.uri);
+      }
+    } catch (error: any) {
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: 'Không thể mở thư viện ảnh'
+      });
+    }
+  };
+
+  const handleUploadAvatar = async (uri: string) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || 'avatar.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      formData.append('file', {
+        uri,
+        name: filename,
+        type,
+      } as any);
+
+      const res = await api.post('/users/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const updatedUser = res.data.user || res.data.data?.user || res.data.data;
+      if (updatedUser) {
+        setAuth(updatedUser, useAuthStore.getState().token!);
+        showAlert({
+          type: 'success',
+          title: 'Thành công',
+          message: 'Cập nhật ảnh đại diện thành công'
+        });
+      }
+    } catch (error: any) {
+      console.error('Upload Avatar Error:', error);
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: error.response?.data?.message || 'Không thể tải ảnh lên hệ thống'
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleLogout = () => {
     showAlert({
@@ -126,11 +202,30 @@ export default function ProfileScreen() {
     <Animated.View entering={FadeIn} className="flex-1 bg-gray-50">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="bg-primary pt-20 pb-8 px-6 items-center rounded-b-[40px] shadow-sm">
-          <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-sm mb-4 border-4 border-white/20">
-            <Text className="text-primary text-4xl font-bold">
-              {user?.full_name?.charAt(0).toUpperCase() || 'U'}
-            </Text>
-          </View>
+          <Pressable 
+            onPress={handlePickAvatar}
+            disabled={uploading}
+            className="relative mb-4"
+          >
+            <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-lg border-4 border-white/20 overflow-hidden">
+              {uploading ? (
+                <ActivityIndicator size="small" color="#CC0D00" />
+              ) : user?.avatar_url ? (
+                <Image 
+                  source={{ uri: user.avatar_url }} 
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              ) : (
+                <Text className="text-primary text-4xl font-bold">
+                  {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                </Text>
+              )}
+            </View>
+            <View className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full items-center justify-center shadow-md border border-gray-100">
+              <Feather name="camera" size={14} color="#666" />
+            </View>
+          </Pressable>
           <Text className="text-white text-2xl font-bold">{user?.full_name}</Text>
           <Text className="text-white/80 mt-1">{user?.email}</Text>
           {user?.phone && <Text className="text-white/80 mt-1">{user.phone}</Text>}
