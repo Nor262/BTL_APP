@@ -9,6 +9,7 @@ interface User {
   full_name: string;
   role: 'admin' | 'storekeeper' | 'borrower';
   phone?: string;
+  avatar_url?: string;
 }
 
 interface AuthState {
