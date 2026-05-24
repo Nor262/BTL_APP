@@ -20,6 +20,9 @@ export default function ProfileScreen() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [studentId, setStudentId] = useState(user?.student_id || '');
+  const [className, setClassName] = useState(user?.class || '');
+  const [department, setDepartment] = useState(user?.department || '');
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -120,7 +123,13 @@ export default function ProfileScreen() {
     }
     setLoading(true);
     try {
-      const res = await api.patch('/auth/profile', { full_name: fullName.trim(), phone: phone.trim() });
+      const res = await api.patch('/auth/profile', { 
+        full_name: fullName.trim(), 
+        phone: phone.trim(),
+        student_id: studentId.trim(),
+        class: className.trim(),
+        department: department.trim(),
+      });
       setAuth(res.data.data || res.data, useAuthStore.getState().token!);
       showAlert({
         type: 'success',
@@ -237,13 +246,40 @@ export default function ProfileScreen() {
         </View>
 
         <View className="px-6 py-6">
+          {user?.role === 'borrower' && (
+            <>
+              <Text className="font-bold text-gray-900 text-lg mb-4">Thông tin cá nhân</Text>
+              <Animated.View entering={FadeInDown.delay(100)} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+                <View className="flex-row justify-between mb-3.5 pb-3 border-b border-gray-50">
+                  <Text className="text-xs text-gray-500 font-medium">Mã sinh viên</Text>
+                  <Text className="text-xs text-gray-900 font-bold">{user?.student_id || 'Chưa cập nhật'}</Text>
+                </View>
+                <View className="flex-row justify-between mb-3.5 pb-3 border-b border-gray-50">
+                  <Text className="text-xs text-gray-500 font-medium">Lớp học</Text>
+                  <Text className="text-xs text-gray-900 font-bold">{user?.class || 'Chưa cập nhật'}</Text>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-gray-500 font-medium">Khoa / Phòng ban</Text>
+                  <Text className="text-xs text-gray-900 font-bold">{user?.department || 'Chưa cập nhật'}</Text>
+                </View>
+              </Animated.View>
+            </>
+          )}
+
           <Text className="font-bold text-gray-900 text-lg mb-4">Cài đặt tài khoản</Text>
 
           <Animated.View entering={FadeInDown.delay(200)} className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
             <ProfileOption
               icon="user"
               title="Sửa thông tin"
-              onPress={() => setShowEditModal(true)}
+              onPress={() => {
+                setFullName(user?.full_name || '');
+                setPhone(user?.phone || '');
+                setStudentId(user?.student_id || '');
+                setClassName(user?.class || '');
+                setDepartment(user?.department || '');
+                setShowEditModal(true);
+              }}
               isFirst
             />
             <ProfileOption
@@ -307,27 +343,59 @@ export default function ProfileScreen() {
             pointerEvents="box-none"
           >
             <Pressable 
-              className="bg-white rounded-[30px] p-6 shadow-2xl" 
+              className="bg-white rounded-[30px] p-6 shadow-2xl max-h-[85%]" 
               onPress={(e) => e.stopPropagation()}
             >
               <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Cập nhật thông tin</Text>
 
-              <Input
-                label="Họ và tên"
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Nhập họ và tên"
-                icon="user"
-              />
+              <ScrollView showsVerticalScrollIndicator={false} className="mb-4">
+                <Input
+                  label="Họ và tên"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Nhập họ và tên"
+                  icon="user"
+                />
 
-              <Input
-                label="Số điện thoại"
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="Nhập số điện thoại"
-                keyboardType="phone-pad"
-                icon="phone"
-              />
+                <Input
+                  label="Số điện thoại"
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Nhập số điện thoại"
+                  keyboardType="phone-pad"
+                  icon="phone"
+                />
+
+                {user?.role === 'borrower' && (
+                  <>
+                    <Input
+                      label="Mã sinh viên"
+                      value={studentId}
+                      onChangeText={setStudentId}
+                      placeholder="Nhập mã sinh viên"
+                      autoCapitalize="characters"
+                      icon="credit-card"
+                    />
+
+                    <Input
+                      label="Lớp học"
+                      value={className}
+                      onChangeText={setClassName}
+                      placeholder="Nhập lớp học (ví dụ: D21CQCN01-B)"
+                      autoCapitalize="characters"
+                      icon="grid"
+                    />
+
+                    <Input
+                      label="Khoa / Phòng ban"
+                      value={department}
+                      onChangeText={setDepartment}
+                      placeholder="Nhập khoa hoặc phòng ban"
+                      icon="briefcase"
+                    />
+                  </>
+                )}
+              </ScrollView>
 
               <View className="flex-row">
                 <Button
