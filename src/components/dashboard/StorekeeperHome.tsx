@@ -25,19 +25,19 @@ export default function StorekeeperHome() {
 
   const handleExportReports = () => {
     Alert.alert(
-      'Xuat bao cao',
-      'Chon loai bao cao ban muon tai ve may:',
+      'Xuất báo cáo',
+      'Chọn loại báo cáo bạn muốn tải về máy:',
       [
         {
-          text: 'Danh sach thiet bi (Excel)',
+          text: 'Danh sách thiết bị (Excel)',
           onPress: () => downloadAndShareReport('/reports/excel', 'bao_cao_thiet_bi.xlsx')
         },
         {
-          text: 'Lich su giao dich (CSV)',
+          text: 'Lịch sử giao dịch (CSV)',
           onPress: () => downloadAndShareReport('/analytics/export-csv', 'bao_cao_giao_dich.csv')
         },
         {
-          text: 'Huy',
+          text: 'Hủy',
           style: 'cancel'
         }
       ]

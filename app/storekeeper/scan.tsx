@@ -39,9 +39,9 @@ export default function StorekeeperScanScreen() {
         <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-6">
           <Feather name="camera" size={32} color="#666" />
         </View>
-        <Text className="text-gray-900 text-xl font-bold text-center mb-2">Truy cap Camera</Text>
-        <Text className="text-gray-500 text-center mb-8">Cen cap quyen camera de ban giao, nhan thiet bi.</Text>
-        <Button title="CAP QUYEN CAMERA" onPress={requestPermission} />
+        <Text className="text-gray-900 text-xl font-bold text-center mb-2">Truy cập Camera</Text>
+        <Text className="text-gray-500 text-center mb-8">Cần cấp quyền camera để bàn giao, nhận thiết bị.</Text>
+        <Button title="CẤP QUYỀN CAMERA" onPress={requestPermission} />
       </View>
     );
   }
@@ -55,7 +55,7 @@ export default function StorekeeperScanScreen() {
 
     try {
       if (scannedItems.find(item => item.qr_code_data === data)) {
-        Alert.alert('Thong bao', 'Thiet bi nay da duoc quet');
+        Alert.alert('Thông báo', 'Thiết bị này đã được quét');
         setTimeout(() => setScanning(true), 1500);
         return;
       }
@@ -65,7 +65,7 @@ export default function StorekeeperScanScreen() {
       setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Ma QR khong hop le');
+      handleApiError(error, 'Mã QR không hợp lệ');
     } finally {
       setLoading(false);
       setTimeout(() => setScanning(true), 1500);
@@ -85,7 +85,7 @@ export default function StorekeeperScanScreen() {
         setEvidenceImage(result.assets[0].uri);
       }
     } catch (error) {
-      handleApiError(error, 'Khong the chon anh');
+      handleApiError(error, 'Không thể chọn ảnh');
     }
   };
 
@@ -99,7 +99,7 @@ export default function StorekeeperScanScreen() {
         const endpoint = item.status === 'available' ? 'checkout' : 'checkin';
         const formData = new FormData();
         formData.append('qr_code_data', item.qr_code_data || '');
-        formData.append('condition', condition === 'Good' ? 'Tinh trang tot' : 'Phat hien hong hoc/loi');
+        formData.append('condition', condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi');
         
         if (evidenceImage) {
           const filename = evidenceImage.split('/').pop() || 'image.jpg';
@@ -116,11 +116,11 @@ export default function StorekeeperScanScreen() {
         });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Thanh cong', `Da xu ly ${scannedItems.length} thiet bi!`);
+      Alert.alert('Thành công', `Đã xử lý ${scannedItems.length} thiết bị!`);
       router.back();
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Loi xu ly giao dich');
+      handleApiError(error, 'Lỗi xử lý giao dịch');
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function StorekeeperScanScreen() {
 
   const handleManualSubmit = async () => {
     if (!serialNumber.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap so Serial');
+      Alert.alert('Thông báo', 'Vui lòng nhập số Serial');
       return;
     }
 
@@ -138,7 +138,7 @@ export default function StorekeeperScanScreen() {
       const itemData = response.data.data || response.data;
       
       if (scannedItems.find(item => item.id === itemData.id)) {
-        Alert.alert('Thong bao', 'Thiet bi nay da duoc nhap');
+        Alert.alert('Thông báo', 'Thiết bị này đã được nhập');
         return;
       }
 
@@ -147,7 +147,7 @@ export default function StorekeeperScanScreen() {
       setSerialNumber('');
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Khong tim thay thiet bi voi so Serial da nhap');
+      handleApiError(error, 'Không tìm thấy thiết bị với số Serial đã nhập');
     } finally {
       setLoading(false);
     }
@@ -171,11 +171,12 @@ export default function StorekeeperScanScreen() {
         />
         
         <View className="absolute inset-0 items-center justify-center">
-          <View className="w-56 h-56 border-2 border-white/50 rounded-2xl" />
+          <View className="w-56 h-56 border-2 rounded-2xl" style={{ borderColor: 'rgba(255, 255, 255, 0.5)' }} />
         </View>
 
         <Pressable 
-          className="absolute top-12 left-4 w-11 h-11 bg-black/50 rounded-full items-center justify-center"
+          className="absolute top-12 left-4 w-11 h-11 rounded-full items-center justify-center"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           onPress={() => router.back()}
         >
           <Feather name="arrow-left" size={20} color="white" />
@@ -183,7 +184,8 @@ export default function StorekeeperScanScreen() {
 
         <View className="absolute top-12 right-4 flex-row">
           <Pressable 
-            className="w-11 h-11 bg-black/50 rounded-full items-center justify-center mr-2"
+            className="w-11 h-11 rounded-full items-center justify-center mr-2"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setShowManualInput(!showManualInput);
@@ -194,14 +196,23 @@ export default function StorekeeperScanScreen() {
         </View>
       </View>
 
-      <View className="flex-1 bg-white rounded-t-[30px] -mt-6 shadow-sm p-6">
+      <View 
+        className="flex-1 bg-white rounded-t-[30px] -mt-6 p-6" 
+        style={{ 
+          shadowColor: '#000', 
+          shadowOffset: { width: 0, height: -2 }, 
+          shadowOpacity: 0.05, 
+          shadowRadius: 3, 
+          elevation: 2 
+        }}
+      >
         <View className="flex-row justify-between items-center mb-4">
           <Text className="text-xl font-bold text-gray-900">
             Da quet ({scannedItems.length})
           </Text>
           {scannedItems.length > 0 && (
             <Pressable onPress={() => setScannedItems([])}>
-              <Text className="text-red-500 font-medium">Xoa tat ca</Text>
+              <Text className="text-red-500 font-medium">Xóa tất cả</Text>
             </Pressable>
           )}
         </View>
@@ -210,26 +221,28 @@ export default function StorekeeperScanScreen() {
           {scannedItems.length === 0 ? (
             <View className="items-center justify-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
               <Feather name="maximize" size={40} color="#D1D1D6" />
-              <Text className="text-gray-400 mt-2 text-center text-sm font-medium">Dua ma QR thiet bi vao khung hinh camera</Text>
+              <Text className="text-gray-400 mt-2 text-center text-sm font-medium">Đưa mã QR thiết bị vào khung hình camera</Text>
             </View>
           ) : (
             <>
               <View className="mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <Text className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-widest">Tinh trang thiet bi</Text>
+                <Text className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-widest">Tình trạng thiết bị</Text>
                 <View className="flex-row">
                   <Pressable 
-                    className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg mr-2 ${condition === 'Good' ? 'bg-green-50 border-green-500' : 'bg-white border-transparent shadow-sm'} border`}
+                    className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg mr-2 ${condition === 'Good' ? 'bg-green-50 border-green-500' : 'bg-white border-transparent'} border`}
+                    style={condition !== 'Good' ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 } : undefined}
                     onPress={() => setCondition('Good')}
                   >
                     <Feather name="check-circle" size={16} color={condition === 'Good' ? '#34C759' : '#C7C7CC'} />
-                    <Text className={`ml-2 font-bold text-xs ${condition === 'Good' ? 'text-green-600' : 'text-gray-500'}`}>TOT</Text>
+                    <Text className={`ml-2 font-bold text-xs ${condition === 'Good' ? 'text-green-600' : 'text-gray-500'}`}>TỐT</Text>
                   </Pressable>
                   <Pressable 
-                    className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${condition === 'Broken' ? 'bg-red-50 border-red-500' : 'bg-white border-transparent shadow-sm'} border`}
+                    className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${condition === 'Broken' ? 'bg-red-50 border-red-500' : 'bg-white border-transparent'} border`}
+                    style={condition !== 'Broken' ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 } : undefined}
                     onPress={() => setCondition('Broken')}
                   >
                     <Feather name="alert-triangle" size={16} color={condition === 'Broken' ? '#FF3B30' : '#C7C7CC'} />
-                    <Text className={`ml-2 font-bold text-xs ${condition === 'Broken' ? 'text-red-600' : 'text-gray-500'}`}>HONG HOC</Text>
+                    <Text className={`ml-2 font-bold text-xs ${condition === 'Broken' ? 'text-red-600' : 'text-gray-500'}`}>HỎNG HÓC</Text>
                   </Pressable>
                 </View>
                 
@@ -240,7 +253,8 @@ export default function StorekeeperScanScreen() {
                       <View className="relative h-32 w-full rounded-xl overflow-hidden mb-2">
                         <Image source={{ uri: evidenceImage }} className="w-full h-full bg-gray-200" resizeMode="cover" />
                         <Pressable 
-                          className="absolute top-2 right-2 bg-black/50 w-8 h-8 rounded-full items-center justify-center"
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full items-center justify-center"
+                          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
                           onPress={() => setEvidenceImage(null)}
                         >
                           <Feather name="x" size={16} color="white" />
@@ -252,7 +266,7 @@ export default function StorekeeperScanScreen() {
                         onPress={pickImage}
                       >
                         <Feather name="camera" size={24} color="#CC0D00" />
-                        <Text className="text-xs text-primary font-medium mt-1">Tai anh len</Text>
+                        <Text className="text-xs text-primary font-medium mt-1">Tải ảnh lên</Text>
                       </Pressable>
                     )}
                   </View>
@@ -260,7 +274,17 @@ export default function StorekeeperScanScreen() {
               </View>
 
               {scannedItems.map((item, index) => (
-                <View key={index} className="flex-row items-center bg-white p-3 rounded-xl mb-2 shadow-sm border border-gray-100">
+                <View 
+                  key={index} 
+                  className="flex-row items-center bg-white p-3 rounded-xl mb-2 border border-gray-100"
+                  style={{ 
+                    shadowColor: '#000', 
+                    shadowOffset: { width: 0, height: 1 }, 
+                    shadowOpacity: 0.05, 
+                    shadowRadius: 1, 
+                    elevation: 1 
+                  }}
+                >
                   <View className="w-10 h-10 bg-red-50 rounded-lg items-center justify-center mr-3">
                     <Feather name="monitor" size={20} color="#CC0D00" />
                   </View>
@@ -279,7 +303,7 @@ export default function StorekeeperScanScreen() {
 
         <View className="pt-2">
           <Button 
-            title={`Xac nhan thuc hien (${scannedItems.length})`} 
+            title={`Xác nhận thực hiện (${scannedItems.length})`} 
             onPress={handleConfirm} 
             disabled={scannedItems.length === 0 || loading}
             loading={loading}
@@ -289,11 +313,18 @@ export default function StorekeeperScanScreen() {
         {showManualInput && (
           <Animated.View 
             entering={FadeInDown} 
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[30px] p-6 shadow-2xl"
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[30px] p-6"
+            style={{ 
+              shadowColor: '#000', 
+              shadowOffset: { width: 0, height: -4 }, 
+              shadowOpacity: 0.1, 
+              shadowRadius: 12, 
+              elevation: 8 
+            }}
           >
-            <Text className="text-lg font-bold text-gray-900 mb-4">Nhap so Serial thiet bi</Text>
+            <Text className="text-lg font-bold text-gray-900 mb-4">Nhập số Serial thiết bị</Text>
             <Input
-              label="So Serial"
+              label="Số Serial"
               placeholder="VD: SN-123456"
               value={serialNumber}
               onChangeText={setSerialNumber}
@@ -302,13 +333,13 @@ export default function StorekeeperScanScreen() {
             />
             <View className="flex-row mt-4">
               <Button 
-                title="Huy" 
+                title="Hủy" 
                 variant="secondary" 
                 onPress={() => setShowManualInput(false)} 
                 containerClassName="flex-1 mr-2"
               />
               <Button 
-                title="Nhap" 
+                title="Nhập" 
                 onPress={handleManualSubmit} 
                 containerClassName="flex-1 ml-2"
               />
