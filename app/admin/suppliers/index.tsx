@@ -29,7 +29,7 @@ export default function AdminSuppliersScreen() {
       setSuppliers(response.data.data || response.data);
     } catch (error) {
       console.error(error);
-      handleApiError(error, 'Khong the tai danh sach nha cung cap');
+      handleApiError(error, 'Không thể tải danh sách nhà cung cấp');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -58,7 +58,7 @@ export default function AdminSuppliersScreen() {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap ten nha cung cap');
+      Alert.alert('Thông báo', 'Vui lòng nhập tên nhà cung cấp');
       return;
     }
 
@@ -73,32 +73,32 @@ export default function AdminSuppliersScreen() {
       if (editingSupplier) {
         await api.put(`/suppliers/${editingSupplier.id}`, payload);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Thanh cong', 'Da cap nhat nha cung cap');
+        Alert.alert('Thành công', 'Đã cập nhật nhà cung cấp');
       } else {
         await api.post('/suppliers', payload);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Thanh cong', 'Da tao nha cung cap moi');
+        Alert.alert('Thành công', 'Đã tạo nhà cung cấp mới');
       }
       setModalVisible(false);
       fetchSuppliers();
     } catch (error) {
-      handleApiError(error, 'Loi khi luu nha cung cap');
+      handleApiError(error, 'Lỗi khi lưu nhà cung cấp');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert('Xac nhan xoa', 'Ban co chac chan muon xoa nha cung cap nay? Hanh dong nay khong the hoan tac.', [
-      { text: 'Huy', style: 'cancel' },
-      { text: 'Xoa', style: 'destructive', onPress: async () => {
+    Alert.alert('Xác nhận xóa', 'Bạn có chắc chắn muốn xóa nhà cung cấp này? Hành động này không thể hoàn tác.', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Xóa', style: 'destructive', onPress: async () => {
         try {
           await api.delete(`/suppliers/${id}`);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert('Thanh cong', 'Da xoa nha cung cap');
+          Alert.alert('Thành công', 'Đã xóa nhà cung cấp');
           fetchSuppliers();
         } catch (error) {
-          handleApiError(error, 'Loi khi xoa nha cung cap');
+          handleApiError(error, 'Lỗi khi xóa nhà cung cấp');
         }
       }}
     ]);
@@ -152,7 +152,7 @@ export default function AdminSuppliersScreen() {
           >
             <Feather name="arrow-left" size={20} color="#333" />
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900">Quan ly Nha cung cap</Text>
+          <Text className="text-xl font-bold text-gray-900">Quản lý Nhà cung cấp</Text>
         </View>
         <Pressable 
           className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center"
@@ -178,8 +178,8 @@ export default function AdminSuppliersScreen() {
         ListEmptyComponent={
           <View className="items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <Feather name="truck" size={48} color="#D1D1D6" />
-            <Text className="text-gray-400 mt-4 font-bold text-base">Chua co nha cung cap nao</Text>
-            <Text className="text-gray-400 text-xs text-center mt-1">An nut dau cong o goc tren de tao moi.</Text>
+            <Text className="text-gray-400 mt-4 font-bold text-base">Chưa có nhà cung cấp nào</Text>
+            <Text className="text-gray-400 text-xs text-center mt-1">Ấn nút dấu cộng ở góc trên để tạo mới.</Text>
           </View>
         }
       />
@@ -188,49 +188,49 @@ export default function AdminSuppliersScreen() {
         <View className="flex-1">
           <Pressable className="absolute inset-0 bg-black/40" onPress={() => setModalVisible(false)} />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
             <Pressable className="bg-white rounded-[30px] p-6 shadow-2xl" onPress={(e) => e.stopPropagation()}>
               <Text className="text-xl font-bold text-gray-900 mb-6 text-center">
-                {editingSupplier ? 'Cap nhat nha cung cap' : 'Them nha cung cap moi'}
+                {editingSupplier ? 'Cập nhật nhà cung cấp' : 'Thêm nhà cung cấp mới'}
               </Text>
 
               <Input
-                label="Ten nha cung cap"
+                label="Tên nhà cung cấp"
                 value={name}
                 onChangeText={setName}
-                placeholder="VD: Cong ty Sony Viet Nam, GearVN..."
+                placeholder="VD: Công ty Sony Việt Nam, GearVN..."
                 icon="truck"
               />
 
               <Input
-                label="Thong tin lien he"
+                label="Thông tin liên hệ"
                 value={contactInfo}
                 onChangeText={setContactInfo}
-                placeholder="VD: 0987654321 hoac mail@supplier.com..."
+                placeholder="VD: 0987654321 hoặc mail@supplier.com..."
                 icon="phone"
               />
 
               <Input
-                label="Dia chi (tuy chon)"
+                label="Địa chỉ (tùy chọn)"
                 value={address}
                 onChangeText={setAddress}
-                placeholder="VD: 123 Nguyen Trai, Ha Noi..."
+                placeholder="VD: 123 Nguyễn Trãi, Hà Nội..."
                 icon="map-pin"
               />
 
               <View className="flex-row mt-6">
                 <Button 
-                  title="Huy" 
+                  title="Hủy" 
                   onPress={() => setModalVisible(false)} 
                   containerClassName="flex-1 mr-2" 
                   variant="secondary" 
                   disabled={submitting}
                 />
                 <Button 
-                  title={editingSupplier ? 'Luu' : 'Tao'} 
+                  title={editingSupplier ? 'Lưu' : 'Tạo'} 
                   onPress={handleSubmit} 
                   containerClassName="flex-1 ml-2" 
                   loading={submitting}

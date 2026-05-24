@@ -28,7 +28,7 @@ export default function AdminCategoriesScreen() {
       setCategories(response.data.data || response.data);
     } catch (error) {
       console.error(error);
-      handleApiError(error, 'Khong the tai danh muc');
+      handleApiError(error, 'Không thể tải danh mục');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -55,7 +55,7 @@ export default function AdminCategoriesScreen() {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      Alert.alert('Thong bao', 'Vui long nhap ten danh muc');
+      Alert.alert('Thông báo', 'Vui lòng nhập tên danh mục');
       return;
     }
 
@@ -64,32 +64,32 @@ export default function AdminCategoriesScreen() {
       if (editingCategory) {
         await api.put(`/categories/${editingCategory.id}`, { name: name.trim(), description: description.trim() });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Thanh cong', 'Da cap nhat danh muc');
+        Alert.alert('Thành công', 'Đã cập nhật danh mục');
       } else {
         await api.post('/categories', { name: name.trim(), description: description.trim() });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Thanh cong', 'Da tao danh muc moi');
+        Alert.alert('Thành công', 'Đã tạo danh mục mới');
       }
       setModalVisible(false);
       fetchCategories();
     } catch (error) {
-      handleApiError(error, 'Loi khi luu danh muc');
+      handleApiError(error, 'Lỗi khi lưu danh mục');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert('Xac nhan xoa', 'Ban co chac chan muon xoa danh muc nay? Hanh dong nay khong the hoan tac.', [
-      { text: 'Huy', style: 'cancel' },
-      { text: 'Xoa', style: 'destructive', onPress: async () => {
+    Alert.alert('Xác nhận xóa', 'Bạn có chắc chắn muốn xóa danh mục này? Hành động này không thể hoàn tác.', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Xóa', style: 'destructive', onPress: async () => {
         try {
           await api.delete(`/categories/${id}`);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert('Thanh cong', 'Da xoa danh muc');
+          Alert.alert('Thành công', 'Đã xóa danh mục');
           fetchCategories();
         } catch (error) {
-          handleApiError(error, 'Loi khi xoa danh muc');
+          handleApiError(error, 'Lỗi khi xóa danh mục');
         }
       }}
     ]);
@@ -138,7 +138,7 @@ export default function AdminCategoriesScreen() {
           >
             <Feather name="arrow-left" size={20} color="#333" />
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900">Quan ly Danh muc</Text>
+          <Text className="text-xl font-bold text-gray-900">Quản lý Danh mục</Text>
         </View>
         <Pressable 
           className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center"
@@ -164,8 +164,8 @@ export default function AdminCategoriesScreen() {
         ListEmptyComponent={
           <View className="items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <Feather name="folder" size={48} color="#D1D1D6" />
-            <Text className="text-gray-400 mt-4 font-bold text-base">Chua co danh muc nao</Text>
-            <Text className="text-gray-400 text-xs text-center mt-1">An nut dau cong o goc tren de tao moi.</Text>
+            <Text className="text-gray-400 mt-4 font-bold text-base">Chưa có danh mục nào</Text>
+            <Text className="text-gray-400 text-xs text-center mt-1">Ấn nút dấu cộng ở góc trên để tạo mới.</Text>
           </View>
         }
       />
@@ -174,41 +174,41 @@ export default function AdminCategoriesScreen() {
         <View className="flex-1">
           <Pressable className="absolute inset-0 bg-black/40" onPress={() => setModalVisible(false)} />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
             <Pressable className="bg-white rounded-[30px] p-6 shadow-2xl" onPress={(e) => e.stopPropagation()}>
               <Text className="text-xl font-bold text-gray-900 mb-6 text-center">
-                {editingCategory ? 'Cap nhat danh muc' : 'Them danh muc moi'}
+                {editingCategory ? 'Cập nhật danh mục' : 'Thêm danh mục mới'}
               </Text>
 
               <Input
-                label="Ten danh muc"
+                label="Tên danh mục"
                 value={name}
                 onChangeText={setName}
-                placeholder="VD: Thiet bi may anh, laptop..."
+                placeholder="VD: Thiết bị máy ảnh, laptop..."
                 icon="folder"
               />
 
               <Input
-                label="Mo ta (tuy chon)"
+                label="Mô tả (tùy chọn)"
                 value={description}
                 onChangeText={setDescription}
-                placeholder="Nhap mo ta danh muc..."
+                placeholder="Nhập mô tả danh mục..."
                 icon="align-left"
               />
 
               <View className="flex-row mt-6">
                 <Button 
-                  title="Huy" 
+                  title="Hủy" 
                   onPress={() => setModalVisible(false)} 
                   containerClassName="flex-1 mr-2" 
                   variant="secondary" 
                   disabled={submitting}
                 />
                 <Button 
-                  title={editingCategory ? 'Luu' : 'Tao'} 
+                  title={editingCategory ? 'Lưu' : 'Tạo'} 
                   onPress={handleSubmit} 
                   containerClassName="flex-1 ml-2" 
                   loading={submitting}
