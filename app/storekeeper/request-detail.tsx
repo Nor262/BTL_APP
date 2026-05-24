@@ -216,7 +216,7 @@ export default function StorekeeperRequestDetailScreen() {
         <View className="flex-1">
           <Pressable className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }} onPress={() => setRejectModalVisible(false)} />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior="padding"
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >

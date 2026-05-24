@@ -238,7 +238,7 @@ export default function AdminMaintenanceScreen() {
         <View className="flex-1">
           <Pressable className="absolute inset-0 bg-black/40" onPress={() => setModalVisible(false)} />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior="padding"
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
