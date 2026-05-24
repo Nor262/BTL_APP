@@ -7,6 +7,7 @@ import '../src/global.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Provider as AntProvider } from '@ant-design/react-native';
+import { viVN } from '@/utils/locale';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
@@ -85,7 +86,7 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <AntProvider>
+      <AntProvider locale={viVN}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" />
