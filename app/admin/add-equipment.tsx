@@ -29,6 +29,7 @@ export default function AddEquipment() {
 
   const [step, setStep] = useState(1);
   const [image, setImage] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
   const [form, setForm] = useState({
     name: '',
     sku: '',
@@ -140,7 +141,7 @@ export default function AddEquipment() {
           maintenance_period_months: Number(form.maintenance_period) || 6,
           auto_qr: form.auto_qr,
         },
-        image_url: image || undefined,
+        image_url: /^https?:\/\//i.test(imageUrl.trim()) ? imageUrl.trim() : undefined,
       });
       showAlert({
         type: 'success', title: 'Thành công', message: 'Đã thêm thiết bị',
@@ -187,34 +188,37 @@ export default function AddEquipment() {
           <View style={{ gap: 14 }}>
             {step === 1 ? (
               <>
-                {/* Image picker */}
-                <Animated.View entering={FadeInDown.delay(80)} className="bg-white rounded-[16px] items-center" style={{ padding: 18, gap: 12, borderWidth: 1.5, borderColor: '#FCA5A5', borderStyle: 'dashed' }}>
-                  {image ? (
-                    <Image source={{ uri: image }} style={{ width: 220, height: 140, borderRadius: 12 }} contentFit="cover" />
-                  ) : (
-                    <View className="w-14 h-14 bg-[#FEE5E3] rounded-xl items-center justify-center">
-                      <Feather name="image" size={22} color="#CC0D00" />
-                    </View>
-                  )}
-                  <Text className="text-[#0F172A] text-sm font-bold">Thêm ảnh thiết bị</Text>
-                  <Text className="text-[#94A3B8] text-[11px]">Tối đa 5 ảnh · &lt; 5 MB</Text>
-                  <View className="flex-row" style={{ gap: 8 }}>
-                    <Pressable
-                      className="bg-[#CC0D00] rounded-full flex-row items-center"
-                      style={{ paddingVertical: 7, paddingHorizontal: 14, gap: 6 }}
-                      onPress={takePhoto}
-                    >
-                      <Feather name="camera" size={12} color="#FFFFFF" />
-                      <Text className="text-white text-[11px] font-bold">Chụp</Text>
-                    </Pressable>
-                    <Pressable
-                      className="bg-white rounded-full flex-row items-center"
-                      style={{ paddingVertical: 7, paddingHorizontal: 14, gap: 6, borderWidth: 1.5, borderColor: '#E2E8F0' }}
-                      onPress={pickFromLibrary}
-                    >
-                      <Feather name="folder" size={12} color="#0F172A" />
-                      <Text className="text-[#0F172A] text-[11px] font-bold">Thư viện</Text>
-                    </Pressable>
+                {/* Image — chỉ chấp nhận URL (BE chưa hỗ trợ upload file thiết bị) */}
+                <Animated.View entering={FadeInDown.delay(80)} className="bg-white rounded-[16px]" style={{ padding: 16, gap: 10, borderWidth: 1.5, borderColor: '#FCA5A5', borderStyle: 'dashed' }}>
+                  <View className="items-center" style={{ gap: 10 }}>
+                    {/^https?:\/\//i.test(imageUrl.trim()) ? (
+                      <Image source={{ uri: imageUrl.trim() }} style={{ width: 220, height: 140, borderRadius: 12 }} contentFit="cover" />
+                    ) : (
+                      <View className="w-14 h-14 bg-[#FEE5E3] rounded-xl items-center justify-center">
+                        <Feather name="image" size={22} color="#CC0D00" />
+                      </View>
+                    )}
+                    <Text className="text-[#0F172A] text-sm font-bold">Ảnh thiết bị</Text>
+                    <Text className="text-[#94A3B8] text-[11px] text-center">Dán URL ảnh (Unsplash/Cloudinary/…)</Text>
+                  </View>
+                  <View className="bg-[#F1F5F9] rounded-xl flex-row items-center" style={{ paddingHorizontal: 12 }}>
+                    <Feather name="link" size={14} color="#94A3B8" />
+                    <TextInput
+                      value={imageUrl}
+                      onChangeText={setImageUrl}
+                      placeholder="https://..."
+                      placeholderTextColor="#94A3B8"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                      className="flex-1 text-[#0F172A] text-sm"
+                      style={{ paddingVertical: 10, paddingLeft: 8 }}
+                    />
+                    {!!imageUrl && (
+                      <Pressable onPress={() => setImageUrl('')}>
+                        <Feather name="x" size={14} color="#94A3B8" />
+                      </Pressable>
+                    )}
                   </View>
                 </Animated.View>
 

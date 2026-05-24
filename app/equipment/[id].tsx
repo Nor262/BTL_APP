@@ -388,11 +388,18 @@ export default function EquipmentDetailScreen() {
                     <Text className="text-[#CC0D00] text-sm font-bold">Xong</Text>
                   </Pressable>
                 </View>
+                {/* Header tên cột */}
+                <View className="flex-row" style={{ paddingTop: 4, paddingBottom: 2 }}>
+                  <Text className="flex-1 text-center text-[#0F172A] text-[13px] font-bold">Năm</Text>
+                  <Text className="flex-1 text-center text-[#0F172A] text-[13px] font-bold">Tháng</Text>
+                  <Text className="flex-1 text-center text-[#0F172A] text-[13px] font-bold">Ngày</Text>
+                </View>
                 <DatePickerView
                   mode="date"
                   value={showDatePicker === 'start' ? startDate : dueDate}
                   onChange={(date) => showDatePicker === 'start' ? setStartDate(date) : setDueDate(date)}
                   minDate={showDatePicker === 'start' ? new Date() : startDate}
+                  locale={{ year: '', month: '', day: '', hour: '', minute: '', am: 'SA', pm: 'CH' } as any}
                 />
               </View>
             </View>

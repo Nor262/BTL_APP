@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, RefreshControl, ScrollView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -20,6 +20,8 @@ export default function EquipmentListScreen() {
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState('Tất cả');
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [sortKey, setSortKey] = useState<'availability' | 'name' | 'newest'>('availability');
 
   useEffect(() => {
     if (params?.category && categoriesList.length > 0) {
@@ -49,21 +51,31 @@ export default function EquipmentListScreen() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filtered = items.filter((it: any) => {
-    if (chip !== 'Tất cả') {
-      const cat = (it.category?.name || '').toLowerCase();
-      if (!cat.includes(chip.toLowerCase())) return false;
-    }
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      if (
-        !(it.name || '').toLowerCase().includes(q) &&
-        !(it.serial_number || '').toLowerCase().includes(q)
-      )
-        return false;
-    }
-    return true;
-  });
+  const filtered = items
+    .filter((it: any) => {
+      if (chip !== 'Tất cả') {
+        const cat = (it.category?.name || '').toLowerCase();
+        if (!cat.includes(chip.toLowerCase())) return false;
+      }
+      if (query.trim()) {
+        const q = query.toLowerCase();
+        if (
+          !(it.name || '').toLowerCase().includes(q) &&
+          !(it.serial_number || '').toLowerCase().includes(q)
+        )
+          return false;
+      }
+      return true;
+    })
+    .sort((a: any, b: any) => {
+      if (sortKey === 'name') return (a.name || '').localeCompare(b.name || '');
+      if (sortKey === 'newest') return (b.id || 0) - (a.id || 0);
+      if (a.status === b.status) return (a.name || '').localeCompare(b.name || '');
+      return a.status === 'available' ? -1 : 1;
+    });
+
+  const sortActive = sortKey !== 'availability';
+  const sortLabel = sortKey === 'availability' ? 'Sẵn sàng' : sortKey === 'name' ? 'Tên A-Z' : 'Mới nhất';
 
   const renderItem = ({ item, index }: { item: any; index: number }) => {
     const available = item.status === 'available';
@@ -127,9 +139,7 @@ export default function EquipmentListScreen() {
             <Feather name="arrow-left" size={18} color="#0F172A" />
           </Pressable>
           <Text className="text-[#0F172A] text-lg font-bold">Tìm thiết bị</Text>
-          <Pressable className="w-10 h-10 bg-white rounded-full items-center justify-center">
-            <Feather name="sliders" size={18} color="#0F172A" />
-          </Pressable>
+          <View style={{ width: 40 }} />
         </View>
 
         {/* Search */}
@@ -174,8 +184,8 @@ export default function EquipmentListScreen() {
         {/* Result count */}
         <View className="flex-row items-center justify-between">
           <Text className="text-[#0F172A] text-[12px] font-bold">{filtered.length} thiết bị</Text>
-          <Pressable className="flex-row items-center" style={{ gap: 4 }}>
-            <Text className="text-[#64748B] text-[11px]">Sẵn sàng trước</Text>
+          <Pressable className="flex-row items-center" style={{ gap: 4 }} onPress={() => setFilterVisible(true)}>
+            <Text className="text-[#64748B] text-[11px]">{sortLabel}</Text>
             <Feather name="chevron-down" size={12} color="#64748B" />
           </Pressable>
         </View>
@@ -197,6 +207,35 @@ export default function EquipmentListScreen() {
           </View>
         }
       />
+
+      {/* Sort Popup */}
+      <Modal visible={filterVisible} transparent animationType="fade" onRequestClose={() => setFilterVisible(false)}>
+        <Pressable className="flex-1 bg-black/50 items-center justify-center px-6" onPress={() => setFilterVisible(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()} className="bg-white rounded-3xl w-full" style={{ padding: 18, gap: 12, maxWidth: 360 }}>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[#0F172A] text-base font-bold">Sắp xếp danh sách</Text>
+              <Pressable onPress={() => setFilterVisible(false)} className="w-7 h-7 items-center justify-center">
+                <Feather name="x" size={18} color="#64748B" />
+              </Pressable>
+            </View>
+
+            <View style={{ gap: 4 }}>
+              {([
+                ['availability', 'Sẵn sàng'],
+                ['name', 'Tên (A → Z)'],
+                ['newest', 'Mới nhất'],
+              ] as const).map(([k, l]) => (
+                <Pressable key={k} onPress={() => { setSortKey(k); setFilterVisible(false); }}
+                  className="flex-row items-center justify-between rounded-xl"
+                  style={{ paddingVertical: 12, paddingHorizontal: 14, backgroundColor: sortKey === k ? '#FEE2E2' : '#F8FAFC' }}>
+                  <Text className="text-[13px] font-semibold" style={{ color: sortKey === k ? '#CC0D00' : '#0F172A' }}>{l}</Text>
+                  {sortKey === k && <Feather name="check" size={18} color="#CC0D00" />}
+                </Pressable>
+              ))}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
