@@ -338,8 +338,9 @@ export default function EquipmentDetailScreen() {
           <View className="flex-row" style={{ gap: 10 }}>
             <Pressable
               className="w-[52px] h-[52px] bg-[#F1F5F9] rounded-[14px] items-center justify-center"
+              onPress={() => router.push({ pathname: '/equipment/availability', params: { equipmentId: id as string, equipmentName: equipment?.name || '' } } as any)}
             >
-              <Feather name="message-circle" size={20} color="#64748B" />
+              <Feather name="calendar" size={20} color="#0F172A" />
             </Pressable>
             <View className="flex-1">
               <Pressable

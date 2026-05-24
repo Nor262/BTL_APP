@@ -64,6 +64,11 @@ export default function AdminLayout() {
       />
       {/* data.tsx vẫn giữ tab bar để user quay lại tab khác */}
       <Tabs.Screen name="data" options={{ href: null }} />
+      <Tabs.Screen name="maintenance" options={{ href: null }} />
+      <Tabs.Screen name="maintenance/[equipmentId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="audit-log" options={{ href: null }} />
+      <Tabs.Screen name="reports" options={{ href: null }} />
+      <Tabs.Screen name="import-equipment" options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
   );
 }

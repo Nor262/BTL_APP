@@ -50,12 +50,17 @@ export default function CategoriesScreen() {
     setShowModal(true);
   };
 
-  const handleOpenEdit = (category: any) => {
+  const handleOpenEdit = async (category: any) => {
     setIsEditing(true);
     setSelectedId(category.id);
+    setShowModal(true);
     setName(category.name);
     setDescription(category.description || '');
-    setShowModal(true);
+    try {
+      const res = await api.get(`/categories/${category.id}`);
+      const d = res.data?.data || res.data;
+      if (d) { setName(d.name || category.name); setDescription(d.description || ''); }
+    } catch {}
   };
 
   const handleDelete = (id: number, name: string) => {

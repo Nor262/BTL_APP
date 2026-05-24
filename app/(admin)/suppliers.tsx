@@ -52,13 +52,22 @@ export default function SuppliersScreen() {
     setShowModal(true);
   };
 
-  const handleOpenEdit = (supplier: any) => {
+  const handleOpenEdit = async (supplier: any) => {
     setIsEditing(true);
     setSelectedId(supplier.id);
     setName(supplier.name);
     setContactInfo(supplier.contact_info || '');
     setAddress(supplier.address || '');
     setShowModal(true);
+    try {
+      const res = await api.get(`/suppliers/${supplier.id}`);
+      const d = res.data?.data || res.data;
+      if (d) {
+        setName(d.name || supplier.name);
+        setContactInfo(d.contact_info || '');
+        setAddress(d.address || '');
+      }
+    } catch {}
   };
 
   const handleDelete = (id: number, name: string) => {

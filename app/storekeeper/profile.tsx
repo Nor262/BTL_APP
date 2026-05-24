@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -53,8 +54,12 @@ export default function StorekeeperProfile() {
             className="bg-[#0F172A] rounded-[20px] items-center"
             style={{ padding: 20, gap: 12 }}
           >
-            <View className="w-[76px] h-[76px] bg-[#15803D] rounded-full items-center justify-center">
-              <Text className="text-white text-[32px] font-bold">{initials}</Text>
+            <View className="w-[76px] h-[76px] bg-[#15803D] rounded-full items-center justify-center overflow-hidden">
+              {user?.avatar_url ? (
+                <Image source={{ uri: user.avatar_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+              ) : (
+                <Text className="text-white text-[32px] font-bold">{initials}</Text>
+              )}
             </View>
             <Text className="text-white text-lg font-bold">{user?.full_name || 'Thủ kho'}</Text>
             <View className="bg-[#DCFCE7] rounded-full" style={{ paddingVertical: 3, paddingHorizontal: 10 }}>

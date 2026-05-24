@@ -56,12 +56,22 @@ export default function AdminEquipment() {
             <Text className="text-[#0F172A] text-lg font-bold">Quản lý kho</Text>
             <Text className="text-[#94A3B8] text-[10px] font-bold">AST-01.04 · {items.length.toLocaleString()}</Text>
           </View>
-          <Pressable
-            className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center"
-            onPress={() => router.push('/admin/add-equipment')}
-          >
-            <Feather name="plus" size={20} color="#FFFFFF" />
-          </Pressable>
+          <View className="flex-row" style={{ gap: 8 }}>
+            <Pressable
+              className="px-3 h-10 bg-[#0F172A] rounded-full flex-row items-center"
+              style={{ gap: 6 }}
+              onPress={() => router.push('/admin/import-equipment' as any)}
+            >
+              <Feather name="upload" size={14} color="#FFFFFF" />
+              <Text className="text-white text-[11px] font-bold">Import</Text>
+            </Pressable>
+            <Pressable
+              className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center"
+              onPress={() => router.push('/admin/add-equipment')}
+            >
+              <Feather name="plus" size={20} color="#FFFFFF" />
+            </Pressable>
+          </View>
         </View>
 
         {/* Segment KHO / DỮ LIỆU */}

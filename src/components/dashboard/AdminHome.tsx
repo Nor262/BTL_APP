@@ -176,13 +176,37 @@ export default function AdminHome() {
               delay={900}
               color="#FF9500"
             />
-            <AdminMenuCard 
+            <AdminMenuCard
               icon="truck"
               title="Quản lý Nhà cung cấp"
               description="Danh sách đối tác, nhà cung cấp"
               onPress={() => router.push('/(admin)/suppliers')}
               delay={1000}
               color="#AF52DE"
+            />
+            <AdminMenuCard
+              icon="tool"
+              title="Bảo trì thiết bị"
+              description="Theo dõi và quản lý các lần bảo trì"
+              onPress={() => router.push('/admin/maintenance' as any)}
+              delay={1100}
+              color="#B45309"
+            />
+            <AdminMenuCard
+              icon="bar-chart-2"
+              title="Báo cáo & Thống kê"
+              description="KPI, biểu đồ, xuất Excel/CSV"
+              onPress={() => router.push('/admin/reports' as any)}
+              delay={1200}
+              color="#15803D"
+            />
+            <AdminMenuCard
+              icon="file-text"
+              title="Nhật ký hệ thống"
+              description="Audit log mọi thao tác trên hệ thống"
+              onPress={() => router.push('/admin/audit-log' as any)}
+              delay={1300}
+              color="#0F172A"
               isLast={true}
             />
           </View>

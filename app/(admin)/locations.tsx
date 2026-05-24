@@ -50,12 +50,17 @@ export default function LocationsScreen() {
     setShowModal(true);
   };
 
-  const handleOpenEdit = (location: any) => {
+  const handleOpenEdit = async (location: any) => {
     setIsEditing(true);
     setSelectedId(location.id);
     setName(location.name);
     setDescription(location.description || '');
     setShowModal(true);
+    try {
+      const res = await api.get(`/locations/${location.id}`);
+      const d = res.data?.data || res.data;
+      if (d) { setName(d.name || location.name); setDescription(d.description || ''); }
+    } catch {}
   };
 
   const handleDelete = (id: number, name: string) => {

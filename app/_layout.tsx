@@ -114,6 +114,9 @@ export default function RootLayout() {
             <Stack.Screen name="register" />
             <Stack.Screen name="forgot-password" />
             <Stack.Screen name="borrow-request" />
+            <Stack.Screen name="return" />
+            <Stack.Screen name="transactions/[id]" />
+            <Stack.Screen name="equipment/availability" />
             <Stack.Screen name="reset-password" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="admin" />

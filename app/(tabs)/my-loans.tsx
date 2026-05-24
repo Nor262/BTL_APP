@@ -178,13 +178,23 @@ export default function MyLoansScreen() {
               </>
             )}
             {item.status === 'active' && !item.is_extended && (
-              <Pressable 
+              <Pressable
                 className="bg-[#EFF6FF] px-3 py-1.5 rounded-lg border border-[#DBEAFE] flex-row items-center"
                 style={{ gap: 4 }}
                 onPress={() => handleExtend(item)}
               >
                 <Feather name="plus" size={12} color="#1D4ED8" />
                 <Text className="text-[#1D4ED8] font-semibold text-[11px]">Gia hạn (+7 ngày)</Text>
+              </Pressable>
+            )}
+            {(item.status === 'active' || item.status === 'overdue') && user?.role === 'borrower' && (
+              <Pressable
+                className="bg-[#CC0D00] px-3 py-1.5 rounded-lg flex-row items-center active:scale-95"
+                style={{ gap: 4 }}
+                onPress={() => router.push({ pathname: '/return', params: { transactionId: String(item.id) } } as any)}
+              >
+                <Feather name="check-circle" size={12} color="#FFFFFF" />
+                <Text className="text-white font-bold text-[11px]">Trả thiết bị</Text>
               </Pressable>
             )}
             {item.status === 'completed' && !item.rating && (

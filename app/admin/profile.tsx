@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,7 +12,9 @@ import { useAlertStore } from '@/store/useAlertStore';
 export default function AdminProfile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuthStore();
+  const { user, logout, refreshMe } = useAuthStore();
+
+  useEffect(() => { refreshMe(); }, []);
   const { showAlert } = useAlertStore();
 
   const initials = (user?.full_name?.split(' ').pop() || 'A').charAt(0).toUpperCase();
@@ -53,8 +56,12 @@ export default function AdminProfile() {
             className="bg-[#0F172A] rounded-[20px] items-center"
             style={{ padding: 20, gap: 12 }}
           >
-            <View className="w-[76px] h-[76px] bg-[#CC0D00] rounded-full items-center justify-center">
-              <Text className="text-white text-[32px] font-bold">{initials}</Text>
+            <View className="w-[76px] h-[76px] bg-[#CC0D00] rounded-full items-center justify-center overflow-hidden">
+              {user?.avatar_url ? (
+                <Image source={{ uri: user.avatar_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+              ) : (
+                <Text className="text-white text-[32px] font-bold">{initials}</Text>
+              )}
             </View>
             <Text className="text-white text-lg font-bold">{user?.full_name || 'Admin'}</Text>
             <View className="bg-[#FEE5E3] rounded-full" style={{ paddingVertical: 3, paddingHorizontal: 10 }}>

@@ -69,11 +69,27 @@ export default function EditProfileScreen() {
     }
     setSubmitting(true);
     try {
+      // Nếu người dùng chọn ảnh mới (đường dẫn local), upload lên server trước
+      let updatedUser: any = null;
+      if (avatar && avatar !== user?.avatar_url && !avatar.startsWith('http')) {
+        const form = new FormData();
+        const name = avatar.split('/').pop() || 'avatar.jpg';
+        const ext = name.split('.').pop()?.toLowerCase();
+        const type = ext === 'png' ? 'image/png' : 'image/jpeg';
+        form.append('file', { uri: avatar, name, type } as any);
+        const up = await api.post('/users/avatar', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        updatedUser = up.data?.user || null;
+      }
+
       const res = await api.patch('/auth/profile', { full_name: fullName.trim(), phone: phone.trim() });
       if (newPass) {
         await api.patch('/auth/change-password', { old_password: currentPass, new_password: newPass });
       }
-      setAuth(res.data.data || res.data, token!);
+      const profile = res.data.data || res.data;
+      // Giữ lại avatar_url mới upload nếu /auth/profile không trả về
+      setAuth({ ...profile, avatar_url: updatedUser?.avatar_url ?? profile.avatar_url }, token!);
       showAlert({
         type: 'success',
         title: 'Thành công',

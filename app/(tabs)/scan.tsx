@@ -91,9 +91,20 @@ export default function BatchScanScreen() {
       }
 
       setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
-    } catch (error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Mã QR không hợp lệ');
+    } catch (error: any) {
+      // Fallback: nếu /transactions/verify-item không tìm thấy giao dịch, kiểm tra thiết bị có tồn tại không
+      if (error?.response?.status === 404) {
+        try {
+          await api.get('/equipment/verify', { params: { qr: data } });
+          Alert.alert('Thiết bị hợp lệ', 'Thiết bị tồn tại nhưng không có giao dịch tương ứng.');
+        } catch {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          handleApiError(error, 'Mã QR không tồn tại trong hệ thống');
+        }
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        handleApiError(error, 'Mã QR không hợp lệ');
+      }
     } finally {
       setTimeout(() => setScanning(true), 1500);
     }

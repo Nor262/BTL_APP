@@ -155,6 +155,24 @@ export default function LoginScreen() {
             {/* SSO Buttons */}
             <View className="w-[342px] flex-row" style={{ gap: 10 }}>
               <Pressable
+                onPress={async () => {
+                  setLoading(true);
+                  try {
+                    const res = await api.post('/auth/google');
+                    const d = res.data.data || res.data;
+                    if (d?.accessToken && d?.user) {
+                      setAuth(d.user, d.accessToken);
+                      const r = d.user.role;
+                      if (r === 'admin') router.replace('/admin/dashboard');
+                      else if (r === 'storekeeper') router.replace('/storekeeper/handover');
+                      else router.replace('/(tabs)');
+                    } else {
+                      showAlert({ type: 'info', title: 'Google Sign-In', message: 'Cần cấu hình OAuth client. Liên hệ admin.' });
+                    }
+                  } catch (e) {
+                    handleApiError(e, 'Google Sign-In chưa khả dụng');
+                  } finally { setLoading(false); }
+                }}
                 className="flex-1 h-12 bg-white rounded-[14px] flex-row items-center justify-center"
                 style={{ gap: 8, borderWidth: 1.5, borderColor: '#E2E8F0' }}
               >
