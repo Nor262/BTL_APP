@@ -127,11 +127,11 @@ export default function StorekeeperRequestDetailScreen() {
           
           <View className="border-t border-gray-50 pt-3">
             <View className="flex-row justify-between mb-2">
-              <Text className="text-xs text-gray-500">Lop học</Text>
+              <Text className="text-xs text-gray-500">Lớp học</Text>
               <Text className="text-xs text-gray-900 font-medium">{request.borrower?.class || 'Chưa cập nhật'}</Text>
             </View>
             <View className="flex-row justify-between mb-2">
-              <Text className="text-xs text-gray-500">Khoa / Phong ban</Text>
+              <Text className="text-xs text-gray-500">Khoa / Phòng ban</Text>
               <Text className="text-xs text-gray-900 font-medium">{request.borrower?.department || 'Chưa cập nhật'}</Text>
             </View>
             {request.borrower?.phone && (

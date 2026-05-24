@@ -8,6 +8,7 @@ import api from '@/api/client';
 import Badge from '../ui/Badge';
 import LoadingScreen from '../ui/LoadingScreen';
 import { downloadAndShareReport } from '@/utils/file-downloader';
+import { Image } from 'expo-image';
 
 export default function StorekeeperHome() {
   const [stats, setStats] = useState<any>({
@@ -103,10 +104,18 @@ export default function StorekeeperHome() {
                 <Feather name="bell" size={20} color="white" />
               </Pressable>
               <Pressable 
-                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
+                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center overflow-hidden"
                 onPress={() => router.push('/(tabs)/explore')}
               >
-                <Feather name="user" size={20} color="white" />
+                {user?.avatar_url ? (
+                  <Image 
+                    source={{ uri: user.avatar_url }} 
+                    style={{ width: '100%', height: '100%' }}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Feather name="user" size={20} color="white" />
+                )}
               </Pressable>
             </View>
           </View>
