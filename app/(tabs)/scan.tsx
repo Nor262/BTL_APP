@@ -101,7 +101,7 @@ export default function BorrowerScanScreen() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      behavior="padding" 
       className="flex-1 bg-black"
     >
       <View className="flex-1 relative">

@@ -261,7 +261,7 @@ export default function ProfileScreen() {
             onPress={() => setShowPasswordModal(false)} 
           />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior="padding"
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"

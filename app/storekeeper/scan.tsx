@@ -160,7 +160,7 @@ export default function StorekeeperScanScreen() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      behavior="padding" 
       className="flex-1 bg-gray-50"
     >
       <View className="h-[45%] relative bg-black">
