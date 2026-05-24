@@ -7,9 +7,10 @@ interface InputProps extends TextInputProps {
   error?: string;
   icon?: string;
   rightLabel?: React.ReactNode;
+  required?: boolean;
 }
 
-export default function Input({ label, error, icon, secureTextEntry, rightLabel, ...props }: InputProps) {
+export default function Input({ label, error, icon, secureTextEntry, rightLabel, required, ...props }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = secureTextEntry;
   const isMultiline = props.multiline;
@@ -17,7 +18,10 @@ export default function Input({ label, error, icon, secureTextEntry, rightLabel,
   return (
     <View className="mb-4 w-full" style={{ gap: 5 }}>
       <View className="flex-row items-center justify-between">
-        <Text className="text-xs font-semibold text-[#64748B]">{label}</Text>
+        <Text className="text-xs font-semibold text-[#64748B]">
+          {label}
+          {required && <Text className="text-[#EF4444]"> *</Text>}
+        </Text>
         {rightLabel}
       </View>
       <View

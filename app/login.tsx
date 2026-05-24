@@ -152,41 +152,32 @@ export default function LoginScreen() {
               <View className="flex-1 h-px bg-[#E2E8F0]" />
             </View>
 
-            {/* SSO Buttons */}
-            <View className="w-[342px] flex-row" style={{ gap: 10 }}>
-              <Pressable
-                onPress={async () => {
-                  setLoading(true);
-                  try {
-                    const res = await api.post('/auth/google');
-                    const d = res.data.data || res.data;
-                    if (d?.accessToken && d?.user) {
-                      setAuth(d.user, d.accessToken);
-                      const r = d.user.role;
-                      if (r === 'admin') router.replace('/admin/dashboard');
-                      else if (r === 'storekeeper') router.replace('/storekeeper/handover');
-                      else router.replace('/(tabs)');
-                    } else {
-                      showAlert({ type: 'info', title: 'Google Sign-In', message: 'Cần cấu hình OAuth client. Liên hệ admin.' });
-                    }
-                  } catch (e) {
-                    handleApiError(e, 'Google Sign-In chưa khả dụng');
-                  } finally { setLoading(false); }
-                }}
-                className="flex-1 h-12 bg-white rounded-[14px] flex-row items-center justify-center"
-                style={{ gap: 8, borderWidth: 1.5, borderColor: '#E2E8F0' }}
-              >
-                <Text className="text-lg font-bold text-[#0F172A]">G</Text>
-                <Text className="text-[#0F172A] text-[13px] font-semibold">Google</Text>
-              </Pressable>
-              <Pressable
-                className="flex-1 h-12 bg-white rounded-[14px] flex-row items-center justify-center"
-                style={{ gap: 8, borderWidth: 1.5, borderColor: '#E2E8F0' }}
-              >
-                <Feather name="smartphone" size={18} color="#0F172A" />
-                <Text className="text-[#0F172A] text-[13px] font-semibold">Apple</Text>
-              </Pressable>
-            </View>
+            {/* SSO — Google only */}
+            <Pressable
+              onPress={async () => {
+                setLoading(true);
+                try {
+                  const res = await api.post('/auth/google');
+                  const d = res.data.data || res.data;
+                  if (d?.accessToken && d?.user) {
+                    setAuth(d.user, d.accessToken);
+                    const r = d.user.role;
+                    if (r === 'admin') router.replace('/admin/dashboard');
+                    else if (r === 'storekeeper') router.replace('/storekeeper/handover');
+                    else router.replace('/(tabs)');
+                  } else {
+                    showAlert({ type: 'info', title: 'Google Sign-In', message: 'Cần cấu hình OAuth client. Liên hệ admin.' });
+                  }
+                } catch (e) {
+                  handleApiError(e, 'Google Sign-In chưa khả dụng');
+                } finally { setLoading(false); }
+              }}
+              className="w-[342px] h-12 bg-white rounded-[14px] flex-row items-center justify-center"
+              style={{ gap: 10, borderWidth: 1.5, borderColor: '#E2E8F0' }}
+            >
+              <Text className="text-lg font-bold text-[#CC0D00]">G</Text>
+              <Text className="text-[#0F172A] text-[13px] font-semibold">Đăng nhập với Google</Text>
+            </Pressable>
 
             {/* Footer */}
             <View className="flex-row items-center justify-center" style={{ gap: 6, paddingTop: 8 }}>

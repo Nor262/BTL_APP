@@ -47,6 +47,7 @@ export default function RootLayout() {
       segments[0] === 'login' ||
       segments[0] === 'register' ||
       segments[0] === 'forgot-password' ||
+      segments[0] === 'verify-otp' ||
       segments[0] === 'reset-password';
 
     const homeForRole =
@@ -113,6 +114,7 @@ export default function RootLayout() {
             <Stack.Screen name="login" />
             <Stack.Screen name="register" />
             <Stack.Screen name="forgot-password" />
+            <Stack.Screen name="verify-otp" />
             <Stack.Screen name="borrow-request" />
             <Stack.Screen name="return" />
             <Stack.Screen name="transactions/[id]" />

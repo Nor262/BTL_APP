@@ -42,7 +42,12 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const { confirmPassword: _, ...submitData } = formData;
-      await api.post('/auth/register', { ...submitData, role: 'borrower' });
+      await api.post('/auth/register', {
+        ...submitData,
+        email: submitData.email.trim().toLowerCase(),
+        username: submitData.username.trim(),
+        role: 'borrower',
+      });
       showAlert({
         type: 'success',
         title: 'Thành công',
@@ -114,6 +119,7 @@ export default function RegisterScreen() {
                 value={formData.full_name}
                 onChangeText={(v) => updateForm('full_name', v)}
                 icon="user"
+                required
               />
               <Input
                 label="Email"
@@ -123,45 +129,26 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 icon="mail"
+                required
               />
-
-              {/* Phone + Student ID Row */}
-              <View className="flex-row" style={{ gap: 10 }}>
-                <View className="flex-1" style={{ gap: 5 }}>
-                  <Text className="text-xs font-semibold text-[#64748B]">Số điện thoại</Text>
-                  <View
-                    className="flex-row items-center bg-white rounded-[14px] h-[46px] px-4"
-                    style={{ borderWidth: 1.5, borderColor: '#E2E8F0', gap: 10 }}
-                  >
-                    <Feather name="phone" size={16} color="#94A3B8" />
-                    <TextInput
-                      className="flex-1 text-sm text-[#0F172A]"
-                      placeholder="0987654321"
-                      placeholderTextColor="#94A3B8"
-                      value={formData.phone}
-                      onChangeText={(v) => updateForm('phone', v)}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                </View>
-                <View className="flex-1" style={{ gap: 5 }}>
-                  <Text className="text-xs font-semibold text-[#64748B]">MSSV</Text>
-                  <View
-                    className="flex-row items-center bg-white rounded-[14px] h-[46px] px-4"
-                    style={{ borderWidth: 1.5, borderColor: '#E2E8F0', gap: 10 }}
-                  >
-                    <Feather name="credit-card" size={16} color="#94A3B8" />
-                    <TextInput
-                      className="flex-1 text-sm text-[#0F172A]"
-                      placeholder="B23DCCC043"
-                      placeholderTextColor="#94A3B8"
-                      value={formData.username}
-                      onChangeText={(v) => updateForm('username', v)}
-                      autoCapitalize="none"
-                    />
-                  </View>
-                </View>
-              </View>
+              <Input
+                label="Tên đăng nhập"
+                placeholder="vd: minh.nv"
+                value={formData.username}
+                onChangeText={(v) => updateForm('username', v)}
+                autoCapitalize="none"
+                icon="user"
+                required
+              />
+              <Input
+                label="Số điện thoại"
+                placeholder="0987654321"
+                value={formData.phone}
+                onChangeText={(v) => updateForm('phone', v)}
+                keyboardType="phone-pad"
+                icon="phone"
+                required
+              />
 
               <Input
                 label="Mật khẩu"
@@ -170,6 +157,7 @@ export default function RegisterScreen() {
                 onChangeText={(v) => updateForm('password', v)}
                 secureTextEntry
                 icon="lock"
+                required
               />
               <Input
                 label="Xác nhận mật khẩu"
@@ -178,6 +166,7 @@ export default function RegisterScreen() {
                 onChangeText={(v) => updateForm('confirmPassword', v)}
                 secureTextEntry
                 icon="lock"
+                required
               />
             </Animated.View>
 

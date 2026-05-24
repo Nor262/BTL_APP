@@ -2,112 +2,119 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '@/api/client';
-import { Alert } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { StatusBar } from 'expo-status-bar';
 import { handleApiError } from '@/utils/error-handler';
+import { Feather } from '@expo/vector-icons';
 import { useAlertStore } from '@/store/useAlertStore';
 
+function StepIndicator({ currentStep }: { currentStep: number }) {
+  const steps = [
+    { num: '1', label: 'Email' },
+    { num: '2', label: 'Xác nhận' },
+    { num: '3', label: 'Mật khẩu' },
+  ];
+  return (
+    <View className="w-[342px] flex-row items-center justify-center">
+      {steps.map((s, i) => (
+        <React.Fragment key={i}>
+          <View className="flex-1 items-center" style={{ gap: 4 }}>
+            <View className={`w-8 h-8 rounded-full items-center justify-center ${i < currentStep ? 'bg-[#CC0D00]' : 'bg-[#E2E8F0]'}`}>
+              <Text className={`text-[13px] font-bold ${i < currentStep ? 'text-white' : 'text-[#94A3B8]'}`}>{s.num}</Text>
+            </View>
+            <Text className={`text-[10px] ${i < currentStep ? 'text-[#CC0D00] font-semibold' : 'text-[#94A3B8]'}`}>{s.label}</Text>
+          </View>
+          {i < steps.length - 1 && (
+            <View className={`h-0.5 w-[30px] ${i < currentStep - 1 ? 'bg-[#CC0D00]' : 'bg-[#E2E8F0]'}`} style={{ marginBottom: 16 }} />
+          )}
+        </React.Fragment>
+      ))}
+    </View>
+  );
+}
+
 export default function ResetPasswordScreen() {
-  const { email } = useLocalSearchParams<{ email: string }>();
-  const [otp, setOtp] = useState('');
+  const { email, otp } = useLocalSearchParams<{ email: string; otp: string }>();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { showAlert } = useAlertStore();
 
-  const handleResetPassword = async () => {
-    if (!otp.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-      showAlert({
-        type: 'warning',
-        title: 'Thông báo',
-        message: 'Vui lòng nhập đầy đủ thông tin'
-      });
+  const handleSubmit = async () => {
+    if (!newPassword.trim() || !confirmPassword.trim()) {
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng nhập đầy đủ mật khẩu' });
       return;
     }
-
+    if (newPassword.length < 6) {
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Mật khẩu phải tối thiểu 6 ký tự' });
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      showAlert({
-        type: 'warning',
-        title: 'Thông báo',
-        message: 'Mật khẩu xác nhận không khớp'
-      });
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Mật khẩu xác nhận không khớp' });
       return;
     }
-
     setLoading(true);
     try {
       await api.post('/auth/reset-password', {
-        email,
-        otp,
-        new_password: newPassword
+        email: (email || '').trim().toLowerCase(),
+        otp: (otp || '').trim(),
+        new_password: newPassword,
       });
-      
       showAlert({
         type: 'success',
         title: 'Thành công',
-        message: 'Mật khẩu của bạn đã được thay đổi. Vui lòng đăng nhập lại.'
+        message: 'Mật khẩu đã được đổi. Vui lòng đăng nhập lại.',
+        onConfirm: () => router.replace('/login'),
       });
-      
-      router.replace('/login');
     } catch (error: any) {
-      handleApiError(error, 'Đặt lại mật khẩu thất bại');
+      const status = error?.response?.status;
+      const beMsg = error?.response?.data?.message;
+      const fullMsg = Array.isArray(beMsg) ? beMsg.join('\n') : (beMsg || error?.message || 'Lỗi không xác định');
+      console.log('[reset-password] FAILED', { status, body: error?.response?.data });
+
+      if (status === 400 && /otp/i.test(fullMsg)) {
+        showAlert({
+          type: 'error',
+          title: 'OTP không hợp lệ',
+          message: `${fullMsg}\n\nMã OTP có thể sai hoặc đã hết hạn (5 phút). Vui lòng quay lại bước trước để nhập lại hoặc yêu cầu mã mới.`,
+          showCancel: true,
+          confirmText: 'Quay lại nhập OTP',
+          onConfirm: () => router.back(),
+        });
+      } else if (status === 404) {
+        showAlert({ type: 'error', title: 'Email không tồn tại', message: fullMsg });
+      } else {
+        showAlert({
+          type: 'error',
+          title: `Đặt lại mật khẩu thất bại${status ? ` (${status})` : ''}`,
+          message: fullMsg,
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-[#F8FAFC]">
       <StatusBar style="dark" />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-        className="flex-1"
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="px-8 pt-16 pb-12">
-            <Pressable 
-              onPress={() => router.back()}
-              className="mb-8"
-            >
-              <Text className="text-primary font-medium">← Quay lại</Text>
-            </Pressable>
-
-            <Animated.View
-              entering={FadeInUp.delay(200).duration(800)}
-              className="items-center mb-10"
-            >
-              <View className="w-20 h-20 bg-green-50 rounded-3xl items-center justify-center mb-6">
-                 <Text className="text-green-600 text-3xl font-bold">✓</Text>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View className="flex-1 items-center pt-20 pb-8 px-6" style={{ gap: 14 }}>
+            <Animated.View entering={FadeInUp.delay(200).duration(800)} className="items-center" style={{ gap: 10, paddingTop: 12 }}>
+              <View className="w-16 h-16 bg-[#CC0D00] rounded-[18px] items-center justify-center">
+                <Feather name="lock" size={32} color="#FFFFFF" />
               </View>
-              <Text className="text-gray-900 text-3xl font-bold tracking-tight">Đặt lại mật khẩu</Text>
-              <Text className="text-gray-500 text-base mt-2 text-center px-4">
-                Nhập mã OTP đã gửi tới {email} và mật khẩu mới của bạn
-              </Text>
+              <Text className="text-[#0F172A] text-[22px] font-extrabold">Đặt mật khẩu mới</Text>
+              <Text className="text-[#64748B] text-xs text-center">Tạo mật khẩu mới cho tài khoản của bạn</Text>
             </Animated.View>
 
-            <Animated.View
-              entering={FadeInDown.delay(400).duration(800)}
-              className="w-full"
-            >
-              <Input
-                label="Mã xác nhận (OTP)"
-                placeholder="123456"
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="number-pad"
-                icon="shield"
-              />
+            <StepIndicator currentStep={3} />
 
+            <Animated.View entering={FadeInDown.delay(400).duration(800)} className="w-[342px]" style={{ gap: 10 }}>
               <Input
                 label="Mật khẩu mới"
                 placeholder="••••••••"
@@ -115,24 +122,30 @@ export default function ResetPasswordScreen() {
                 onChangeText={setNewPassword}
                 secureTextEntry
                 icon="lock"
+                required
               />
-
               <Input
-                label="Xác nhận mật khẩu mới"
+                label="Xác nhận mật khẩu"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
                 icon="lock"
-              />
-
-              <Button
-                title="Cập nhật mật khẩu"
-                onPress={handleResetPassword}
-                loading={loading}
-                className="mt-6"
+                required
               />
             </Animated.View>
+
+            <Button
+              title="ĐẶT LẠI MẬT KHẨU"
+              onPress={handleSubmit}
+              loading={loading}
+              icon="check"
+              containerClassName="w-[342px]"
+            />
+
+            <Pressable onPress={() => router.back()}>
+              <Text className="text-[#94A3B8] text-xs">← Quay lại</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

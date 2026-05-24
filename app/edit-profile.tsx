@@ -19,6 +19,9 @@ export default function EditProfileScreen() {
 
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [studentId, setStudentId] = useState(user?.student_id || '');
+  const [className, setClassName] = useState((user as any)?.class || '');
+  const [department, setDepartment] = useState(user?.department || '');
   const [avatar, setAvatar] = useState(user?.avatar_url || '');
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -83,7 +86,13 @@ export default function EditProfileScreen() {
         updatedUser = up.data?.user || null;
       }
 
-      const res = await api.patch('/auth/profile', { full_name: fullName.trim(), phone: phone.trim() });
+      const res = await api.patch('/auth/profile', {
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        student_id: studentId.trim() || undefined,
+        class: className.trim() || undefined,
+        department: department.trim() || undefined,
+      });
       if (newPass) {
         await api.patch('/auth/change-password', { old_password: currentPass, new_password: newPass });
       }
@@ -175,6 +184,40 @@ export default function EditProfileScreen() {
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
+                  placeholderTextColor="#94A3B8"
+                />
+              </View>
+              <View style={{ gap: 5 }}>
+                <Text className="text-[#64748B] text-[11px] font-semibold">Mã sinh viên</Text>
+                <TextInput
+                  className="text-[#0F172A] text-sm"
+                  style={{ paddingVertical: 8 }}
+                  value={studentId}
+                  onChangeText={setStudentId}
+                  placeholder="vd: B23DCCC043"
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="characters"
+                />
+              </View>
+              <View style={{ gap: 5 }}>
+                <Text className="text-[#64748B] text-[11px] font-semibold">Lớp</Text>
+                <TextInput
+                  className="text-[#0F172A] text-sm"
+                  style={{ paddingVertical: 8 }}
+                  value={className}
+                  onChangeText={setClassName}
+                  placeholder="vd: D23CQCN01-B"
+                  placeholderTextColor="#94A3B8"
+                />
+              </View>
+              <View style={{ gap: 5 }}>
+                <Text className="text-[#64748B] text-[11px] font-semibold">Khoa</Text>
+                <TextInput
+                  className="text-[#0F172A] text-sm"
+                  style={{ paddingVertical: 8 }}
+                  value={department}
+                  onChangeText={setDepartment}
+                  placeholder="vd: Công nghệ thông tin"
                   placeholderTextColor="#94A3B8"
                 />
               </View>

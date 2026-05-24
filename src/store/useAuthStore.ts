@@ -43,11 +43,14 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: async () => {
         try {
-          const { default: api } = await import('@/api/client');
-          const Notifications = await import('expo-notifications');
-          const tokenData = await Notifications.getDevicePushTokenAsync().catch(() => null);
-          if (tokenData?.data) {
-            await api.post('/notifications/remove-token', { token: tokenData.data }).catch(() => {});
+          const Constants = (await import('expo-constants')).default;
+          if (Constants.appOwnership !== 'expo') {
+            const { default: api } = await import('@/api/client');
+            const Notifications = await import('expo-notifications');
+            const tokenData = await Notifications.getDevicePushTokenAsync().catch(() => null);
+            if (tokenData?.data) {
+              await api.post('/notifications/remove-token', { token: tokenData.data }).catch(() => {});
+            }
           }
         } catch {}
         set({ user: null, token: null });

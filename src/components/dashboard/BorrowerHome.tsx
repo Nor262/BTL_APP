@@ -256,7 +256,7 @@ export default function BorrowerHome() {
           <Animated.View entering={FadeInDown.delay(500)} style={{ gap: 12, width: '100%' }}>
             <View className="flex-row items-center justify-between">
               <Text className="text-[#0F172A] text-[17px] font-bold">Danh mục</Text>
-              <Pressable onPress={() => router.push({ pathname: '/(tabs)/search', params: { category: '' } })}>
+              <Pressable onPress={() => router.push('/equipment')}>
                 <Text className="text-[#CC0D00] text-xs font-medium">Tất cả →</Text>
               </Pressable>
             </View>

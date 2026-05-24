@@ -222,7 +222,10 @@ export default function ProfileScreen() {
           {/* Header */}
           <View className="flex-row items-center justify-between" style={{ width: '100%' }}>
             <Text className="text-[#0F172A] text-2xl font-bold">Hồ sơ</Text>
-            <Pressable className="w-10 h-10 bg-white rounded-full items-center justify-center active:bg-[#F1F5F9]">
+            <Pressable
+              onPress={() => router.push('/edit-profile')}
+              className="w-10 h-10 bg-white rounded-full items-center justify-center active:bg-[#F1F5F9]"
+            >
               <Feather name="settings" size={20} color="#0F172A" />
             </Pressable>
           </View>
