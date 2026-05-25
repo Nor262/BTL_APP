@@ -62,6 +62,11 @@ export default function LoginScreen() {
     setGoogleLoading(true);
     try {
       await GoogleSignin.hasPlayServices();
+      try {
+        await GoogleSignin.signOut();
+      } catch (signOutError) {
+        console.log('SignOut error ignored:', signOutError);
+      }
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
       
