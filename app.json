@@ -8,11 +8,6 @@
     "scheme": "frontendapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -39,7 +34,7 @@
           }
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "./node_modules/@react-native-google-signin/google-signin/app.plugin.js"
     ],
     "experiments": {
       "typedRoutes": true,
