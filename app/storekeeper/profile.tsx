@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -8,12 +8,19 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAlertStore } from '@/store/useAlertStore';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function StorekeeperProfile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuthStore();
+  const { user, logout, refreshMe } = useAuthStore();
   const { showAlert } = useAlertStore();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshMe();
+    }, [])
+  );
 
   const initials = (user?.full_name?.split(' ').pop() || 'K').charAt(0).toUpperCase();
 

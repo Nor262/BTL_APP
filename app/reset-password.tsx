@@ -81,7 +81,6 @@ export default function ResetPasswordScreen() {
           title: 'OTP không hợp lệ',
           message: `${fullMsg}\n\nMã OTP có thể sai hoặc đã hết hạn (5 phút). Vui lòng quay lại bước trước để nhập lại hoặc yêu cầu mã mới.`,
           showCancel: true,
-          confirmText: 'Quay lại nhập OTP',
           onConfirm: () => router.back(),
         });
       } else if (status === 404) {

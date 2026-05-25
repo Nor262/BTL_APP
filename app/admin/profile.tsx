@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -8,13 +8,18 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAlertStore } from '@/store/useAlertStore';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function AdminProfile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, logout, refreshMe } = useAuthStore();
 
-  useEffect(() => { refreshMe(); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      refreshMe();
+    }, [])
+  );
   const { showAlert } = useAlertStore();
 
   const initials = (user?.full_name?.split(' ').pop() || 'A').charAt(0).toUpperCase();

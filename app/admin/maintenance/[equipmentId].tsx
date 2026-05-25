@@ -23,13 +23,15 @@ export default function MaintenanceDetailScreen() {
         handleApiError(e, 'Lỗi tải chi tiết');
       } finally { setLoading(false); }
     })();
-  }, [id]);
+  }, [equipmentId]);
 
   const handleComplete = async () => {
     setSubmitting(true);
+
+
     try {
       await api.put(`/maintenance/complete/${equipmentId}`);
-      await api.patch(`/equipment/${equipmentId}/resolve-maintenance`).catch(() => {});
+      await api.patch(`/equipment/${equipmentId}/resolve-maintenance`).catch(() => { });
       showAlert({ type: 'success', title: 'Hoàn tất bảo trì', message: 'Thiết bị đã sẵn sàng sử dụng' });
       router.back();
     } catch (e) {

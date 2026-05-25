@@ -22,7 +22,7 @@ const MENU_ITEMS = [
 ];
 
 export default function ProfileScreen() {
-  const { user, logout, setAuth } = useAuthStore();
+  const { user, logout, setAuth, refreshMe } = useAuthStore();
   const { showAlert } = useAlertStore();
   const router = useRouter();
 
@@ -71,6 +71,7 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchData();
+      refreshMe();
     }, [])
   );
 

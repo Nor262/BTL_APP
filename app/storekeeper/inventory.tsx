@@ -67,14 +67,30 @@ export default function StorekeeperInventory() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleComplete = () => {
-    Alert.alert(
-      'Hoàn tất kiểm kê',
-      `Tổng kết phiên kiểm kê:\n\n- Đã quét (Khớp): ${ok}/${totalToScan}\n- Chưa quét (Mất): ${pending}\n- Bỏ qua (Đang mượn/Bảo trì...): ${skip}\n\nĐã lưu kết quả kiểm kê.`,
-      [
-        { text: 'OK', onPress: () => router.back() }
-      ]
-    );
+  const handleComplete = async () => {
+    const missingItems = items.filter(it => it.status === 'available' && !scannedIds.includes(it.id));
+    const missingItemIds = missingItems.map(it => it.id);
+
+    try {
+      await api.post('/audit/inventory', {
+        total_items: total,
+        matched_count: ok,
+        missing_count: pending,
+        skipped_count: skip,
+        missing_item_ids: missingItemIds
+      });
+      
+      Alert.alert(
+        'Hoàn tất kiểm kê',
+        `Tổng kết phiên kiểm kê:\n\n- Đã quét (Khớp): ${ok}/${totalToScan}\n- Chưa quét (Mất): ${pending}\n- Bỏ qua (Đang mượn/Bảo trì...): ${skip}\n\nĐã lưu kết quả kiểm kê vào Nhật ký hệ thống.`,
+        [
+          { text: 'OK', onPress: () => router.back() }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể lưu phiên kiểm kê vào hệ thống.');
+      console.error(error);
+    }
   };
 
   const openScanner = async () => {
