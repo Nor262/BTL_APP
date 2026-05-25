@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "frontendApp",
+    "name": "Equipment Management System",
     "slug": "frontendApp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.nor262.frontendApp"
     },
     "web": {
       "output": "static",
@@ -43,6 +44,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "48cd4786-2a70-45d0-9774-efd1631f8ea4"
+      }
     }
   }
 }
