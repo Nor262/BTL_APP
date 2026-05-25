@@ -43,7 +43,7 @@ export async function registerForPushNotificationsAsync() {
     });
   }
 
-  if (Device.isDevice) {
+  if (Device.isDevice || Platform.OS === 'android') {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== 'granted') {
@@ -55,11 +55,16 @@ export async function registerForPushNotificationsAsync() {
       return;
     }
     
-    const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    console.log('Push Token:', token);
+    // Lấy native FCM token cho Android vì backend gọi trực tiếp Firebase Admin SDK
+    if (Platform.OS === 'android') {
+      token = (await Notifications.getDevicePushTokenAsync()).data;
+    } else {
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    }
+    console.log('Push Token (FCM):', token);
 
-    // Update token to backend
+    // Cập nhật token lên backend
     if (token) {
       try {
         await api.post('/notifications/register-token', { fcm_token: token });

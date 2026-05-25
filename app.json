@@ -8,18 +8,14 @@
     "scheme": "frontendapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.nor262.frontendApp"
+      "package": "com.nor262.frontendApp",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -38,7 +34,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "./node_modules/@react-native-google-signin/google-signin/app.plugin.js"
     ],
     "experiments": {
       "typedRoutes": true,
