@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView, Modal, Alert, ActivityIndicator } from 'react-native';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/api/client';
@@ -25,6 +26,15 @@ export default function LoginScreen() {
   const { showAlert } = useAlertStore();
   const router = useRouter();
 
+  useEffect(() => {
+    // Configure Google Sign-In with Web Client ID (needed for ID token verification)
+    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '612309700754-ib1shrs5nn00cgesh8coto8ba00856iv.apps.googleusercontent.com';
+    GoogleSignin.configure({
+      webClientId: webClientId,
+      offlineAccess: true,
+    });
+  }, []);
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       showAlert({
@@ -48,8 +58,41 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    setGoogleTokenModal(true);
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+      
+      if (!idToken) {
+        throw new Error('Không lấy được ID Token từ Google. Vui lòng kiểm tra cấu hình.');
+      }
+
+      // Send the token to the backend for verification and login
+      const response = await api.post('/auth/google', { token: idToken });
+      const { user, access_token } = response.data.data;
+      
+      setAuth(user, access_token);
+      Alert.alert('Thành công', 'Đăng nhập Google thành công!');
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('Google login cancelled by user');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log('Google login in progress already');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Thông báo', 'Thiết bị không hỗ trợ Google Play Services. Đang mở công cụ mô phỏng.');
+        setGoogleTokenModal(true);
+      } else {
+        console.log('Google Sign-In Native Error details:', error);
+        // If native login fails for any other reason (like configuration mismatch in dev mode),
+        // fallback to the manual token / sandbox modal
+        setGoogleTokenModal(true);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const submitGoogleToken = async () => {
