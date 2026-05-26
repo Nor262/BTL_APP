@@ -9,7 +9,7 @@ import Constants from 'expo-constants';
  */
 
 // Hardcoded fallback IP - update this to your machine's local IP if needed
-const FALLBACK_IP = '192.168.1.120'; 
+const FALLBACK_IP = '192.168.55.104'; 
 
 const expoHost = Constants.expoGoConfig?.debuggerHost?.split(':')[0]
   ?? Constants.expoConfig?.hostUri?.split(':')[0]
