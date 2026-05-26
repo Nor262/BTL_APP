@@ -71,7 +71,12 @@ export default function AdminUsers() {
             <Text className="text-[#0F172A] text-base font-bold">Quản lý người dùng</Text>
             <Text className="text-[#94A3B8] text-[10px]">{users.length} tài khoản</Text>
           </View>
-          <View className="w-10 h-10" />
+          <Pressable
+            className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center"
+            onPress={() => router.push('/users' as any)}
+          >
+            <Feather name="user-plus" size={18} color="#FFFFFF" />
+          </Pressable>
         </View>
 
         {/* Tabs */}

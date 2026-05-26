@@ -33,17 +33,11 @@ export default function AdminLayout() {
           title: 'Quản lý Vị trí lưu trữ',
         }} 
       />
-      <Stack.Screen 
-        name="suppliers" 
+      <Stack.Screen
+        name="suppliers"
         options={{
           title: 'Quản lý Nhà cung cấp',
-        }} 
-      />
-      <Stack.Screen 
-        name="equipment" 
-        options={{
-          title: 'Quản lý Thiết bị',
-        }} 
+        }}
       />
     </Stack>
   );

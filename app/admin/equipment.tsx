@@ -126,14 +126,6 @@ export default function AdminEquipment() {
             value={query}
             onChangeText={setQuery}
           />
-          <Pressable
-            className="bg-[#0F172A] rounded-md flex-row items-center"
-            style={{ paddingHorizontal: 10, paddingVertical: 6, gap: 5 }}
-            onPress={() => router.push('/(tabs)/scan')}
-          >
-            <Feather name="maximize" size={13} color="#FFFFFF" />
-            <Text className="text-white text-[11px] font-bold">Tra cứu</Text>
-          </Pressable>
         </View>
 
         {/* Chips */}

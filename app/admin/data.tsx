@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import api from '@/api/client';
@@ -35,6 +35,15 @@ export default function AdminData() {
     maintenance: '/maintenance',
   };
 
+  // Màn quản lý (CRUD) tương ứng từng loại dữ liệu
+  const MANAGE_ROUTE: any = {
+    category: '/categories',
+    supplier: '/suppliers',
+    location: '/locations',
+    maintenance: '/admin/maintenance',
+  };
+  const goManage = () => router.push(MANAGE_ROUTE[tab] as any);
+
   const fetchData = async () => {
     try {
       const res = await api.get(ENDPOINT[tab]);
@@ -55,7 +64,13 @@ export default function AdminData() {
   };
 
   useEffect(() => { fetchData(); }, [tab]);
-  useEffect(() => { fetchCounts(); }, []);
+  // Làm mới khi quay lại màn (sau khi thêm/sửa/xóa ở màn quản lý)
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+      fetchCounts();
+    }, [tab])
+  );
 
   return (
     <View className="flex-1 bg-[#F1F5F9]">
@@ -68,7 +83,7 @@ export default function AdminData() {
             <Text className="text-[#0F172A] text-lg font-bold">Quản lý dữ liệu</Text>
             <Text className="text-[#94A3B8] text-[10px]">Danh mục · Nhà CC · Kho · Bảo trì</Text>
           </View>
-          <Pressable className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center">
+          <Pressable className="w-10 h-10 bg-[#CC0D00] rounded-full items-center justify-center" onPress={goManage}>
             <Feather name="plus" size={20} color="#FFFFFF" />
           </Pressable>
         </View>
@@ -127,31 +142,28 @@ export default function AdminData() {
           {items.map((it: any, idx: number) => {
             const info = ICON_MAP[it.name] || { icon: 'folder', bg: '#F1F5F9', color: '#64748B' };
             return (
-              <Animated.View key={it.id || idx} entering={FadeInDown.delay(idx * 50)} className="bg-white rounded-[14px] flex-row items-center" style={{ padding: 12, gap: 10 }}>
-                <View className="w-11 h-11 rounded-xl items-center justify-center" style={{ backgroundColor: info.bg }}>
-                  <Feather name={info.icon} size={18} color={info.color} />
-                </View>
-                <View className="flex-1" style={{ gap: 2 }}>
-                  <Text className="text-[#0F172A] text-sm font-bold">{it.name}</Text>
-                  <Text className="text-[#94A3B8] text-[11px]" numberOfLines={1}>
-                    {it.description || it.address || it.email || '---'}
-                  </Text>
-                  <View className="flex-row" style={{ gap: 8, marginTop: 4 }}>
-                    <View className="flex-row items-center" style={{ gap: 4 }}>
+              <Animated.View key={it.id || idx} entering={FadeInDown.delay(idx * 50)}>
+                <Pressable className="bg-white rounded-[14px] flex-row items-center" style={{ padding: 12, gap: 10 }} onPress={goManage}>
+                  <View className="w-11 h-11 rounded-xl items-center justify-center" style={{ backgroundColor: info.bg }}>
+                    <Feather name={info.icon} size={18} color={info.color} />
+                  </View>
+                  <View className="flex-1" style={{ gap: 2 }}>
+                    <Text className="text-[#0F172A] text-sm font-bold">{it.name}</Text>
+                    <Text className="text-[#94A3B8] text-[11px]" numberOfLines={1}>
+                      {it.description || it.address || it.email || '---'}
+                    </Text>
+                    <View className="flex-row items-center" style={{ gap: 4, marginTop: 4 }}>
                       <Feather name="edit-2" size={10} color="#94A3B8" />
-                      <Text className="text-[#94A3B8] text-[10px]">Sửa</Text>
-                    </View>
-                    <View className="flex-row items-center" style={{ gap: 4 }}>
-                      <Feather name="trash-2" size={10} color="#EF4444" />
-                      <Text className="text-[#EF4444] text-[10px]">Xóa</Text>
+                      <Text className="text-[#94A3B8] text-[10px]">Chạm để sửa / xóa</Text>
                     </View>
                   </View>
-                </View>
-                {it.equipment_count !== undefined && (
-                  <View className="rounded-full bg-[#F1F5F9]" style={{ paddingVertical: 2, paddingHorizontal: 8 }}>
-                    <Text className="text-[#64748B] text-[10px] font-bold">{it.equipment_count} TB</Text>
-                  </View>
-                )}
+                  {it.equipment_count !== undefined && (
+                    <View className="rounded-full bg-[#F1F5F9]" style={{ paddingVertical: 2, paddingHorizontal: 8 }}>
+                      <Text className="text-[#64748B] text-[10px] font-bold">{it.equipment_count} TB</Text>
+                    </View>
+                  )}
+                  <Feather name="chevron-right" size={16} color="#CBD5E1" />
+                </Pressable>
               </Animated.View>
             );
           })}
