@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '@/store/useAuthStore';
 import * as ImagePicker from 'expo-image-picker';
 import { useAlertStore } from '@/store/useAlertStore';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 LocaleConfig.locales['vi'] = {
   monthNames: ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'],
@@ -459,7 +460,8 @@ export default function EquipmentDetailScreen() {
 
         {/* Edit Equipment Modal */}
         <Modal visible={editModalVisible} animationType="slide" transparent={false}>
-          <View className="flex-1 bg-[#F1F5F9]" style={{ paddingTop: Platform.OS === 'ios' ? 44 : 0 }}>
+          <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+            <View className="flex-1 bg-[#F1F5F9]">
             {/* Header */}
             <View className="flex-row items-center justify-between px-5 bg-white border-b border-gray-100" style={{ height: 56 }}>
               <Pressable className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100" onPress={() => setEditModalVisible(false)}>
@@ -728,7 +730,8 @@ export default function EquipmentDetailScreen() {
                 </View>
               </View>
             </Modal>
-          </View>
+            </View>
+          </SafeAreaView>
         </Modal>
       </View>
     </KeyboardAvoidingView>
