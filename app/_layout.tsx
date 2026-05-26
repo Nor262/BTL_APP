@@ -134,7 +134,6 @@ export default function RootLayout() {
             <Stack.Screen name="forgot-password" />
             <Stack.Screen name="verify-otp" />
             <Stack.Screen name="borrow-request" />
-            <Stack.Screen name="return" />
             <Stack.Screen name="transactions/[id]" />
             <Stack.Screen name="equipment/availability" />
             <Stack.Screen name="reset-password" />
