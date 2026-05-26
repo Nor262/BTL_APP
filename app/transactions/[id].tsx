@@ -193,7 +193,12 @@ export default function TransactionDetailScreen() {
       <View className="absolute left-0 right-0 bottom-0 bg-white" style={{ paddingTop: 12, paddingBottom: 28, paddingHorizontal: 16 }}>
         <View className="flex-row" style={{ gap: 8 }}>
           {sk === 'active' && isOwner && (
-            <Pressable onPress={() => router.push({ pathname: '/return', params: { transactionId: String(id) } } as any)}
+            <Pressable onPress={() => showAlert({
+                type: 'info',
+                title: 'Trả thiết bị',
+                message: 'Vui lòng mang thiết bị đến phòng quản lý để thủ kho xác nhận trả.',
+                showCancel: false,
+              })}
               className="flex-1 bg-[#CC0D00] rounded-2xl flex-row items-center justify-center" style={{ paddingVertical: 14, gap: 6 }}>
               <Feather name="check-circle" size={14} color="#FFFFFF" />
               <Text className="text-white font-bold text-sm">Trả thiết bị</Text>

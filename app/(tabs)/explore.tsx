@@ -39,6 +39,13 @@ export default function ProfileScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [stats, setStats] = useState({ total: 0, active: 0, overdue: 0 });
 
+  // Làm mới thông tin (gồm avatar_url) mỗi khi mở màn hình — giống profile của thủ kho/admin
+  useFocusEffect(
+    useCallback(() => {
+      refreshMe();
+    }, [])
+  );
+
   // Sync state values when modal opens or user updates
   useEffect(() => {
     if (showEditModal && user) {
@@ -151,13 +158,17 @@ export default function ProfileScreen() {
         },
       });
 
-      const updatedUser = res.data.user || res.data.data?.user;
+      // Response /users/avatar bị TransformInterceptor bọc thành { data: { message, avatar_url, user } }
+      const payload = res.data?.data ?? res.data;
+      const updatedUser = payload?.user;
+      const newAvatarUrl = payload?.avatar_url;
       if (updatedUser) {
         setAuth(updatedUser, useAuthStore.getState().token!);
-      } else if (res.data.avatar_url) {
-        const newUser = { ...user, avatar_url: res.data.avatar_url } as any;
-        setAuth(newUser, useAuthStore.getState().token!);
+      } else if (newAvatarUrl) {
+        setAuth({ ...user, avatar_url: newAvatarUrl } as any, useAuthStore.getState().token!);
       }
+      // Đồng bộ lại từ server để chắc chắn avatar_url mới nhất được lưu/hiển thị
+      await refreshMe();
 
       showAlert({
         type: 'success',
@@ -244,9 +255,9 @@ export default function ProfileScreen() {
               {uploading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : user?.avatar_url ? (
-                <Image 
-                  source={{ uri: user.avatar_url }} 
-                  className="w-full h-full rounded-full"
+                <Image
+                  source={{ uri: user.avatar_url }}
+                  style={{ width: '100%', height: '100%' }}
                   contentFit="cover"
                 />
               ) : (

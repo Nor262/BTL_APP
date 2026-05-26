@@ -191,7 +191,12 @@ export default function MyLoansScreen() {
               <Pressable
                 className="bg-[#CC0D00] px-3 py-1.5 rounded-lg flex-row items-center active:scale-95"
                 style={{ gap: 4 }}
-                onPress={() => router.push({ pathname: '/return', params: { transactionId: String(item.id) } } as any)}
+                onPress={() => showAlert({
+                  type: 'info',
+                  title: 'Trả thiết bị',
+                  message: 'Vui lòng mang thiết bị đến phòng quản lý để thủ kho xác nhận trả.',
+                  showCancel: false,
+                })}
               >
                 <Feather name="check-circle" size={12} color="#FFFFFF" />
                 <Text className="text-white font-bold text-[11px]">Trả thiết bị</Text>

@@ -232,9 +232,8 @@ export default function BorrowerHome() {
                         showAlert({
                           type: 'info',
                           title: 'Trả thiết bị',
-                          message: 'Vui lòng mang thiết bị đến phòng quản lý để thủ kho xác nhận trả. Hoặc quét mã QR thiết bị tại quầy.',
+                          message: 'Vui lòng mang thiết bị đến phòng quản lý để thủ kho xác nhận trả.',
                           showCancel: false,
-                          onConfirm: () => router.push({ pathname: '/(tabs)/scan', params: { mode: 'checkin' } }),
                         });
                       }}
                     >

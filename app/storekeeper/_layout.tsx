@@ -25,6 +25,8 @@ export default function StorekeeperLayout() {
       <Tabs.Screen name="handover" options={{ title: 'GIAO', tabBarIcon: ({ color }) => <Feather name="package" size={22} color={color} /> }} />
       <Tabs.Screen name="inventory" options={{ title: 'KHO', tabBarIcon: ({ color }) => <Feather name="archive" size={22} color={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'TÔI', tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} /> }} />
+      {/* Màn quét bàn giao/nhận — điều hướng tới khi cần, ẩn khỏi thanh tab */}
+      <Tabs.Screen name="scan" options={{ href: null }} />
     </Tabs>
   );
 }
