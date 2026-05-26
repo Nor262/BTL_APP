@@ -84,7 +84,7 @@ export default function MyLoansScreen() {
             className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 mr-2"
             onPress={() => handleExtend(item)}
           >
-            <Text className="text-blue-600 font-medium text-xs">Gia hạn (+7 ngày)</Text>
+            <Text className="text-blue-600 font-medium text-xs">Gia hạn (+1 ngày)</Text>
           </Pressable>
         )}
         {item.status === 'completed' && !item.rating && (
@@ -126,11 +126,11 @@ export default function MyLoansScreen() {
   };
 
   const handleExtend = (tx: any) => {
-    Alert.alert('Xác nhận gia hạn', 'Bạn muốn gia hạn thêm 7 ngày cho thiết bị này?', [
+    Alert.alert('Xác nhận gia hạn', 'Bạn muốn gia hạn thêm 1 ngày cho thiết bị này?', [
       { text: 'Hủy', style: 'cancel' },
       { text: 'Gia hạn', onPress: async () => {
         try {
-          const newDueDate = new Date(new Date(tx.due_date).getTime() + 7 * 24 * 60 * 60 * 1000);
+          const newDueDate = new Date(new Date(tx.due_date).getTime() + 1 * 24 * 60 * 60 * 1000);
           await api.patch(`/transactions/${tx.id}/extend`, { new_due_date: newDueDate.toISOString() });
           Alert.alert('Thành công', 'Gia hạn thành công!');
           fetchData();

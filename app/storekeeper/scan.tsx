@@ -18,8 +18,6 @@ export default function StorekeeperScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannedItems, setScannedItems] = useState<any[]>([]);
   const [scanning, setScanning] = useState(true);
-  const [condition, setCondition] = useState<'Good' | 'Broken'>('Good');
-  const [evidenceImage, setEvidenceImage] = useState<string | null>(null);
   const [showManualInput, setShowManualInput] = useState(false);
   const [serialNumber, setSerialNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,7 +60,14 @@ export default function StorekeeperScanScreen() {
 
       const response = await api.get(`/equipment/verify?qr_data=${data}`);
       const itemData = response.data.data || response.data;
-      setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
+
+      if (itemData.transaction_id === null) {
+        Alert.alert('Lỗi', 'Thiết bị này hiện không có đơn mượn nào được duyệt.');
+        setTimeout(() => setScanning(true), 1500);
+        return;
+      }
+
+      setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data, condition: 'Good', evidenceImage: null }]);
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       handleApiError(error, 'Mã QR không hợp lệ');
@@ -72,17 +77,59 @@ export default function StorekeeperScanScreen() {
     }
   };
 
-  const pickImage = async () => {
+  const updateItemField = (index: number, field: string, value: any) => {
+    setScannedItems(prev => prev.map((item, i) => {
+      if (i === index) {
+        return { ...item, [field]: value };
+      }
+      return item;
+    }));
+  };
+
+  const selectImageForItem = async (index: number) => {
+    Alert.alert(
+      'Hình ảnh minh chứng',
+      'Chọn nguồn ảnh:',
+      [
+        {
+          text: 'Chụp ảnh mới',
+          onPress: () => launchImagePicker(index, 'camera')
+        },
+        {
+          text: 'Chọn từ thư viện',
+          onPress: () => launchImagePicker(index, 'library')
+        },
+        {
+          text: 'Hủy',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  const launchImagePicker = async (index: number, mode: 'camera' | 'library') => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      if (mode === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Thông báo', 'Bạn cần cấp quyền camera để chụp ảnh.');
+          return;
+        }
+      }
+
+      const options: ImagePicker.ImagePickerOptions = {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
-      });
+      };
+
+      const result = mode === 'camera'
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options);
 
       if (!result.canceled) {
-        setEvidenceImage(result.assets[0].uri);
+        updateItemField(index, 'evidenceImage', result.assets[0].uri);
       }
     } catch (error) {
       handleApiError(error, 'Không thể chọn ảnh');
@@ -99,14 +146,14 @@ export default function StorekeeperScanScreen() {
         const endpoint = item.status === 'available' ? 'checkout' : 'checkin';
         const formData = new FormData();
         formData.append('qr_code_data', item.qr_code_data || '');
-        formData.append('condition', condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi');
+        formData.append('condition', item.condition === 'Good' ? 'Tình trạng tốt' : 'Phát hiện hỏng hóc/lỗi');
         
-        if (evidenceImage) {
-          const filename = evidenceImage.split('/').pop() || 'image.jpg';
+        if (item.evidenceImage) {
+          const filename = item.evidenceImage.split('/').pop() || 'image.jpg';
           const match = /\.(\w+)$/.exec(filename);
           const type = match ? `image/${match[1]}` : `image/jpeg`;
           
-          formData.append('image', { uri: evidenceImage, name: filename, type } as any);
+          formData.append('image', { uri: item.evidenceImage, name: filename, type } as any);
         }
 
         await api.put(`/transactions/${item.transaction_id || item.id}/${endpoint}`, formData, {
@@ -136,13 +183,18 @@ export default function StorekeeperScanScreen() {
     try {
       const response = await api.post('/transactions/verify-item', { serial_number: serialNumber.trim() });
       const itemData = response.data.data || response.data;
+
+      if (itemData.transaction_id === null) {
+        Alert.alert('Lỗi', 'Thiết bị này hiện không có đơn mượn nào được duyệt.');
+        return;
+      }
       
       if (scannedItems.find(item => item.id === itemData.id)) {
         Alert.alert('Thông báo', 'Thiết bị này đã được nhập');
         return;
       }
 
-      setScannedItems(prev => [...prev, { ...itemData, qr_code_data: itemData.qr_code_data || itemData.serial_number }]);
+      setScannedItems(prev => [...prev, { ...itemData, qr_code_data: itemData.qr_code_data || itemData.serial_number, condition: 'Good', evidenceImage: null }]);
       setShowManualInput(false);
       setSerialNumber('');
     } catch (error) {
@@ -225,76 +277,82 @@ export default function StorekeeperScanScreen() {
             </View>
           ) : (
             <>
-              <View className="mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <Text className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-widest">Tình trạng thiết bị</Text>
-                <View className="flex-row">
-                  <Pressable 
-                    className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg mr-2 ${condition === 'Good' ? 'bg-green-50 border-green-500' : 'bg-white border-transparent'} border`}
-                    style={condition !== 'Good' ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 } : undefined}
-                    onPress={() => setCondition('Good')}
-                  >
-                    <Feather name="check-circle" size={16} color={condition === 'Good' ? '#34C759' : '#C7C7CC'} />
-                    <Text className={`ml-2 font-bold text-xs ${condition === 'Good' ? 'text-green-600' : 'text-gray-500'}`}>TỐT</Text>
-                  </Pressable>
-                  <Pressable 
-                    className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${condition === 'Broken' ? 'bg-red-50 border-red-500' : 'bg-white border-transparent'} border`}
-                    style={condition !== 'Broken' ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 } : undefined}
-                    onPress={() => setCondition('Broken')}
-                  >
-                    <Feather name="alert-triangle" size={16} color={condition === 'Broken' ? '#FF3B30' : '#C7C7CC'} />
-                    <Text className={`ml-2 font-bold text-xs ${condition === 'Broken' ? 'text-red-600' : 'text-gray-500'}`}>HỎNG HÓC</Text>
-                  </Pressable>
-                </View>
-                
-                {condition === 'Broken' && (
-                  <View className="mt-4">
-                    <Text className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Hinh anh minh chung</Text>
-                    {evidenceImage ? (
-                      <View className="relative h-32 w-full rounded-xl overflow-hidden mb-2">
-                        <Image source={{ uri: evidenceImage }} className="w-full h-full bg-gray-200" resizeMode="cover" />
-                        <Pressable 
-                          className="absolute top-2 right-2 w-8 h-8 rounded-full items-center justify-center"
-                          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-                          onPress={() => setEvidenceImage(null)}
-                        >
-                          <Feather name="x" size={16} color="white" />
-                        </Pressable>
-                      </View>
-                    ) : (
-                      <Pressable 
-                        className="h-20 w-full border border-dashed border-gray-300 rounded-xl items-center justify-center bg-white"
-                        onPress={pickImage}
-                      >
-                        <Feather name="camera" size={24} color="#CC0D00" />
-                        <Text className="text-xs text-primary font-medium mt-1">Tải ảnh lên</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                )}
-              </View>
-
               {scannedItems.map((item, index) => (
                 <View 
                   key={index} 
-                  className="flex-row items-center bg-white p-3 rounded-xl mb-2 border border-gray-100"
+                  className="bg-white p-4 rounded-2xl mb-4 border border-gray-100"
                   style={{ 
                     shadowColor: '#000', 
                     shadowOffset: { width: 0, height: 1 }, 
                     shadowOpacity: 0.05, 
-                    shadowRadius: 1, 
-                    elevation: 1 
+                    shadowRadius: 2, 
+                    elevation: 2 
                   }}
                 >
-                  <View className="w-10 h-10 bg-red-50 rounded-lg items-center justify-center mr-3">
-                    <Feather name="monitor" size={20} color="#CC0D00" />
+                  {/* Title & Remove btn */}
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-row items-center flex-1 pr-2">
+                      <View className="w-10 h-10 bg-red-50 rounded-lg items-center justify-center mr-3">
+                        <Feather name="monitor" size={20} color="#CC0D00" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{item.name}</Text>
+                        <Text className="text-xs text-gray-500 mt-0.5">SN: {item.serial_number}</Text>
+                      </View>
+                    </View>
+                    <Pressable onPress={() => removeItem(index)} className="p-2">
+                      <Feather name="trash-2" size={18} color="#FF3B30" />
+                    </Pressable>
                   </View>
-                  <View className="flex-1">
-                    <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{item.name}</Text>
-                    <Text className="text-xs text-gray-500 mt-1">SN: {item.serial_number}</Text>
+
+                  {/* Condition selector for this item */}
+                  <View className="mt-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <Text className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Tình trạng thiết bị</Text>
+                    <View className="flex-row mb-2">
+                      <Pressable 
+                        className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg mr-2 ${item.condition === 'Good' ? 'bg-green-55 border-green-500' : 'bg-white border-transparent'} border`}
+                        style={item.condition === 'Good' ? { backgroundColor: '#F0FDF4' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 }}
+                        onPress={() => updateItemField(index, 'condition', 'Good')}
+                      >
+                        <Feather name="check-circle" size={14} color={item.condition === 'Good' ? '#22C55E' : '#C7C7CC'} />
+                        <Text className={`ml-2 font-bold text-xs ${item.condition === 'Good' ? 'text-green-600' : 'text-gray-500'}`}>TỐT</Text>
+                      </Pressable>
+                      <Pressable 
+                        className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${item.condition === 'Broken' ? 'bg-red-55 border-red-500' : 'bg-white border-transparent'} border`}
+                        style={item.condition === 'Broken' ? { backgroundColor: '#FEF2F2' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 }}
+                        onPress={() => updateItemField(index, 'condition', 'Broken')}
+                      >
+                        <Feather name="alert-triangle" size={14} color={item.condition === 'Broken' ? '#EF4444' : '#C7C7CC'} />
+                        <Text className={`ml-2 font-bold text-xs ${item.condition === 'Broken' ? 'text-red-600' : 'text-gray-500'}`}>HỎNG HÓC</Text>
+                      </Pressable>
+                    </View>
+
+                    {item.condition === 'Broken' && (
+                      <View className="mt-2">
+                        <Text className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Hình ảnh minh chứng</Text>
+                        {item.evidenceImage ? (
+                          <View className="relative h-32 w-full rounded-lg overflow-hidden">
+                            <Image source={{ uri: item.evidenceImage }} className="w-full h-full bg-gray-200" resizeMode="cover" />
+                            <Pressable 
+                              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full items-center justify-center"
+                              style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+                              onPress={() => updateItemField(index, 'evidenceImage', null)}
+                            >
+                              <Feather name="x" size={14} color="white" />
+                            </Pressable>
+                          </View>
+                        ) : (
+                          <Pressable 
+                            className="h-16 w-full border border-dashed border-gray-300 rounded-lg items-center justify-center bg-white flex-row"
+                            onPress={() => selectImageForItem(index)}
+                          >
+                            <Feather name="camera" size={16} color="#CC0D00" />
+                            <Text className="text-xs text-primary font-medium ml-2">Chụp hoặc Tải ảnh lên</Text>
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
                   </View>
-                  <Pressable onPress={() => removeItem(index)} className="p-2">
-                    <Feather name="delete" size={16} color="#FF3B30" />
-                  </Pressable>
                 </View>
               ))}
             </>
