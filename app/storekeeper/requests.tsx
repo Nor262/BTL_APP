@@ -61,7 +61,7 @@ export default function StorekeeperRequestsScreen() {
       className="bg-white rounded-2xl p-4 mb-3 border border-gray-100"
       style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 1, elevation: 1 }}
     >
-      <Pressable onPress={() => router.push(`/storekeeper/request-detail?id=${item.id}`)}>
+      <Pressable onPress={() => router.push(`/storekeeper/request-detail?id=${item.id}` as any)}>
         <View className="flex-row justify-between items-start mb-3">
           <View className="flex-1 pr-4">
             <Text className="font-bold text-gray-900 text-base" numberOfLines={1}>

@@ -94,18 +94,20 @@ export default function StorekeeperHome() {
           <View className="flex-row justify-between items-center mb-8">
             <View>
               <Text className="text-white/70 text-sm font-medium">Hệ thống Quản lý</Text>
-              <Text className="text-white text-2xl font-bold">Thủ kho PTIT</Text>
+              <Text className="text-white text-2xl font-bold">
+                {user?.role === 'admin' ? 'Admin PTIT' : 'Thủ kho PTIT'}
+              </Text>
             </View>
             <View className="flex-row items-center">
               <Pressable 
                 className="w-10 h-10 bg-white/20 rounded-full items-center justify-center mr-3"
-                onPress={() => router.push('/notifications')}
+                onPress={() => router.push('/notifications' as any)}
               >
                 <Feather name="bell" size={20} color="white" />
               </Pressable>
               <Pressable 
                 className="w-10 h-10 bg-white/20 rounded-full items-center justify-center overflow-hidden"
-                onPress={() => router.push('/(tabs)/explore')}
+                onPress={() => router.push('/(tabs)/explore' as any)}
               >
                 {user?.avatar_url ? (
                   <Image 
@@ -123,7 +125,7 @@ export default function StorekeeperHome() {
           <Animated.View entering={FadeInDown.delay(200)}>
             <Pressable 
               className="bg-white/10 border border-white/20 rounded-3xl p-6 flex-row items-center justify-between"
-              onPress={() => router.push('/storekeeper/scan')}
+              onPress={() => router.push('/storekeeper/scan' as any)}
             >
               <View className="flex-row items-center">
                 <View className="w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-lg">
@@ -178,33 +180,38 @@ export default function StorekeeperHome() {
             <ShortcutCard 
               label="Duyệt yêu cầu" 
               icon="check-square" 
-              onPress={() => router.push('/storekeeper/requests')}
+              onPress={() => router.push('/storekeeper/requests' as any)}
               badge={stats.pending > 0 ? stats.pending : undefined}
+            />
+            <ShortcutCard 
+              label="Thiết bị" 
+              icon="box" 
+              onPress={() => router.push('/admin/equipment' as any)}
             />
             <ShortcutCard 
               label="Bảo trì" 
               icon="tool" 
-              onPress={() => router.push('/admin/maintenance')}
+              onPress={() => router.push('/admin/maintenance' as any)}
             />
             <ShortcutCard 
               label="Danh mục" 
               icon="folder" 
-              onPress={() => router.push('/admin/categories')}
+              onPress={() => router.push('/admin/categories' as any)}
             />
             <ShortcutCard 
               label="Vị trí kho" 
               icon="map-pin" 
-              onPress={() => router.push('/admin/locations')}
+              onPress={() => router.push('/admin/locations' as any)}
             />
             <ShortcutCard 
               label="Nhà cung cấp" 
               icon="truck" 
-              onPress={() => router.push('/admin/suppliers')}
+              onPress={() => router.push('/admin/suppliers' as any)}
             />
             <ShortcutCard 
               label="Giao dịch" 
               icon="list" 
-              onPress={() => router.push('/my-loans')}
+              onPress={() => router.push('/my-loans' as any)}
             />
             <ShortcutCard 
               label="Báo cáo" 
@@ -215,14 +222,14 @@ export default function StorekeeperHome() {
               <ShortcutCard 
                 label="Nhật ký" 
                 icon="file-text" 
-                onPress={() => router.push('/admin/audit')}
+                onPress={() => router.push('/admin/audit' as any)}
               />
             )}
           </View>
 
           <View className="flex-row justify-between items-center mt-6 mb-4">
             <Text className="font-bold text-xl text-gray-900">Yêu cầu mới nhất</Text>
-            <Pressable onPress={() => router.push('/my-loans')}>
+            <Pressable onPress={() => router.push('/my-loans' as any)}>
               <Text className="text-primary font-bold text-sm">Xem tất cả</Text>
             </Pressable>
           </View>

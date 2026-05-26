@@ -55,7 +55,7 @@ export default function StorekeeperRequestDetailScreen() {
           await api.put(`/transactions/${id}/review`, { status: 'approved' });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           Alert.alert('Thành công', 'Đã duyệt đơn mượn thiết bị!');
-          router.replace('/storekeeper/requests');
+          router.replace('/storekeeper/requests' as any);
         } catch (error) {
           handleApiError(error, 'Lỗi khi duyệt đơn');
         } finally {
@@ -80,7 +80,7 @@ export default function StorekeeperRequestDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setRejectModalVisible(false);
       Alert.alert('Thành công', 'Đã từ chối đơn mượn thiết bị');
-      router.replace('/storekeeper/requests');
+      router.replace('/storekeeper/requests' as any);
     } catch (error) {
       handleApiError(error, 'Lỗi khi từ chối đơn');
     } finally {

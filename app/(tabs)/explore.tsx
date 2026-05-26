@@ -240,7 +240,7 @@ export default function ProfileScreen() {
           {user?.phone && <Text className="text-white/80 mt-1">{user.phone}</Text>}
           <View className="bg-white/20 px-4 py-1.5 rounded-full mt-3">
             <Text className="text-white text-xs font-bold uppercase tracking-wider">
-              {user?.role === 'storekeeper' ? 'THỦ KHO' : 'SINH VIÊN'}
+              {user?.role === 'admin' ? 'ADMIN' : user?.role === 'storekeeper' ? 'THỦ KHO' : 'SINH VIÊN'}
             </Text>
           </View>
         </View>
