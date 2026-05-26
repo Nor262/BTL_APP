@@ -12,7 +12,7 @@ export default function ImportEquipmentScreen() {
   const { showAlert } = useAlertStore();
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<{ success: number; failed: number; errors?: any[] } | null>(null);
+  const [result, setResult] = useState<{ success: number; failed?: number; errors?: any[] } | null>(null);
 
   const pickFile = async () => {
     const r = await DocumentPicker.getDocumentAsync({
@@ -29,8 +29,17 @@ export default function ImportEquipmentScreen() {
       fd.append('file', { uri: file.uri, name: file.name, type: file.mimeType || 'application/octet-stream' } as any);
       const res = await api.post('/equipment/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       const d = res.data.data || res.data;
-      setResult({ success: d.success || d.imported || 0, failed: d.failed || 0, errors: d.errors });
-      showAlert({ type: 'success', title: 'Import xong', message: `Thành công ${d.success || 0}, lỗi ${d.failed || 0}` });
+      const success = d.success ?? d.imported ?? 0;
+      // Backend hiện chỉ trả số dòng import thành công; chỉ hiện "lỗi" khi backend thực sự trả về
+      const failed = d.failed;
+      setResult({ success, failed, errors: d.errors });
+      showAlert({
+        type: 'success',
+        title: 'Import xong',
+        message: failed != null
+          ? `Thành công ${success}, lỗi ${failed}`
+          : `Đã import thành công ${success} thiết bị. Kiểm tra lại danh sách nếu thiếu (dòng sai category_id/serial trùng sẽ bị bỏ qua).`,
+      });
     } catch (e) {
       handleApiError(e, 'Lỗi import file');
     } finally { setUploading(false); }
@@ -52,7 +61,8 @@ export default function ImportEquipmentScreen() {
             <Feather name="info" size={16} color="#1D4ED8" />
             <Text className="text-[#1D4ED8] font-bold text-sm">Hướng dẫn</Text>
           </View>
-          <Text className="text-[#1E40AF] text-xs">File Excel/CSV cần có các cột: name, serial_number, category_id, location_id, supplier_id, quantity, price.</Text>
+          <Text className="text-[#1E40AF] text-xs">Dòng 1 là tiêu đề. Các cột theo đúng thứ tự: name, serial_number, category_id, location_id, status, condition, price.</Text>
+          <Text className="text-[#1E40AF] text-xs">Lưu ý: category_id và location_id phải là số ID (lấy ở mục Danh mục / Vị trí), không phải tên.</Text>
         </View>
 
         <Pressable onPress={pickFile}
@@ -86,10 +96,12 @@ export default function ImportEquipmentScreen() {
                 <Text className="text-[#15803D] text-xs font-semibold">Thành công</Text>
                 <Text className="text-[#15803D] text-2xl font-extrabold">{result.success}</Text>
               </View>
-              <View className="flex-1 bg-[#FEE2E2] rounded-xl" style={{ padding: 10 }}>
-                <Text className="text-[#CC0D00] text-xs font-semibold">Lỗi</Text>
-                <Text className="text-[#CC0D00] text-2xl font-extrabold">{result.failed}</Text>
-              </View>
+              {result.failed != null && (
+                <View className="flex-1 bg-[#FEE2E2] rounded-xl" style={{ padding: 10 }}>
+                  <Text className="text-[#CC0D00] text-xs font-semibold">Lỗi</Text>
+                  <Text className="text-[#CC0D00] text-2xl font-extrabold">{result.failed}</Text>
+                </View>
+              )}
             </View>
             {result.errors?.length && (
               <View style={{ gap: 4 }}>

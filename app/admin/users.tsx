@@ -71,9 +71,7 @@ export default function AdminUsers() {
             <Text className="text-[#0F172A] text-base font-bold">Quản lý người dùng</Text>
             <Text className="text-[#94A3B8] text-[10px]">{users.length} tài khoản</Text>
           </View>
-          <Pressable className="w-10 h-10 bg-white rounded-full items-center justify-center">
-            <Feather name="sliders" size={18} color="#0F172A" />
-          </Pressable>
+          <View className="w-10 h-10" />
         </View>
 
         {/* Tabs */}

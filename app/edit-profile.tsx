@@ -30,6 +30,7 @@ export default function EditProfileScreen() {
   const [showNew, setShowNew] = useState(false);
 
   const initials = (fullName.split(' ').pop() || 'U').charAt(0).toUpperCase();
+  const isStudent = user?.role === 'borrower';
 
   const passStrength = (() => {
     if (!newPass) return { label: '', color: '#E2E8F0', pct: 0 };
@@ -187,6 +188,8 @@ export default function EditProfileScreen() {
                   placeholderTextColor="#94A3B8"
                 />
               </View>
+              {isStudent && (
+              <>
               <View style={{ gap: 5 }}>
                 <Text className="text-[#64748B] text-[11px] font-semibold">Mã sinh viên</Text>
                 <TextInput
@@ -221,6 +224,8 @@ export default function EditProfileScreen() {
                   placeholderTextColor="#94A3B8"
                 />
               </View>
+              </>
+              )}
             </Animated.View>
 
             {/* Change password card */}

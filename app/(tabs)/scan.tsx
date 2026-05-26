@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { StyleSheet, ActivityIndicator, View, Text, Pressable, TextInput } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
-import { handleApiError } from '@/utils/error-handler';
+import { useAlertStore } from '@/store/useAlertStore';
 
 /**
  * Màn hình quét cho Người mượn (Borrower): chỉ TRA CỨU thiết bị.
@@ -20,7 +20,18 @@ export default function BorrowerScanScreen() {
   const [flashOn, setFlashOn] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const lockRef = useRef(false);
   const router = useRouter();
+  const { showAlert } = useAlertStore();
+
+  // Reset trạng thái mỗi khi quay lại màn quét (cho phép quét tiếp)
+  useFocusEffect(
+    useCallback(() => {
+      setScanning(true);
+      setLoading(false);
+      lockRef.current = false;
+    }, [])
+  );
 
   if (!permission) {
     return (
@@ -46,6 +57,10 @@ export default function BorrowerScanScreen() {
   }
 
   const lookup = async (data: string) => {
+    // Khóa đồng bộ: chặn camera bắn nhiều lần gây loading lặp
+    if (lockRef.current) return;
+    lockRef.current = true;
+    setScanning(false);
     setLoading(true);
     try {
       const response = await api.get('/equipment/verify', { params: { qr_data: data } });
@@ -54,22 +69,30 @@ export default function BorrowerScanScreen() {
       if (eqId) {
         router.push(`/equipment/${eqId}`);
       } else {
-        throw new Error('Không tìm thấy thiết bị');
+        throw new Error('NOT_FOUND');
       }
-    } catch (error) {
+    } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Mã QR không hợp lệ');
-      setTimeout(() => setScanning(true), 1500);
+      const notFound = error?.response?.status === 404 || error?.message === 'NOT_FOUND';
+      showAlert({
+        type: 'error',
+        title: notFound ? 'Không tìm thấy thiết bị' : 'Mã QR không hợp lệ',
+        message: notFound
+          ? 'Không tìm thấy thông tin thiết bị cho mã QR/serial này.'
+          : 'Mã QR không hợp lệ hoặc không đọc được. Vui lòng thử lại.',
+        showCancel: false,
+      });
+      // Cho phép quét lại sau lỗi
+      lockRef.current = false;
+      setScanning(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (!scanning) return;
-    setScanning(false);
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await lookup(data);
+    lookup(data);
   };
 
   const submitManual = () => {

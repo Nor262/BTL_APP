@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, ActivityIndicator, Alert, View, Text, Pressable, ScrollView, Image, TextInput } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { StyleSheet, ActivityIndicator, Alert, View, Text, Pressable, ScrollView, Image } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,8 +24,8 @@ export default function StorekeeperScanScreen() {
   const [condition, setCondition] = useState<'Good' | 'Broken'>('Good');
   const [evidenceImage, setEvidenceImage] = useState<string | null>(null);
   const [flashOn, setFlashOn] = useState(false);
-  const [manualCode, setManualCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const lockRef = useRef(false);
   const router = useRouter();
 
   if (!permission) {
@@ -59,20 +59,37 @@ export default function StorekeeperScanScreen() {
     // Theo backup: verify qua /equipment/verify
     const response = await api.get('/equipment/verify', { params: { qr_data: data } });
     const itemData = response.data.data || response.data;
+
+    // Thiết bị 'available' -> luồng BÀN GIAO (check-out): cần có đơn mượn đã DUYỆT.
+    if (itemData.status === 'available' && itemData.transaction_status !== 'approved') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Không thể bàn giao', 'Thiết bị này chưa có yêu cầu mượn đã được duyệt để bàn giao.');
+      return;
+    }
+
     setScannedItems(prev => [...prev, { ...itemData, qr_code_data: data }]);
   };
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (!scanning) return;
+    // Khóa đồng bộ: chặn camera bắn nhiều lần gây xử lý/thông báo lặp
+    if (lockRef.current) return;
+    lockRef.current = true;
     setScanning(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       await addItem(data);
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      handleApiError(error, 'Mã QR không hợp lệ');
+      const notFound = error?.response?.status === 404;
+      Alert.alert(
+        notFound ? 'Không tìm thấy thiết bị' : 'Mã QR không hợp lệ',
+        notFound
+          ? 'Không tìm thấy thông tin thiết bị cho mã QR/serial này.'
+          : 'Mã QR không hợp lệ hoặc không đọc được. Vui lòng thử lại.',
+      );
     } finally {
-      setTimeout(() => setScanning(true), 1500);
+      // Mở khóa & cho quét tiếp sau 1.2s
+      setTimeout(() => { setScanning(true); lockRef.current = false; }, 1200);
     }
   };
 
@@ -130,13 +147,6 @@ export default function StorekeeperScanScreen() {
   const removeItem = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setScannedItems(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const submitManual = () => {
-    const code = manualCode.trim();
-    if (!code) return;
-    setManualCode('');
-    handleBarCodeScanned({ data: code });
   };
 
   return (
@@ -207,31 +217,9 @@ export default function StorekeeperScanScreen() {
           </View>
         </View>
 
-        {/* Instruction + manual input */}
+        {/* Instruction */}
         <View className="items-center" style={{ paddingVertical: 14, gap: 6 }}>
           <Text className="text-white text-sm font-semibold">Đưa mã QR vào khung hình</Text>
-          <View
-            className="flex-row items-center bg-[#1E293B] rounded-[12px] border border-[#334155]"
-            style={{ marginTop: 12, paddingHorizontal: 16, gap: 12, width: '100%', maxWidth: 320 }}
-          >
-            <Feather name="edit-3" size={16} color="#94A3B8" />
-            <TextInput
-              className="flex-1 text-white text-sm"
-              style={{ paddingVertical: 14 }}
-              placeholder="Hoặc nhập mã thiết bị thủ công..."
-              placeholderTextColor="#64748B"
-              value={manualCode}
-              onChangeText={setManualCode}
-              autoCapitalize="characters"
-              onSubmitEditing={submitManual}
-            />
-            <Pressable
-              className={`w-8 h-8 rounded-lg items-center justify-center ${manualCode.trim() ? 'bg-[#CC0D00]' : 'bg-[#334155]'}`}
-              onPress={submitManual}
-            >
-              <Feather name="arrow-right" size={16} color={manualCode.trim() ? '#FFFFFF' : '#94A3B8'} />
-            </Pressable>
-          </View>
         </View>
 
         {/* Bottom Panel */}

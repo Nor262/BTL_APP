@@ -20,6 +20,8 @@ export const useAlertStore = create<AlertState>((set) => ({
   message: '',
   onConfirm: undefined,
   showCancel: false,
-  showAlert: (config) => set({ visible: true, ...config }),
+  // Reset onConfirm/showCancel mặc định trước khi áp config mới,
+  // tránh dính onConfirm cũ (vd logout) khi alert mới không truyền onConfirm.
+  showAlert: (config) => set({ visible: true, onConfirm: undefined, showCancel: false, ...config }),
   hideAlert: () => set({ visible: false }),
 }));

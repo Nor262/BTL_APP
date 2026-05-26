@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, RefreshControl, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import api from '@/api/client';
+import { useAlertStore } from '@/store/useAlertStore';
 
 const CHIPS = [
   { key: 'all', label: 'Tất cả', color: '#CC0D00' },
@@ -20,6 +21,27 @@ export default function AdminEquipment() {
   const [chip, setChip] = useState('all');
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [menuItem, setMenuItem] = useState<any | null>(null);
+  const { showAlert } = useAlertStore();
+
+  const handleDelete = (item: any) => {
+    setMenuItem(null);
+    showAlert({
+      type: 'warning',
+      title: 'Xóa thiết bị',
+      message: `Xóa "${item.name}"? Hành động này không thể hoàn tác.`,
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/equipment/${item.id}`);
+          showAlert({ type: 'success', title: 'Đã xóa', message: 'Đã xóa thiết bị', showCancel: false });
+          fetchData();
+        } catch (e: any) {
+          showAlert({ type: 'error', title: 'Lỗi', message: e.response?.data?.message || 'Không thể xóa thiết bị', showCancel: false });
+        }
+      },
+    });
+  };
 
   const fetchData = async () => {
     try {
@@ -105,10 +127,12 @@ export default function AdminEquipment() {
             onChangeText={setQuery}
           />
           <Pressable
-            className="w-7 h-7 bg-[#0F172A] rounded-md items-center justify-center"
+            className="bg-[#0F172A] rounded-md flex-row items-center"
+            style={{ paddingHorizontal: 10, paddingVertical: 6, gap: 5 }}
             onPress={() => router.push('/(tabs)/scan')}
           >
-            <Feather name="maximize" size={14} color="#FFFFFF" />
+            <Feather name="maximize" size={13} color="#FFFFFF" />
+            <Text className="text-white text-[11px] font-bold">Tra cứu</Text>
           </Pressable>
         </View>
 
@@ -173,7 +197,7 @@ export default function AdminEquipment() {
                       </Text>
                     </View>
                   </View>
-                  <Pressable className="w-8 h-8 items-center justify-center">
+                  <Pressable className="w-8 h-8 items-center justify-center" onPress={() => setMenuItem(it)}>
                     <Feather name="more-vertical" size={16} color="#94A3B8" />
                   </Pressable>
                 </Pressable>
@@ -182,6 +206,36 @@ export default function AdminEquipment() {
           })}
         </View>
       </ScrollView>
+
+      {/* Action menu (Sửa / Xóa) */}
+      <Modal visible={!!menuItem} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setMenuItem(null)}>
+        <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setMenuItem(null)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="bg-white" style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36, gap: 8 }}>
+              <View className="flex-row items-center justify-between" style={{ marginBottom: 4 }}>
+                <Text className="text-[#0F172A] text-base font-bold" numberOfLines={1}>{menuItem?.name}</Text>
+                <Pressable onPress={() => setMenuItem(null)}><Feather name="x" size={20} color="#0F172A" /></Pressable>
+              </View>
+              <Pressable
+                className="flex-row items-center rounded-[12px]"
+                style={{ paddingVertical: 14, paddingHorizontal: 14, backgroundColor: '#F8FAFC', gap: 12 }}
+                onPress={() => { const id = menuItem.id; setMenuItem(null); router.push(`/admin/add-equipment?id=${id}` as any); }}
+              >
+                <Feather name="edit-2" size={18} color="#0F172A" />
+                <Text className="text-[#0F172A] text-sm font-bold">Sửa thiết bị</Text>
+              </Pressable>
+              <Pressable
+                className="flex-row items-center rounded-[12px]"
+                style={{ paddingVertical: 14, paddingHorizontal: 14, backgroundColor: '#FEF2F2', gap: 12 }}
+                onPress={() => handleDelete(menuItem)}
+              >
+                <Feather name="trash-2" size={18} color="#B91C1C" />
+                <Text className="text-[#B91C1C] text-sm font-bold">Xóa thiết bị</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 
@@ -14,7 +14,7 @@ LocaleConfig.defaultLocale = 'vi';
 const MAINTENANCE_OPTIONS = [3, 6, 12, 24];
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -26,6 +26,8 @@ export default function AddEquipment() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { showAlert } = useAlertStore();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEdit = !!id;
 
   const [step, setStep] = useState(1);
   const [image, setImage] = useState<string | null>(null);
@@ -48,6 +50,51 @@ export default function AddEquipment() {
   const [specTags, setSpecTags] = useState<string[]>([]);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showPeriod, setShowPeriod] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
+  const [showCategory, setShowCategory] = useState(false);
+  const [showLocation, setShowLocation] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [catRes, locRes] = await Promise.all([
+          api.get('/categories'),
+          api.get('/locations').catch(() => ({ data: { data: [] } })),
+        ]);
+        setCategories(catRes.data?.data || catRes.data || []);
+        setLocations(locRes.data?.data || locRes.data || []);
+      } catch {}
+    })();
+  }, []);
+
+  // Chế độ sửa: nạp dữ liệu thiết bị hiện có
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const res = await api.get(`/equipment/${id}`);
+        const eq = res.data?.data || res.data;
+        const specs = eq.specifications || {};
+        setForm((s: any) => ({
+          ...s,
+          name: eq.name || '',
+          sku: eq.sku || '',
+          serial_number: eq.serial_number || '',
+          category_id: eq.category_id ? String(eq.category_id) : '',
+          location_id: eq.location_id ? String(eq.location_id) : '',
+          specs: specs.summary || '',
+          warranty_date: specs.warranty || '',
+          maintenance_period: String(specs.maintenance_period_months || 6),
+          initial_status: eq.status === 'available' ? 'available' : 'maintenance',
+        }));
+        if (Array.isArray(specs.tags)) setSpecTags(specs.tags);
+        if (eq.image_url) setImageUrl(eq.image_url);
+      } catch {
+        showAlert({ type: 'error', title: 'Lỗi', message: 'Không tải được thông tin thiết bị', showCancel: false });
+      }
+    })();
+  }, [id]);
 
   const update = (k: string, v: string | boolean) => setForm((s: any) => ({ ...s, [k]: v }));
 
@@ -125,13 +172,31 @@ export default function AddEquipment() {
       showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng nhập đủ tên và serial' });
       return;
     }
+    const categoryId = Number(form.category_id);
+    if (!form.category_id || !Number.isInteger(categoryId) || categoryId <= 0) {
+      setStep(1);
+      showAlert({ type: 'warning', title: 'Thiếu danh mục', message: 'Vui lòng chọn Danh mục cho thiết bị' });
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.post('/equipment', {
+      // Nếu chọn ảnh mới (đường dẫn local) -> upload lên Cloudinary qua /equipment/upload
+      let finalImageUrl = /^https?:\/\//i.test(imageUrl.trim()) ? imageUrl.trim() : undefined;
+      if (image) {
+        const fd = new FormData();
+        const fname = image.split('/').pop() || 'equipment.jpg';
+        const m = /\.(\w+)$/.exec(fname);
+        const type = m ? `image/${m[1]}` : 'image/jpeg';
+        fd.append('file', { uri: image, name: fname, type } as any);
+        const up = await api.post('/equipment/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        finalImageUrl = up.data?.data?.url || up.data?.url || finalImageUrl;
+      }
+
+      const payload = {
         name: form.name,
         serial_number: form.serial_number,
         sku: form.sku,
-        category_id: form.category_id ? Number(form.category_id) : undefined,
+        category_id: categoryId,
         location_id: form.location_id ? Number(form.location_id) : undefined,
         status: form.initial_status === 'available' ? 'available' : 'maintenance',
         specifications: {
@@ -141,17 +206,22 @@ export default function AddEquipment() {
           maintenance_period_months: Number(form.maintenance_period) || 6,
           auto_qr: form.auto_qr,
         },
-        image_url: /^https?:\/\//i.test(imageUrl.trim()) ? imageUrl.trim() : undefined,
-      });
+        image_url: finalImageUrl,
+      };
+      if (isEdit) {
+        await api.put(`/equipment/${id}`, payload);
+      } else {
+        await api.post('/equipment', payload);
+      }
       showAlert({
-        type: 'success', title: 'Thành công', message: 'Đã thêm thiết bị',
+        type: 'success', title: 'Thành công', message: isEdit ? 'Đã cập nhật thiết bị' : 'Đã thêm thiết bị',
         onConfirm: () => {
-          resetForm();
+          if (!isEdit) resetForm();
           router.replace('/admin/equipment');
         },
       });
     } catch (e: any) {
-      showAlert({ type: 'error', title: 'Lỗi', message: e.response?.data?.message || 'Không thể thêm thiết bị' });
+      showAlert({ type: 'error', title: 'Lỗi', message: e.response?.data?.message || (isEdit ? 'Không thể cập nhật thiết bị' : 'Không thể thêm thiết bị') });
     } finally { setSubmitting(false); }
   };
 
@@ -169,7 +239,7 @@ export default function AddEquipment() {
               <Feather name="arrow-left" size={18} color="#0F172A" />
             </Pressable>
             <View className="items-center">
-              <Text className="text-[#0F172A] text-base font-bold">Thêm thiết bị</Text>
+              <Text className="text-[#0F172A] text-base font-bold">{isEdit ? 'Sửa thiết bị' : 'Thêm thiết bị'}</Text>
               <Text className="text-[#94A3B8] text-[10px] font-bold">AST-07 · Bước {step}/2</Text>
             </View>
             <Pressable>
@@ -188,37 +258,37 @@ export default function AddEquipment() {
           <View style={{ gap: 14 }}>
             {step === 1 ? (
               <>
-                {/* Image — chỉ chấp nhận URL (BE chưa hỗ trợ upload file thiết bị) */}
-                <Animated.View entering={FadeInDown.delay(80)} className="bg-white rounded-[16px]" style={{ padding: 16, gap: 10, borderWidth: 1.5, borderColor: '#FCA5A5', borderStyle: 'dashed' }}>
-                  <View className="items-center" style={{ gap: 10 }}>
-                    {/^https?:\/\//i.test(imageUrl.trim()) ? (
-                      <Image source={{ uri: imageUrl.trim() }} style={{ width: 220, height: 140, borderRadius: 12 }} contentFit="cover" />
+                {/* Ảnh thiết bị — chụp ảnh hoặc chọn từ thư viện (upload Cloudinary qua /equipment/upload) */}
+                <Animated.View entering={FadeInDown.delay(80)} className="bg-white rounded-[16px]" style={{ padding: 16, gap: 12 }}>
+                  <Text className="text-[#0F172A] text-sm font-bold">Ảnh thiết bị</Text>
+                  <View className="items-center">
+                    {(image || /^https?:\/\//i.test(imageUrl.trim())) ? (
+                      <View style={{ width: 220, height: 140 }}>
+                        <Image source={{ uri: image || imageUrl.trim() }} style={{ width: 220, height: 140, borderRadius: 12 }} contentFit="cover" />
+                        <Pressable
+                          className="absolute bg-black/60 w-7 h-7 rounded-full items-center justify-center"
+                          style={{ top: 8, right: 8 }}
+                          onPress={() => { setImage(null); setImageUrl(''); }}
+                        >
+                          <Feather name="x" size={14} color="#fff" />
+                        </Pressable>
+                      </View>
                     ) : (
-                      <View className="w-14 h-14 bg-[#FEE5E3] rounded-xl items-center justify-center">
-                        <Feather name="image" size={22} color="#CC0D00" />
+                      <View className="w-full items-center justify-center rounded-xl" style={{ height: 120, gap: 6, borderWidth: 1.5, borderColor: '#E2E8F0', borderStyle: 'dashed' }}>
+                        <Feather name="image" size={26} color="#CC0D00" />
+                        <Text className="text-[#94A3B8] text-[11px]">Chưa có ảnh</Text>
                       </View>
                     )}
-                    <Text className="text-[#0F172A] text-sm font-bold">Ảnh thiết bị</Text>
-                    <Text className="text-[#94A3B8] text-[11px] text-center">Dán URL ảnh (Unsplash/Cloudinary/…)</Text>
                   </View>
-                  <View className="bg-[#F1F5F9] rounded-xl flex-row items-center" style={{ paddingHorizontal: 12 }}>
-                    <Feather name="link" size={14} color="#94A3B8" />
-                    <TextInput
-                      value={imageUrl}
-                      onChangeText={setImageUrl}
-                      placeholder="https://..."
-                      placeholderTextColor="#94A3B8"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="url"
-                      className="flex-1 text-[#0F172A] text-sm"
-                      style={{ paddingVertical: 10, paddingLeft: 8 }}
-                    />
-                    {!!imageUrl && (
-                      <Pressable onPress={() => setImageUrl('')}>
-                        <Feather name="x" size={14} color="#94A3B8" />
-                      </Pressable>
-                    )}
+                  <View className="flex-row" style={{ gap: 10 }}>
+                    <Pressable onPress={takePhoto} className="flex-1 flex-row items-center justify-center bg-[#0F172A] rounded-xl" style={{ paddingVertical: 12, gap: 8 }}>
+                      <Feather name="camera" size={16} color="#fff" />
+                      <Text className="text-white text-xs font-bold">Chụp ảnh</Text>
+                    </Pressable>
+                    <Pressable onPress={pickFromLibrary} className="flex-1 flex-row items-center justify-center bg-[#F1F5F9] rounded-xl" style={{ paddingVertical: 12, gap: 8 }}>
+                      <Feather name="image" size={16} color="#0F172A" />
+                      <Text className="text-[#0F172A] text-xs font-bold">Thư viện</Text>
+                    </Pressable>
                   </View>
                 </Animated.View>
 
@@ -230,10 +300,24 @@ export default function AddEquipment() {
                     <View className="flex-1"><Field label="Mã SKU" value={form.sku} onChange={(v) => update('sku', v)} placeholder="MBP-2024" /></View>
                     <View className="flex-1"><Field label="Số serial" value={form.serial_number} onChange={(v) => update('serial_number', v)} placeholder="00128" /></View>
                   </View>
-                  <Field label="Danh mục" value={form.category_id} onChange={(v) => update('category_id', v)} placeholder="Laptop (ID)" icon="grid" />
+                  <SelectField
+                    label="Danh mục"
+                    icon="grid"
+                    placeholder="Chọn danh mục"
+                    value={categories.find((c) => String(c.id) === String(form.category_id))?.name}
+                    onPress={() => setShowCategory(true)}
+                  />
                   <View className="flex-row" style={{ gap: 10 }}>
                     <View className="flex-1"><Field label="Số lượng" value={form.quantity} onChange={(v) => update('quantity', v)} placeholder="1" /></View>
-                    <View className="flex-1"><Field label="Vị trí kho" value={form.location_id} onChange={(v) => update('location_id', v)} placeholder="Kệ A-12" /></View>
+                    <View className="flex-1">
+                      <SelectField
+                        label="Vị trí kho"
+                        icon="map-pin"
+                        placeholder="Chọn vị trí"
+                        value={locations.find((l) => String(l.id) === String(form.location_id))?.name}
+                        onPress={() => setShowLocation(true)}
+                      />
+                    </View>
                   </View>
                 </Animated.View>
               </>
@@ -498,6 +582,83 @@ export default function AddEquipment() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Category Select Modal */}
+      <Modal visible={showCategory} transparent animationType="fade" statusBarTranslucent>
+        <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setShowCategory(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="bg-white" style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36, gap: 8, maxHeight: 460 }}>
+              <View className="flex-row items-center justify-between" style={{ marginBottom: 8 }}>
+                <Text className="text-[#0F172A] text-base font-bold">Chọn danh mục</Text>
+                <Pressable onPress={() => setShowCategory(false)}><Feather name="x" size={20} color="#0F172A" /></Pressable>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false} style={{ gap: 8 }}>
+                {categories.length === 0 ? (
+                  <Text className="text-[#94A3B8] text-sm text-center" style={{ paddingVertical: 16 }}>Chưa có danh mục nào</Text>
+                ) : categories.map((c) => {
+                  const active = String(c.id) === String(form.category_id);
+                  return (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => { update('category_id', String(c.id)); setShowCategory(false); }}
+                      className="flex-row items-center justify-between rounded-[12px]"
+                      style={{ marginBottom: 8, paddingVertical: 14, paddingHorizontal: 14, backgroundColor: active ? '#FEE5E3' : '#F8FAFC', borderWidth: 1.5, borderColor: active ? '#CC0D00' : 'transparent' }}
+                    >
+                      <Text className={`text-sm font-bold ${active ? 'text-[#CC0D00]' : 'text-[#0F172A]'}`}>{c.name}</Text>
+                      {active && <Feather name="check" size={16} color="#CC0D00" />}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Location Select Modal */}
+      <Modal visible={showLocation} transparent animationType="fade" statusBarTranslucent>
+        <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setShowLocation(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="bg-white" style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36, gap: 8, maxHeight: 460 }}>
+              <View className="flex-row items-center justify-between" style={{ marginBottom: 8 }}>
+                <Text className="text-[#0F172A] text-base font-bold">Chọn vị trí kho</Text>
+                <Pressable onPress={() => setShowLocation(false)}><Feather name="x" size={20} color="#0F172A" /></Pressable>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false} style={{ gap: 8 }}>
+                {locations.length === 0 ? (
+                  <Text className="text-[#94A3B8] text-sm text-center" style={{ paddingVertical: 16 }}>Chưa có vị trí nào</Text>
+                ) : locations.map((l) => {
+                  const active = String(l.id) === String(form.location_id);
+                  return (
+                    <Pressable
+                      key={l.id}
+                      onPress={() => { update('location_id', String(l.id)); setShowLocation(false); }}
+                      className="flex-row items-center justify-between rounded-[12px]"
+                      style={{ marginBottom: 8, paddingVertical: 14, paddingHorizontal: 14, backgroundColor: active ? '#FEE5E3' : '#F8FAFC', borderWidth: 1.5, borderColor: active ? '#CC0D00' : 'transparent' }}
+                    >
+                      <Text className={`text-sm font-bold ${active ? 'text-[#CC0D00]' : 'text-[#0F172A]'}`}>{l.name}</Text>
+                      {active && <Feather name="check" size={16} color="#CC0D00" />}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+function SelectField({ label, value, placeholder, icon, onPress }: { label: string; value?: string; placeholder?: string; icon?: any; onPress: () => void }) {
+  return (
+    <View style={{ gap: 4 }}>
+      <Text className="text-[#64748B] text-[11px] font-semibold">{label}</Text>
+      <Pressable onPress={onPress} className="flex-row items-center bg-[#F8FAFC] rounded-[12px] h-[42px] px-3" style={{ gap: 8 }}>
+        {icon && <Feather name={icon} size={14} color="#94A3B8" />}
+        <Text numberOfLines={1} className={`flex-1 text-sm ${value ? 'text-[#0F172A]' : 'text-[#94A3B8]'}`}>{value || placeholder}</Text>
+        <Feather name="chevron-down" size={16} color="#94A3B8" />
+      </Pressable>
     </View>
   );
 }

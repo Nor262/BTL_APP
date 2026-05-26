@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -12,16 +13,38 @@ import TransactionDetailModal from '@/components/common/TransactionDetailModal';
 export default function StorekeeperHandover() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
-  
+  const { user, refreshMe } = useAuthStore();
+
   const [approvedList, setApprovedList] = useState<any[]>([]);
   const [activeList, setActiveList] = useState<any[]>([]);
   
   const [selectedTxDetail, setSelectedTxDetail] = useState<any>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
+  const [manualVisible, setManualVisible] = useState(false);
+  const [manualCode, setManualCode] = useState('');
+
+  const submitManualCode = () => {
+    const code = manualCode.trim().toLowerCase();
+    if (!code) return;
+    const match = [...approvedList, ...activeList].find((t: any) => {
+      const sn = (t.equipment?.serial_number || '').toLowerCase();
+      const qr = (t.equipment?.qr_code_data || '').toLowerCase();
+      return sn === code || qr === code;
+    });
+    if (!match) {
+      Alert.alert('Không tìm thấy', 'Không có giao dịch cần bàn giao/nhận cho mã này.');
+      return;
+    }
+    setManualVisible(false);
+    setManualCode('');
+    setSelectedTxDetail(match);
+    setDetailModalVisible(true);
+  };
+
   useFocusEffect(
     useCallback(() => {
+      refreshMe();
       api.get(`/transactions`).then((res) => {
         const all = res.data?.data || res.data || [];
         setApprovedList(all.filter((t: any) => t.status === 'approved'));
@@ -43,9 +66,16 @@ export default function StorekeeperHandover() {
             <Text className="text-[#94A3B8] text-xs">Storekeeper</Text>
             <Text className="text-white text-xl font-bold">Quản lý giao/trả</Text>
           </View>
-          <View className="w-11 h-11 bg-[#15803D] rounded-full items-center justify-center">
-            <Text className="text-white text-base font-bold">{initials}</Text>
-          </View>
+          <Pressable
+            className="w-11 h-11 bg-[#15803D] rounded-full items-center justify-center overflow-hidden"
+            onPress={() => router.push('/storekeeper/profile')}
+          >
+            {user?.avatar_url ? (
+              <Image source={{ uri: user.avatar_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            ) : (
+              <Text className="text-white text-base font-bold">{initials}</Text>
+            )}
+          </Pressable>
         </View>
       </View>
 
@@ -67,7 +97,7 @@ export default function StorekeeperHandover() {
             <Pressable
               className="flex-1 bg-white rounded-[14px] items-center"
               style={{ padding: 14, gap: 6 }}
-              onPress={() => router.push(`/scan`)}
+              onPress={() => { setManualCode(''); setManualVisible(true); }}
             >
               <View className="w-9 h-9 bg-[#F1F5F9] rounded-lg items-center justify-center">
                 <Feather name="edit-3" size={16} color="#0F172A" />
@@ -162,6 +192,47 @@ export default function StorekeeperHandover() {
           <Text className="text-white text-sm font-bold">Mở máy quét (Check-in/out)</Text>
         </Pressable>
       </View>
+
+      {/* Popup nhập mã thủ công (không cần camera) */}
+      <Modal visible={manualVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setManualVisible(false)}>
+        <Pressable className="flex-1 bg-black/40 justify-center" style={{ padding: 24 }} onPress={() => setManualVisible(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="bg-white rounded-2xl" style={{ padding: 20, gap: 14 }}>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-[#0F172A] text-base font-bold">Nhập mã thiết bị</Text>
+                <Pressable onPress={() => setManualVisible(false)}>
+                  <Feather name="x" size={20} color="#94A3B8" />
+                </Pressable>
+              </View>
+              <Text className="text-[#64748B] text-xs">Nhập số serial / mã QR của thiết bị cần bàn giao hoặc nhận trả.</Text>
+              <View className="bg-[#F8FAFC] rounded-xl flex-row items-center" style={{ paddingHorizontal: 12, borderWidth: 1.5, borderColor: '#E2E8F0' }}>
+                <Feather name="hash" size={14} color="#94A3B8" />
+                <TextInput
+                  className="flex-1 text-[#0F172A] text-sm"
+                  style={{ paddingVertical: 12, paddingLeft: 8 }}
+                  placeholder="VD: SN-123456"
+                  placeholderTextColor="#94A3B8"
+                  value={manualCode}
+                  onChangeText={setManualCode}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  autoFocus
+                  onSubmitEditing={submitManualCode}
+                />
+              </View>
+              <Pressable
+                className={`rounded-xl flex-row items-center justify-center ${manualCode.trim() ? 'bg-[#15803D]' : 'bg-[#E2E8F0]'}`}
+                style={{ paddingVertical: 13, gap: 8 }}
+                onPress={submitManualCode}
+                disabled={!manualCode.trim()}
+              >
+                <Feather name="search" size={16} color={manualCode.trim() ? '#FFFFFF' : '#94A3B8'} />
+                <Text className={`text-sm font-bold ${manualCode.trim() ? 'text-white' : 'text-[#94A3B8]'}`}>Tra cứu giao dịch</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <TransactionDetailModal
         visible={detailModalVisible}

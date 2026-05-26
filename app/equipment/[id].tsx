@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as Print from 'expo-print';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View, Text, ScrollView, Pressable, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
@@ -8,12 +9,14 @@ import { DatePickerView } from '@ant-design/react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import QRCode from 'react-native-qrcode-svg';
 import { StatusBar } from 'expo-status-bar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import * as Haptics from 'expo-haptics';
 import { handleApiError } from '@/utils/error-handler';
 import { useAlertStore } from '@/store/useAlertStore';
+import { useAuthStore } from '@/store/useAuthStore';
 
 LocaleConfig.locales['vi'] = {
   monthNames: ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'],
@@ -39,6 +42,47 @@ export default function EquipmentDetailScreen() {
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
   const { showAlert } = useAlertStore();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
+  const isManager = user?.role === 'admin' || user?.role === 'storekeeper';
+  const qrRef = useRef<any>(null);
+
+  const handleDeleteEquipment = () => {
+    showAlert({
+      type: 'warning',
+      title: 'Xóa thiết bị',
+      message: `Xóa "${equipment?.name}"? Hành động này không thể hoàn tác.`,
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/equipment/${id}`);
+          showAlert({ type: 'success', title: 'Đã xóa', message: 'Đã xóa thiết bị', showCancel: false, onConfirm: () => router.back() });
+        } catch (e: any) {
+          handleApiError(e, 'Không thể xóa thiết bị');
+        }
+      },
+    });
+  };
+
+  const handlePrintLabel = () => {
+    if (!qrRef.current) return;
+    qrRef.current.toDataURL(async (base64: string) => {
+      try {
+        const html = `
+          <html><head><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+          <body style="margin:0;font-family:Helvetica,Arial,sans-serif;">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;border:2px solid #0F172A;border-radius:16px;width:320px;margin:40px auto;">
+              <img src="data:image/png;base64,${base64}" style="width:240px;height:240px;" />
+              <div style="font-size:22px;font-weight:bold;color:#0F172A;margin-top:16px;text-align:center;">${equipment?.name || ''}</div>
+              <div style="font-size:16px;color:#475569;margin-top:6px;">SN: ${equipment?.serial_number || ''}</div>
+            </div>
+          </body></html>`;
+        await Print.printAsync({ html });
+      } catch (e: any) {
+        handleApiError(e, 'Không thể in nhãn QR');
+      }
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -186,6 +230,38 @@ export default function EquipmentDetailScreen() {
               </View>
             </Animated.View>
 
+            {/* QR Card — sinh tại client từ mã sản phẩm (serial) */}
+            {equipment?.serial_number && equipment?.specifications?.auto_qr !== false && (
+              <Animated.View
+                entering={FadeInDown.delay(250)}
+                className="bg-white rounded-[18px] items-center"
+                style={{ padding: 20, gap: 12 }}
+              >
+                <Text className="text-[#0F172A] text-[13px] font-bold self-start">Mã QR thiết bị</Text>
+                <View
+                  className="bg-white items-center justify-center rounded-2xl"
+                  style={{ padding: 14, borderWidth: 1.5, borderColor: '#F1F5F9' }}
+                >
+                  <QRCode
+                    value={equipment.qr_code_data || equipment.serial_number}
+                    size={168}
+                    color="#0F172A"
+                    backgroundColor="#FFFFFF"
+                    getRef={(c: any) => (qrRef.current = c)}
+                  />
+                </View>
+                <Text className="text-[#94A3B8] text-[11px]">Quét để tra cứu · SN: {equipment.serial_number}</Text>
+                <Pressable
+                  onPress={handlePrintLabel}
+                  className="flex-row items-center justify-center bg-[#0F172A] rounded-xl self-stretch"
+                  style={{ paddingVertical: 12, gap: 8 }}
+                >
+                  <Feather name="printer" size={16} color="#FFFFFF" />
+                  <Text className="text-white text-xs font-bold">In / Lưu nhãn QR</Text>
+                </Pressable>
+              </Animated.View>
+            )}
+
             {/* Specs Card */}
             <Animated.View
               entering={FadeInDown.delay(300)}
@@ -211,7 +287,8 @@ export default function EquipmentDetailScreen() {
               ))}
             </Animated.View>
 
-            {/* Purpose Input */}
+            {/* Purpose Input — chỉ borrower */}
+            {!isManager && (
             <Animated.View entering={FadeInDown.delay(350)} style={{ gap: 8 }}>
               <Text className="text-[#64748B] text-xs font-semibold" style={{ paddingHorizontal: 4 }}>
                 Mục đích sử dụng
@@ -228,6 +305,7 @@ export default function EquipmentDetailScreen() {
                 />
               </View>
             </Animated.View>
+            )}
 
             {/* Calendar Card */}
             {occupiedDates.length > 0 && (
@@ -304,6 +382,30 @@ export default function EquipmentDetailScreen() {
             gap: 10,
           }}
         >
+          {isManager ? (
+          /* Manager: Sửa / Xóa */
+          <View className="flex-row" style={{ gap: 10 }}>
+            <Pressable
+              className="flex-1 h-[52px] bg-[#0F172A] rounded-[14px] flex-row items-center justify-center"
+              style={{ gap: 8 }}
+              onPress={() => router.push(`/admin/add-equipment?id=${id}` as any)}
+            >
+              <Feather name="edit-2" size={16} color="#FFFFFF" />
+              <Text className="text-white text-[15px] font-bold">Sửa</Text>
+            </Pressable>
+            {isAdmin && (
+              <Pressable
+                className="flex-1 h-[52px] bg-[#FEF2F2] rounded-[14px] flex-row items-center justify-center"
+                style={{ gap: 8, borderWidth: 1.5, borderColor: '#FECACA' }}
+                onPress={handleDeleteEquipment}
+              >
+                <Feather name="trash-2" size={16} color="#B91C1C" />
+                <Text className="text-[#B91C1C] text-[15px] font-bold">Xóa</Text>
+              </Pressable>
+            )}
+          </View>
+          ) : (
+          <>
           {/* Date Row */}
           <View className="flex-row" style={{ gap: 10 }}>
             <Pressable
@@ -366,6 +468,8 @@ export default function EquipmentDetailScreen() {
               </Pressable>
             </View>
           </View>
+          </>
+          )}
         </View>
 
         {/* Date Picker Modal */}

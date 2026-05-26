@@ -109,8 +109,7 @@ export default function StorekeeperHome() {
           <Animated.View entering={FadeInDown.delay(300)} className="flex-row" style={{ gap: 10 }}>
             {[
               { icon: 'check-square' as const, iconColor: '#7C3AED', bg: '#F3E8FF', label: 'Phê duyệt', badge: pendingCount, onPress: () => router.push('/my-loans') },
-              { icon: 'package' as const, iconColor: '#CC0D00', bg: '#FEE5E3', label: 'Quản lý kho', sub: `${totalEquipment} thiết bị`, onPress: () => {} },
-              { icon: 'users' as const, iconColor: '#16A34A', bg: '#DCFCE7', label: 'Người dùng', sub: 'Quản lý', onPress: () => {} },
+              { icon: 'package' as const, iconColor: '#CC0D00', bg: '#FEE5E3', label: 'Quản lý kho', sub: `${totalEquipment} thiết bị`, onPress: () => router.push('/storekeeper/inventory') },
             ].map((item, i) => (
               <Pressable
                 key={i}

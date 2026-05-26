@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -12,7 +13,7 @@ import { useAlertStore } from '@/store/useAlertStore';
 export default function AdminDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  const { user, refreshMe } = useAuthStore();
   const { showAlert } = useAlertStore();
   const [stats, setStats] = useState({ total: 0, pending: 0, overdue: 0 });
   const [overdueItems, setOverdueItems] = useState<any[]>([]);
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
   useFocusEffect(
     useCallback(() => {
       fetchData();
+      refreshMe();
     }, [])
   );
 
@@ -91,8 +93,12 @@ export default function AdminDashboard() {
             <Text className="text-[#94A3B8] text-xs">Xin chào, Admin</Text>
             <Text className="text-white text-xl font-bold">{user?.full_name || 'Trần Quang Anh'}</Text>
           </View>
-          <Pressable className="w-11 h-11 bg-[#CC0D00] rounded-full items-center justify-center">
-            <Text className="text-white text-base font-bold">{initials}</Text>
+          <Pressable className="w-11 h-11 bg-[#CC0D00] rounded-full items-center justify-center overflow-hidden" onPress={() => router.push('/admin/profile')}>
+            {user?.avatar_url ? (
+              <Image source={{ uri: user.avatar_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            ) : (
+              <Text className="text-white text-base font-bold">{initials}</Text>
+            )}
           </Pressable>
         </View>
 

@@ -38,7 +38,7 @@ export default function StorekeeperProfile() {
     { icon: 'user' as const, color: '#15803D', bg: '#DCFCE7', label: 'Thông tin cá nhân', onPress: () => router.push('/edit-profile') },
     { icon: 'bell' as const, color: '#D97706', bg: '#FEF3C7', label: 'Thông báo', onPress: () => router.push('/notifications') },
     { icon: 'lock' as const, color: '#1D4ED8', bg: '#DBEAFE', label: 'Đổi mật khẩu', onPress: () => router.push('/edit-profile') },
-    { icon: 'help-circle' as const, color: '#DB2777', bg: '#FCE7F3', label: 'Trợ giúp & Hỗ trợ', onPress: () => {} },
+    { icon: 'help-circle' as const, color: '#DB2777', bg: '#FCE7F3', label: 'Trợ giúp & Hỗ trợ', onPress: () => showAlert({ type: 'info', title: 'Trợ giúp & Hỗ trợ', message: 'Tính năng đang được phát triển.', showCancel: false }) },
   ];
 
   return (
@@ -51,7 +51,7 @@ export default function StorekeeperProfile() {
         <View style={{ gap: 14 }}>
           <View className="flex-row items-center justify-between">
             <Text className="text-[#0F172A] text-2xl font-bold">Hồ sơ</Text>
-            <Pressable className="w-10 h-10 bg-white rounded-full items-center justify-center">
+            <Pressable className="w-10 h-10 bg-white rounded-full items-center justify-center" onPress={() => router.push('/edit-profile')}>
               <Feather name="settings" size={18} color="#0F172A" />
             </Pressable>
           </View>

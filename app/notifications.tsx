@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -54,6 +54,17 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread' | 'important'>('all');
+  const [selected, setSelected] = useState<Notification | null>(null);
+
+  const openDetail = (item: Notification) => {
+    setSelected(item);
+    if (!item.is_read) markAsRead(item.id);
+  };
+
+  const formatFull = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -111,7 +122,7 @@ export default function NotificationsScreen() {
         <Pressable
           className="bg-white rounded-2xl flex-row p-3.5"
           style={{ gap: 12, opacity: item.is_read ? 0.7 : 1 }}
-          onPress={() => !item.is_read && markAsRead(item.id)}
+          onPress={() => openDetail(item)}
         >
           <View
             className="w-10 h-10 rounded-xl items-center justify-center"
@@ -215,6 +226,48 @@ export default function NotificationsScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Chi tiết thông báo */}
+      <Modal visible={!!selected} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setSelected(null)}>
+        <Pressable className="flex-1 bg-black/40 justify-center" style={{ padding: 24 }} onPress={() => setSelected(null)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="bg-white rounded-2xl" style={{ padding: 20, gap: 14 }}>
+              {/* Nút đóng ở góc trên bên phải */}
+              <Pressable
+                onPress={() => setSelected(null)}
+                className="absolute w-8 h-8 bg-[#F1F5F9] rounded-full items-center justify-center"
+                style={{ top: 12, right: 12, zIndex: 10 }}
+                hitSlop={8}
+              >
+                <Feather name="x" size={18} color="#0F172A" />
+              </Pressable>
+              {selected && (() => { const s = getStyle(selected.type); return (
+                <>
+                  <View className="flex-row items-center" style={{ gap: 12, paddingRight: 36 }}>
+                    <View className="w-11 h-11 rounded-xl items-center justify-center" style={{ backgroundColor: s.bg }}>
+                      <Feather name={s.icon} size={22} color={s.color} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[#0F172A] text-base font-bold">{selected.title}</Text>
+                      <Text className="text-[#94A3B8] text-[11px]">{formatFull(selected.created_at)}</Text>
+                    </View>
+                  </View>
+                  <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                    <Text className="text-[#334155] text-sm" style={{ lineHeight: 21 }}>{selected.message}</Text>
+                  </ScrollView>
+                  <Pressable
+                    className="bg-[#0F172A] rounded-xl items-center justify-center"
+                    style={{ paddingVertical: 12 }}
+                    onPress={() => setSelected(null)}
+                  >
+                    <Text className="text-white text-sm font-bold">Đóng</Text>
+                  </Pressable>
+                </>
+              ); })()}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
