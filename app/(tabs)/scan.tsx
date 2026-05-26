@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, ActivityIndicator, Alert, View as RNView, Pressable, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { View, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -21,10 +21,12 @@ export default function BorrowerScanScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    // Reset scanner state when screen gets focus
-    setScanning(true);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      // Reset scanner state when screen gets focus
+      setScanning(true);
+    }, [])
+  );
 
   if (!permission) {
     return (
@@ -107,7 +109,7 @@ export default function BorrowerScanScreen() {
       <View className="flex-1 relative">
         <CameraView
           style={StyleSheet.absoluteFillObject}
-          onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
+          onBarcodeScanned={handleBarCodeScanned}
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         />
 

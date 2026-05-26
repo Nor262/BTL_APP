@@ -14,6 +14,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '@/store/useAuthStore';
 import * as ImagePicker from 'expo-image-picker';
+import { useAlertStore } from '@/store/useAlertStore';
 
 LocaleConfig.locales['vi'] = {
   monthNames: ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'],
@@ -29,6 +30,7 @@ import { handleApiError } from '@/utils/error-handler';
 export default function EquipmentDetailScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuthStore();
+  const { showAlert } = useAlertStore();
   const [equipment, setEquipment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showDatePicker, setShowDatePicker] = useState<'start' | 'due' | null>(null);
@@ -65,7 +67,7 @@ export default function EquipmentDetailScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Thông báo', 'Cần quyền truy cập thư viện ảnh để tải ảnh lên');
+        showAlert({ type: 'warning', title: 'Thông báo', message: 'Cần quyền truy cập thư viện ảnh để tải ảnh lên' });
         return;
       }
 
@@ -95,15 +97,16 @@ export default function EquipmentDetailScreen() {
           },
         });
 
-        if (res.data?.url) {
-          setEditForm(prev => ({ ...prev, image_url: res.data.url }));
-          Alert.alert('Thành công', 'Tải ảnh lên thành công!');
+        const url = res.data?.data?.url || res.data?.url;
+        if (url) {
+          setEditForm(prev => ({ ...prev, image_url: url }));
+          showAlert({ type: 'success', title: 'Thành công', message: 'Tải ảnh lên thành công!' });
         } else {
-          Alert.alert('Lỗi', 'Không nhận được URL ảnh từ server');
+          showAlert({ type: 'error', title: 'Lỗi', message: 'Không nhận được URL ảnh từ server' });
         }
       }
     } catch (e: any) {
-      Alert.alert('Lỗi', e.response?.data?.message || 'Không thể tải ảnh lên');
+      showAlert({ type: 'error', title: 'Lỗi', message: e.response?.data?.message || 'Không thể tải ảnh lên' });
     } finally {
       setUploadingImage(false);
     }
@@ -176,7 +179,7 @@ export default function EquipmentDetailScreen() {
 
   const handleUpdate = async () => {
     if (!editForm.name || !editForm.serial_number || !editForm.category_id) {
-      Alert.alert('Lỗi', 'Vui lòng nhập tên, số serial và chọn danh mục');
+      showAlert({ type: 'error', title: 'Lỗi', message: 'Vui lòng nhập tên, số serial và chọn danh mục' });
       return;
     }
     setSubmitting(true);
@@ -197,7 +200,7 @@ export default function EquipmentDetailScreen() {
 
       const res = await api.put(`/equipment/${id}`, payload);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Thành công', 'Thông tin thiết bị đã được cập nhật!');
+      showAlert({ type: 'success', title: 'Thành công', message: 'Thông tin thiết bị đã được cập nhật!' });
       setEquipment(res.data.data || res.data);
       setEditModalVisible(false);
     } catch (error) {
@@ -210,12 +213,12 @@ export default function EquipmentDetailScreen() {
   const handleBorrow = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (!notes.trim()) {
-      Alert.alert('Yêu cầu', 'Vui lòng nhập mục đích mượn thiết bị');
+      showAlert({ type: 'warning', title: 'Yêu cầu', message: 'Vui lòng nhập mục đích mượn thiết bị' });
       return;
     }
 
     if (startDate >= dueDate) {
-      Alert.alert('Lỗi', 'Ngày bắt đầu phải trước ngày trả');
+      showAlert({ type: 'error', title: 'Lỗi', message: 'Ngày bắt đầu phải trước ngày trả' });
       return;
     }
 
@@ -228,9 +231,14 @@ export default function EquipmentDetailScreen() {
         notes: notes.trim(),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Thành công', 'Yêu cầu mượn đã được gửi. Hệ thống sẽ thông báo khi quản trị viên phê duyệt.', [
-        { text: 'Về trang chủ', onPress: () => router.replace('/(tabs)') }
-      ]);
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Yêu cầu mượn đã được gửi. Hệ thống sẽ thông báo khi quản trị viên phê duyệt.',
+        onConfirm: () => {
+          router.replace('/(tabs)');
+        }
+      });
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       handleApiError(error, 'Không thể gửi yêu cầu');

@@ -65,8 +65,9 @@ export default function AddEquipment() {
           },
         });
 
-        if (res.data?.url) {
-          setImageUrl(res.data.url);
+        const url = res.data?.data?.url || res.data?.url;
+        if (url) {
+          setImageUrl(url);
           showAlert({ type: 'success', title: 'Thành công', message: 'Tải ảnh lên thành công!' });
         } else {
           showAlert({ type: 'error', title: 'Lỗi', message: 'Không nhận được URL ảnh từ server' });

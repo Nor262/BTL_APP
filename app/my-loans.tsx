@@ -11,6 +11,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { handleApiError } from '@/utils/error-handler';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAlertStore } from '@/store/useAlertStore';
 
 export default function MyLoansScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -21,6 +22,7 @@ export default function MyLoansScreen() {
   const [rating, setRating] = useState('5');
   const [feedback, setFeedback] = useState('');
   const { user } = useAuthStore();
+  const { showAlert } = useAlertStore();
   const router = useRouter();
 
   const fetchData = async () => {
@@ -117,7 +119,7 @@ export default function MyLoansScreen() {
         rating: parseInt(rating, 10),
         feedback
       });
-      Alert.alert('Thành công', 'Cảm ơn bạn đã đánh giá!');
+      showAlert({ type: 'success', title: 'Thành công', message: 'Cảm ơn bạn đã đánh giá!' });
       setRatingModalVisible(false);
       fetchData();
     } catch (error) {
@@ -126,19 +128,22 @@ export default function MyLoansScreen() {
   };
 
   const handleExtend = (tx: any) => {
-    Alert.alert('Xác nhận gia hạn', 'Bạn muốn gia hạn thêm 1 ngày cho thiết bị này?', [
-      { text: 'Hủy', style: 'cancel' },
-      { text: 'Gia hạn', onPress: async () => {
+    showAlert({
+      type: 'warning',
+      title: 'Xác nhận gia hạn',
+      message: 'Bạn muốn gia hạn thêm 1 ngày cho thiết bị này?',
+      showCancel: true,
+      onConfirm: async () => {
         try {
           const newDueDate = new Date(new Date(tx.due_date).getTime() + 1 * 24 * 60 * 60 * 1000);
           await api.patch(`/transactions/${tx.id}/extend`, { new_due_date: newDueDate.toISOString() });
-          Alert.alert('Thành công', 'Gia hạn thành công!');
+          showAlert({ type: 'success', title: 'Thành công', message: 'Gia hạn thành công!' });
           fetchData();
         } catch (error) {
           handleApiError(error, 'Lỗi gia hạn');
         }
-      }}
-    ]);
+      }
+    });
   };
 
   if (loading) {

@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ActivityIndicator, Alert, Pressable, ScrollView, Image, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, ActivityIndicator, Pressable, ScrollView, Image, KeyboardAvoidingView, Platform, Dimensions, Modal } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { View, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import api from '@/api/client';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { handleApiError } from '@/utils/error-handler';
+import { useAlertStore } from '@/store/useAlertStore';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
@@ -22,6 +23,15 @@ export default function StorekeeperScanScreen() {
   const [serialNumber, setSerialNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { showAlert } = useAlertStore();
+  const [uploadSelectorVisible, setUploadSelectorVisible] = useState(false);
+  const [activeUploadIndex, setActiveUploadIndex] = useState<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      setScanning(true);
+    }, [])
+  );
 
   if (!permission) {
     return (
@@ -53,7 +63,7 @@ export default function StorekeeperScanScreen() {
 
     try {
       if (scannedItems.find(item => item.qr_code_data === data)) {
-        Alert.alert('Thông báo', 'Thiết bị này đã được quét');
+        showAlert({ type: 'warning', title: 'Thông báo', message: 'Thiết bị này đã được quét' });
         setTimeout(() => setScanning(true), 1500);
         return;
       }
@@ -62,7 +72,7 @@ export default function StorekeeperScanScreen() {
       const itemData = response.data.data || response.data;
 
       if (itemData.transaction_id === null) {
-        Alert.alert('Lỗi', 'Thiết bị này hiện không có đơn mượn nào được duyệt.');
+        showAlert({ type: 'error', title: 'Lỗi', message: 'Thiết bị này hiện không có đơn mượn nào được duyệt.' });
         setTimeout(() => setScanning(true), 1500);
         return;
       }
@@ -86,25 +96,9 @@ export default function StorekeeperScanScreen() {
     }));
   };
 
-  const selectImageForItem = async (index: number) => {
-    Alert.alert(
-      'Hình ảnh minh chứng',
-      'Chọn nguồn ảnh:',
-      [
-        {
-          text: 'Chụp ảnh mới',
-          onPress: () => launchImagePicker(index, 'camera')
-        },
-        {
-          text: 'Chọn từ thư viện',
-          onPress: () => launchImagePicker(index, 'library')
-        },
-        {
-          text: 'Hủy',
-          style: 'cancel'
-        }
-      ]
-    );
+  const selectImageForItem = (index: number) => {
+    setActiveUploadIndex(index);
+    setUploadSelectorVisible(true);
   };
 
   const launchImagePicker = async (index: number, mode: 'camera' | 'library') => {
@@ -112,7 +106,7 @@ export default function StorekeeperScanScreen() {
       if (mode === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Thông báo', 'Bạn cần cấp quyền camera để chụp ảnh.');
+          showAlert({ type: 'warning', title: 'Thông báo', message: 'Bạn cần cấp quyền camera để chụp ảnh.' });
           return;
         }
       }
@@ -163,8 +157,27 @@ export default function StorekeeperScanScreen() {
         });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Thành công', `Đã xử lý ${scannedItems.length} thiết bị!`);
-      router.back();
+
+      const checkoutCount = scannedItems.filter(item => item.status === 'available').length;
+      const checkinCount = scannedItems.filter(item => item.status !== 'available').length;
+      
+      let successMsg = '';
+      if (checkoutCount > 0 && checkinCount === 0) {
+        successMsg = `Đã bàn giao thành công ${checkoutCount} thiết bị!`;
+      } else if (checkinCount > 0 && checkoutCount === 0) {
+        successMsg = `Đã thu hồi (nhận lại) thành công ${checkinCount} thiết bị!`;
+      } else {
+        successMsg = `Đã bàn giao ${checkoutCount} và thu hồi ${checkinCount} thiết bị thành công!`;
+      }
+
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: successMsg,
+        onConfirm: () => {
+          router.back();
+        }
+      });
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       handleApiError(error, 'Lỗi xử lý giao dịch');
@@ -175,7 +188,7 @@ export default function StorekeeperScanScreen() {
 
   const handleManualSubmit = async () => {
     if (!serialNumber.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng nhập số Serial');
+      showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng nhập số Serial' });
       return;
     }
 
@@ -185,12 +198,12 @@ export default function StorekeeperScanScreen() {
       const itemData = response.data.data || response.data;
 
       if (itemData.transaction_id === null) {
-        Alert.alert('Lỗi', 'Thiết bị này hiện không có đơn mượn nào được duyệt.');
+        showAlert({ type: 'error', title: 'Lỗi', message: 'Thiết bị này hiện không có đơn mượn nào được duyệt.' });
         return;
       }
       
       if (scannedItems.find(item => item.id === itemData.id)) {
-        Alert.alert('Thông báo', 'Thiết bị này đã được nhập');
+        showAlert({ type: 'warning', title: 'Thông báo', message: 'Thiết bị này đã được nhập' });
         return;
       }
 
@@ -218,7 +231,7 @@ export default function StorekeeperScanScreen() {
       <View className="h-[45%] relative bg-black">
         <CameraView
           style={StyleSheet.absoluteFill}
-          onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
+          onBarcodeScanned={handleBarCodeScanned}
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         />
         
@@ -404,7 +417,81 @@ export default function StorekeeperScanScreen() {
             </View>
           </Animated.View>
         )}
+
+        {/* Custom Bottom Sheet Image Source Modal */}
+        <Modal
+          visible={uploadSelectorVisible}
+          transparent
+          animationType="slide"
+          statusBarTranslucent
+          onRequestClose={() => setUploadSelectorVisible(false)}
+        >
+          <View style={styles.overlayModal}>
+            <Pressable style={styles.backdropModal} onPress={() => setUploadSelectorVisible(false)} />
+            <Animated.View 
+              entering={FadeInDown} 
+              className="bg-white rounded-t-[30px] p-6 pb-10 w-full absolute bottom-0"
+              style={{ 
+                shadowColor: '#000', 
+                shadowOffset: { width: 0, height: -4 }, 
+                shadowOpacity: 0.1, 
+                shadowRadius: 12, 
+                elevation: 8 
+              }}
+            >
+              <Text className="text-lg font-bold text-gray-900 mb-6 text-center">Hình ảnh minh chứng</Text>
+              
+              <Pressable 
+                className="flex-row items-center py-4 border-b border-gray-100"
+                onPress={() => {
+                  setUploadSelectorVisible(false);
+                  if (activeUploadIndex !== null) {
+                    launchImagePicker(activeUploadIndex, 'camera');
+                  }
+                }}
+              >
+                <View className="w-10 h-10 bg-red-50 rounded-full items-center justify-center mr-4">
+                  <Feather name="camera" size={20} color="#CC0D00" />
+                </View>
+                <Text className="text-gray-800 font-semibold text-base">Chụp ảnh mới</Text>
+              </Pressable>
+
+              <Pressable 
+                className="flex-row items-center py-4 border-b border-gray-100"
+                onPress={() => {
+                  setUploadSelectorVisible(false);
+                  if (activeUploadIndex !== null) {
+                    launchImagePicker(activeUploadIndex, 'library');
+                  }
+                }}
+              >
+                <View className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center mr-4">
+                  <Feather name="image" size={20} color="#007AFF" />
+                </View>
+                <Text className="text-gray-800 font-semibold text-base">Chọn từ thư viện</Text>
+              </Pressable>
+
+              <Pressable 
+                className="mt-4 py-3.5 bg-gray-100 rounded-xl items-center justify-center"
+                onPress={() => setUploadSelectorVisible(false)}
+              >
+                <Text className="text-gray-500 font-bold text-sm">Hủy bỏ</Text>
+              </Pressable>
+            </Animated.View>
+          </View>
+        </Modal>
       </View>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  overlayModal: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  backdropModal: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});
