@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 // Khi chạy qua Expo tunnel (ngrok), debuggerHost là *.exp.direct → không gọi được backend LAN.
 // Trong trường hợp đó dùng FALLBACK_IP (IP LAN máy dev) để gọi backend.
-const FALLBACK_IP = '192.168.1.26';
+const FALLBACK_IP = '192.168.55.104';
 
 const expoHost = Constants.expoGoConfig?.debuggerHost?.split(':')[0]
   ?? Constants.expoConfig?.hostUri?.split(':')[0]
