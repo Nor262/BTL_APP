@@ -16,6 +16,8 @@ const CARD_WIDTH = (width - 48) / 2;
 export default function BorrowerHome() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [activeLoans, setActiveLoans] = useState<any[]>([]);
+  const [pendingLoans, setPendingLoans] = useState<any[]>([]);
+  const [approvedLoans, setApprovedLoans] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,6 +39,12 @@ export default function BorrowerHome() {
       const transactions = transRes.data?.data || transRes.data || [];
       const active = transactions.filter((t: any) => t.status === 'active' || t.status === 'overdue');
       setActiveLoans(active);
+
+      const pending = transactions.filter((t: any) => t.status === 'pending');
+      setPendingLoans(pending);
+
+      const approved = transactions.filter((t: any) => t.status === 'approved');
+      setApprovedLoans(approved);
       
       setUnreadCount(countRes.data?.data?.count || countRes.data?.count || 0);
     } catch (error) {
@@ -216,6 +224,112 @@ export default function BorrowerHome() {
                   <Feather name="info" size={20} color="#D1D1D6" />
                </View>
                <Text className="text-gray-400 text-sm font-medium">Bạn hiện không mượn thiết bị nào</Text>
+            </View>
+          )}
+
+          {/* Approved Loans Horizontal Section */}
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="font-bold text-xl text-gray-900 tracking-tight">Đơn mượn đã được duyệt</Text>
+            {approvedLoans.length > 0 && (
+              <Pressable onPress={() => router.push('/my-loans')}>
+                <Text className="text-primary font-bold text-sm">Xem tất cả</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {approvedLoans.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-10 -mx-6 px-6">
+              {approvedLoans.map((loan: any, index: number) => (
+                <Animated.View 
+                  key={loan.id} 
+                  entering={FadeInRight.delay(index * 100)}
+                  className="mr-4"
+                >
+                  <Pressable 
+                    onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
+                    className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
+                    style={{ width: width * 0.75 }}
+                  >
+                    <View className="w-16 h-16 bg-green-50 rounded-2xl items-center justify-center overflow-hidden">
+                      {loan.equipment?.image_url ? (
+                        <Image source={{ uri: loan.equipment.image_url }} style={{ width: '100%', height: '100%' }} />
+                      ) : (
+                        <Feather name="box" size={24} color="#D1D1D6" />
+                      )}
+                    </View>
+                    <View className="flex-1 ml-4">
+                      <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{loan.equipment?.name || 'Thiết bị'}</Text>
+                      <View className="flex-row items-center mt-1">
+                        <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                        <Text className="text-green-600 text-xs font-semibold">Đã duyệt - Sẵn sàng nhận</Text>
+                      </View>
+                    </View>
+                    <View className="bg-gray-50 w-10 h-10 rounded-full items-center justify-center">
+                      <Feather name="chevron-right" size={18} color="#999" />
+                    </View>
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View className="bg-gray-50 rounded-[30px] p-6 items-center mb-10 border border-dashed border-gray-200">
+               <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mb-3 shadow-sm">
+                  <Feather name="check-square" size={20} color="#D1D1D6" />
+               </View>
+               <Text className="text-gray-400 text-sm font-medium">Không có đơn mượn nào đã duyệt</Text>
+            </View>
+          )}
+
+          {/* Pending Loans Horizontal Section */}
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="font-bold text-xl text-gray-900 tracking-tight">Đơn mượn chưa được duyệt</Text>
+            {pendingLoans.length > 0 && (
+              <Pressable onPress={() => router.push('/my-loans')}>
+                <Text className="text-primary font-bold text-sm">Xem tất cả</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {pendingLoans.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-10 -mx-6 px-6">
+              {pendingLoans.map((loan: any, index: number) => (
+                <Animated.View 
+                  key={loan.id} 
+                  entering={FadeInRight.delay(index * 100)}
+                  className="mr-4"
+                >
+                  <Pressable 
+                    onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
+                    className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
+                    style={{ width: width * 0.75 }}
+                  >
+                    <View className="w-16 h-16 bg-amber-50 rounded-2xl items-center justify-center overflow-hidden">
+                      {loan.equipment?.image_url ? (
+                        <Image source={{ uri: loan.equipment.image_url }} style={{ width: '100%', height: '100%' }} />
+                      ) : (
+                        <Feather name="box" size={24} color="#D1D1D6" />
+                      )}
+                    </View>
+                    <View className="flex-1 ml-4">
+                      <Text className="font-bold text-gray-900 text-sm" numberOfLines={1}>{loan.equipment?.name || 'Thiết bị'}</Text>
+                      <View className="flex-row items-center mt-1">
+                        <View className="w-2 h-2 rounded-full bg-amber-500 mr-2" />
+                        <Text className="text-amber-600 text-xs font-semibold">Chờ quản trị viên duyệt</Text>
+                      </View>
+                    </View>
+                    <View className="bg-gray-50 w-10 h-10 rounded-full items-center justify-center">
+                      <Feather name="chevron-right" size={18} color="#999" />
+                    </View>
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View className="bg-gray-50 rounded-[30px] p-6 items-center mb-10 border border-dashed border-gray-200">
+               <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mb-3 shadow-sm">
+                  <Feather name="clock" size={20} color="#D1D1D6" />
+               </View>
+               <Text className="text-gray-400 text-sm font-medium">Không có đơn mượn nào đang chờ duyệt</Text>
             </View>
           )}
 

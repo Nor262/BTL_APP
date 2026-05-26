@@ -77,18 +77,24 @@ export default function LoginScreen() {
       const { user, access_token } = response.data.data;
       
       setAuth(user, access_token);
-      Alert.alert('Thành công', 'Đăng nhập Google thành công!');
-      router.replace('/(tabs)');
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Đăng nhập Google thành công!',
+        onConfirm: () => {
+          router.replace('/(tabs)');
+        }
+      });
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log('Google login cancelled by user');
       } else if (error.code === statusCodes.IN_PROGRESS) {
         console.log('Google login in progress already');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Thông báo', 'Thiết bị không hỗ trợ Google Play Services.');
+        showAlert({ type: 'warning', title: 'Thông báo', message: 'Thiết bị không hỗ trợ Google Play Services.' });
       } else {
         console.log('Google Sign-In Native Error details:', error);
-        Alert.alert('Lỗi', error.message || 'Đăng nhập Google thất bại');
+        showAlert({ type: 'error', title: 'Lỗi', message: error.message || 'Đăng nhập Google thất bại' });
       }
     } finally {
       setGoogleLoading(false);
