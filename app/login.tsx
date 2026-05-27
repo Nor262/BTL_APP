@@ -26,7 +26,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     // Configure Google Sign-In with Web Client ID (needed for ID token verification)
-    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '612309700754-ib1shrs5nn00cgesh8coto8ba00856iv.apps.googleusercontent.com';
+    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '19807270724-rff969hgaqn5tbaao1hro99060m0bs7l.apps.googleusercontent.com';
     GoogleSignin.configure({
       webClientId: webClientId,
       offlineAccess: true,
