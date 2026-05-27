@@ -79,6 +79,25 @@ export default function BorrowerHome() {
     });
   };
 
+  const handleCancel = (tx: any) => {
+    useAlertStore.getState().showAlert({
+      type: 'warning',
+      title: 'Xác nhận hủy',
+      message: 'Bạn chắc chắn muốn hủy đơn mượn này?',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await api.patch(`/transactions/${tx.id}/cancel`);
+          useAlertStore.getState().showAlert({ type: 'success', title: 'Thành công', message: 'Đã hủy đơn mượn thiết bị!' });
+          fetchData();
+        } catch (error) {
+          console.error(error);
+          useAlertStore.getState().showAlert({ type: 'error', title: 'Lỗi', message: 'Không thể hủy đơn mượn' });
+        }
+      }
+    });
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -473,6 +492,18 @@ export default function BorrowerHome() {
                       handleExtend(selectedTx);
                     }}
                     containerClassName="mt-4" 
+                  />
+                )}
+
+                {['pending', 'approved'].includes(selectedTx.status) && (
+                  <Button 
+                    title="Hủy đơn mượn" 
+                    onPress={() => {
+                      setDetailModalVisible(false);
+                      handleCancel(selectedTx);
+                    }}
+                    containerClassName="mt-4 bg-red-600"
+                    variant="danger"
                   />
                 )}
 

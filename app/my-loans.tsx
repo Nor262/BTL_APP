@@ -156,6 +156,24 @@ export default function MyLoansScreen() {
     });
   };
 
+  const handleCancel = (tx: any) => {
+    showAlert({
+      type: 'warning',
+      title: 'Xác nhận hủy',
+      message: 'Bạn chắc chắn muốn hủy đơn mượn này?',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await api.patch(`/transactions/${tx.id}/cancel`);
+          showAlert({ type: 'success', title: 'Thành công', message: 'Đã hủy đơn mượn thiết bị!' });
+          fetchData();
+        } catch (error) {
+          handleApiError(error, 'Lỗi hủy đơn mượn');
+        }
+      }
+    });
+  };
+
   if (loading) {
     return <LoadingScreen />;
   }
@@ -326,6 +344,18 @@ export default function MyLoansScreen() {
                       setRatingModalVisible(true);
                     }}
                     containerClassName="mt-4" 
+                  />
+                )}
+
+                {['pending', 'approved'].includes(selectedTx.status) && (
+                  <Button 
+                    title="Hủy đơn mượn" 
+                    onPress={() => {
+                      setDetailModalVisible(false);
+                      handleCancel(selectedTx);
+                    }}
+                    containerClassName="mt-4 bg-red-600"
+                    variant="danger"
                   />
                 )}
 
