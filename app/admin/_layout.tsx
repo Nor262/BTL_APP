@@ -1,9 +1,15 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 export default function AdminLayout() {
+  const pathname = usePathname();
+
+  const isKhoActive = (focused: boolean) => {
+    return focused || pathname.startsWith('/admin/data') || pathname.startsWith('/admin/maintenance');
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -40,7 +46,14 @@ export default function AdminLayout() {
         name="equipment"
         options={{
           title: 'KHO',
-          tabBarIcon: ({ color }) => <Feather name="box" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Feather name="box" size={22} color={isKhoActive(focused) ? '#CC0D00' : '#94A3B8'} />
+          ),
+          tabBarLabel: ({ focused }) => (
+            <Text style={{ color: isKhoActive(focused) ? '#CC0D00' : '#94A3B8', fontWeight: '700', fontSize: 10, marginTop: -2 }}>
+              KHO
+            </Text>
+          ),
         }}
       />
       <Tabs.Screen
@@ -69,6 +82,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="audit-log" options={{ href: null }} />
       <Tabs.Screen name="reports" options={{ href: null }} />
       <Tabs.Screen name="import-equipment" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="user-detail/[id]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
   );
 }

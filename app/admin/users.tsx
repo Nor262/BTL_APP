@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, FlatList } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -29,6 +29,10 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Role Modal state
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+
   const fetchData = async () => {
     try {
       const res = await api.get('/users');
@@ -54,6 +58,24 @@ export default function AdminUsers() {
     }
   };
 
+  const openRoleModal = (u: any) => {
+    setSelectedUser(u);
+    setRoleModalVisible(true);
+  };
+
+  const changeRole = async (newRole: string) => {
+    if (!selectedUser) return;
+    try {
+      await api.patch(`/users/${selectedUser.id}/role`, { role: newRole });
+      setRoleModalVisible(false);
+      setSelectedUser(null);
+      fetchData();
+      showAlert({ type: 'success', title: 'Thành công', message: 'Đã đổi vai trò người dùng' });
+    } catch (e: any) {
+      showAlert({ type: 'error', title: 'Lỗi', message: e.response?.data?.message || 'Không thể đổi vai trò' });
+    }
+  };
+
   return (
     <View className="flex-1 bg-[#F1F5F9]">
       <StatusBar style="dark" />
@@ -61,12 +83,7 @@ export default function AdminUsers() {
       {/* Header */}
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 8 }}>
         <View className="flex-row items-center justify-between" style={{ height: 44 }}>
-          <Pressable
-            className="w-10 h-10 bg-white rounded-full items-center justify-center"
-            onPress={() => router.back()}
-          >
-            <Feather name="arrow-left" size={18} color="#0F172A" />
-          </Pressable>
+          <View className="w-10" />
           <View className="items-center">
             <Text className="text-[#0F172A] text-base font-bold">Quản lý người dùng</Text>
             <Text className="text-[#94A3B8] text-[10px]">{users.length} tài khoản</Text>
@@ -144,7 +161,11 @@ export default function AdminUsers() {
                 </View>
                 {/* Actions */}
                 <View className="flex-row" style={{ gap: 8 }}>
-                  <Pressable className="flex-1 bg-[#FEE5E3] rounded-[10px] items-center" style={{ paddingVertical: 8 }}>
+                  <Pressable
+                    className="flex-1 bg-[#FEE5E3] rounded-[10px] items-center"
+                    style={{ paddingVertical: 8 }}
+                    onPress={() => openRoleModal(u)}
+                  >
                     <Text className="text-[#CC0D00] text-[11px] font-bold">Đổi vai trò</Text>
                   </Pressable>
                   <Pressable
@@ -159,7 +180,7 @@ export default function AdminUsers() {
                       {u.is_active ? 'Khóa TK' : 'Mở khóa'}
                     </Text>
                   </Pressable>
-                  <Pressable className="flex-1 bg-[#F1F5F9] rounded-[10px] items-center" style={{ paddingVertical: 8 }}>
+                  <Pressable className="flex-1 bg-[#F1F5F9] rounded-[10px] items-center" style={{ paddingVertical: 8 }} onPress={() => router.push(`/admin/user-detail/${u.id}` as any)}>
                     <Text className="text-[#0F172A] text-[11px] font-bold">Chi tiết</Text>
                   </Pressable>
                 </View>
@@ -168,6 +189,42 @@ export default function AdminUsers() {
           })}
         </View>
       </ScrollView>
+
+      {/* Role Change Modal */}
+      <Modal visible={roleModalVisible} transparent animationType="fade">
+        <TouchableWithoutFeedback onPress={() => setRoleModalVisible(false)}>
+          <View className="flex-1 bg-black/50 justify-center items-center" style={{ padding: 20 }}>
+            <TouchableWithoutFeedback>
+              <View className="bg-white rounded-[20px] w-full" style={{ padding: 20 }}>
+                <Text className="text-[#0F172A] text-lg font-bold mb-4 text-center">Đổi vai trò</Text>
+                <Text className="text-[#64748B] text-center mb-6 text-sm">
+                  Chọn vai trò mới cho {selectedUser?.full_name}
+                </Text>
+                <View style={{ gap: 10 }}>
+                  {ROLES.filter(r => r.key !== 'all').map(r => (
+                    <Pressable
+                      key={r.key}
+                      className="bg-[#F8FAFC] rounded-xl flex-row items-center justify-between"
+                      style={{ padding: 16, borderWidth: 1, borderColor: selectedUser?.role === r.key ? '#CC0D00' : '#E2E8F0' }}
+                      onPress={() => changeRole(r.key)}
+                    >
+                      <Text className="text-[#0F172A] font-bold">{r.label}</Text>
+                      {selectedUser?.role === r.key && <Feather name="check" size={20} color="#CC0D00" />}
+                    </Pressable>
+                  ))}
+                </View>
+                <Pressable
+                  className="mt-6 rounded-xl items-center"
+                  style={{ padding: 16, backgroundColor: '#F1F5F9' }}
+                  onPress={() => setRoleModalVisible(false)}
+                >
+                  <Text className="text-[#64748B] font-bold">Hủy bỏ</Text>
+                </Pressable>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }

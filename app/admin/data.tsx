@@ -35,11 +35,10 @@ export default function AdminData() {
     maintenance: '/maintenance',
   };
 
-  // Màn quản lý (CRUD) tương ứng từng loại dữ liệu
   const MANAGE_ROUTE: any = {
-    category: '/categories',
-    supplier: '/suppliers',
-    location: '/locations',
+    category: '/(admin)/categories?action=add',
+    supplier: '/(admin)/suppliers?action=add',
+    location: '/(admin)/locations?action=add',
     maintenance: '/admin/maintenance',
   };
   const goManage = () => router.push(MANAGE_ROUTE[tab] as any);

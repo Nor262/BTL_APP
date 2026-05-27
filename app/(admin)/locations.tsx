@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import api from '@/api/client';
 import LoadingScreen from '@/components/ui/LoadingScreen';
@@ -33,9 +34,19 @@ export default function LocationsScreen() {
     }
   };
 
+  const { action } = useLocalSearchParams<{ action?: string }>();
+
   useEffect(() => {
     fetchLocations();
   }, []);
+
+  useEffect(() => {
+    if (action === 'add') {
+      setTimeout(() => {
+        handleOpenAdd();
+      }, 100);
+    }
+  }, [action]);
 
   const onRefresh = () => {
     setRefreshing(true);

@@ -12,6 +12,7 @@ const TABS = [
   { key: 'pending', label: 'Chờ duyệt' },
   { key: 'approved', label: 'Đã duyệt' },
   { key: 'rejected', label: 'Từ chối' },
+  { key: 'overdue', label: 'Quá hạn' },
 ];
 
 const formatTime = (dateStr: string) => {
@@ -76,12 +77,7 @@ export default function AdminApproval() {
       {/* Header */}
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 8 }}>
         <View className="flex-row items-center justify-between" style={{ height: 44 }}>
-          <Pressable
-            className="w-10 h-10 bg-white rounded-full items-center justify-center"
-            onPress={() => router.back()}
-          >
-            <Feather name="arrow-left" size={18} color="#0F172A" />
-          </Pressable>
+          <View className="w-10" />
           <View className="items-center">
             <Text className="text-[#0F172A] text-base font-bold">Phê duyệt đơn</Text>
             <Text className="text-[#94A3B8] text-[10px] font-bold">BOR-09</Text>
@@ -170,8 +166,8 @@ export default function AdminApproval() {
                   </View>
                 </View>
                 {/* Actions */}
-                {tab === 'pending' && (
-                  <View className="flex-row" style={{ gap: 8 }}>
+                <View className="flex-row" style={{ gap: 8 }}>
+                  {tab === 'pending' && (
                     <Pressable
                       className="flex-1 bg-[#FEE2E2] rounded-[10px] items-center justify-center"
                       style={{ paddingVertical: 10 }}
@@ -179,13 +175,15 @@ export default function AdminApproval() {
                     >
                       <Text className="text-[#B91C1C] text-[12px] font-bold">Từ chối</Text>
                     </Pressable>
-                    <Pressable
-                      className="flex-1 bg-[#F1F5F9] rounded-[10px] items-center justify-center"
-                      style={{ paddingVertical: 10 }}
-                      onPress={() => router.push(`/equipment/${it.equipment_id}`)}
-                    >
-                      <Text className="text-[#0F172A] text-[12px] font-bold">Chi tiết</Text>
-                    </Pressable>
+                  )}
+                  <Pressable
+                    className="flex-1 bg-[#F1F5F9] rounded-[10px] items-center justify-center"
+                    style={{ paddingVertical: 10 }}
+                    onPress={() => router.push(`/transactions/${it.id}` as any)}
+                  >
+                    <Text className="text-[#0F172A] text-[12px] font-bold">Chi tiết</Text>
+                  </Pressable>
+                  {tab === 'pending' && (
                     <Pressable
                       className="flex-1 bg-[#15803D] rounded-[10px] flex-row items-center justify-center"
                       style={{ paddingVertical: 10, gap: 4 }}
@@ -194,8 +192,8 @@ export default function AdminApproval() {
                       <Feather name="check" size={12} color="#FFFFFF" />
                       <Text className="text-white text-[12px] font-bold">Duyệt</Text>
                     </Pressable>
-                  </View>
-                )}
+                  )}
+                </View>
               </Animated.View>
             ))
           )}

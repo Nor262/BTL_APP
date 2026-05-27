@@ -60,7 +60,7 @@ export default function ProfileScreen() {
   const fetchData = () => {
     api.get('/notifications/unread-count').then(res => {
       setUnreadCount(res.data?.data?.count || 0);
-    }).catch(() => {});
+    }).catch(() => { });
     api.get('/transactions/my').then(res => {
       const txs = res.data?.data || [];
       setStats({
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
         active: txs.filter((t: any) => t.status === 'active').length,
         overdue: txs.filter((t: any) => t.status === 'overdue').length,
       });
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   useEffect(() => {
@@ -99,8 +99,8 @@ export default function ProfileScreen() {
     }
     setLoading(true);
     try {
-      const res = await api.patch('/auth/profile', { 
-        full_name: fullName.trim(), 
+      const res = await api.patch('/auth/profile', {
+        full_name: fullName.trim(),
         phone: phone.trim(),
         student_id: studentId.trim() || null,
         class: userClass.trim() || null,
@@ -141,7 +141,7 @@ export default function ProfileScreen() {
       const selectedImage = result.assets[0];
       const localUri = selectedImage.uri;
       const filename = localUri.split('/').pop() || 'avatar.jpg';
-      
+
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image`;
 
@@ -248,8 +248,8 @@ export default function ProfileScreen() {
             className="bg-[#0F172A] rounded-[20px] items-center"
             style={{ width: '100%', padding: 20, gap: 14 }}
           >
-            <Pressable 
-              onPress={selectAndUploadAvatar} 
+            <Pressable
+              onPress={selectAndUploadAvatar}
               className="w-[76px] h-[76px] bg-[#CC0D00] rounded-full items-center justify-center relative overflow-hidden active:scale-95"
             >
               {uploading ? (
@@ -279,7 +279,7 @@ export default function ProfileScreen() {
               </View>
               <Text className="text-[#94A3B8] text-[11px]">{user?.email || ''}</Text>
             </View>
-            
+
             {/* Stats */}
             <View
               className="bg-[#1E293B] rounded-[14px] flex-row items-center justify-between"
@@ -303,8 +303,8 @@ export default function ProfileScreen() {
           </Animated.View>
 
           {/* Detailed Info Card */}
-          <Animated.View 
-            entering={FadeInDown.delay(150)} 
+          <Animated.View
+            entering={FadeInDown.delay(150)}
             className="bg-white rounded-[18px] border border-[#F1F5F9] p-4"
             style={{ width: '100%', gap: 12 }}
           >
@@ -314,7 +314,7 @@ export default function ProfileScreen() {
               </View>
               <Text className="font-bold text-[#0F172A] text-sm">Thông tin chi tiết</Text>
             </View>
-            
+
             <View style={{ gap: 2 }}>
               {user?.role === 'borrower' && (
                 <DetailItem label="Mã sinh viên" value={user?.student_id || 'Chưa cập nhật'} icon="credit-card" />
@@ -326,11 +326,11 @@ export default function ProfileScreen() {
                 <DetailItem label="Khoa" value={user?.department || 'Chưa cập nhật'} icon="grid" />
               )}
               <DetailItem label="Số điện thoại" value={user?.phone || 'Chưa cập nhật'} icon="phone" />
-              
-              <DetailItem 
-                label="Ngày tham gia" 
-                value={user?.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '...'} 
-                icon="calendar" 
+
+              <DetailItem
+                label="Ngày tham gia"
+                value={user?.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '...'}
+                icon="calendar"
               />
             </View>
           </Animated.View>
@@ -395,11 +395,11 @@ export default function ProfileScreen() {
           >
             <Pressable className="bg-white rounded-[24px] p-6 shadow-2xl max-h-[85%]" onPress={(e) => e.stopPropagation()} style={{ gap: 16 }}>
               <Text className="text-[#0F172A] text-lg font-bold text-center">Cập nhật thông tin</Text>
-              
+
               <ScrollView showsVerticalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 12 }}>
                 <Input label="Họ và tên" value={fullName} onChangeText={setFullName} placeholder="Nhập họ và tên" icon="user" />
                 <Input label="Số điện thoại" value={phone} onChangeText={setPhone} placeholder="Nhập số điện thoại" keyboardType="phone-pad" icon="phone" />
-                
+
                 {user?.role === 'borrower' && (
                   <>
                     <Input label="Mã số sinh viên" value={studentId} onChangeText={setStudentId} placeholder="Nhập mã sinh viên" icon="credit-card" />
@@ -408,7 +408,7 @@ export default function ProfileScreen() {
                   </>
                 )}
               </ScrollView>
-              
+
               <View className="flex-row" style={{ gap: 10 }}>
                 <Button title="Hủy" onPress={() => setShowEditModal(false)} containerClassName="flex-1" variant="secondary" />
                 <Button title="Lưu" onPress={updateProfile} loading={loading} containerClassName="flex-1" />
@@ -432,7 +432,7 @@ export default function ProfileScreen() {
               <Input label="Mật khẩu hiện tại" value={passwords.current} onChangeText={(v) => setPasswords(p => ({ ...p, current: v }))} secureTextEntry placeholder="••••••••" icon="lock" />
               <Input label="Mật khẩu mới" value={passwords.new} onChangeText={(v) => setPasswords(p => ({ ...p, new: v }))} secureTextEntry placeholder="••••••••" icon="lock" />
               <Input label="Xác nhận mật khẩu" value={passwords.confirm} onChangeText={(v) => setPasswords(p => ({ ...p, confirm: v }))} secureTextEntry placeholder="••••••••" icon="lock" />
-              
+
               <View className="flex-row" style={{ gap: 10 }}>
                 <Button title="Hủy" onPress={() => { setShowPasswordModal(false); setPasswords({ current: '', new: '', confirm: '' }); }} containerClassName="flex-1" variant="secondary" />
                 <Button title="Đổi mật khẩu" onPress={handleChangePassword} loading={loading} containerClassName="flex-1" />

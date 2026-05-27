@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import api from '@/api/client';
 import LoadingScreen from '@/components/ui/LoadingScreen';
@@ -33,9 +34,20 @@ export default function CategoriesScreen() {
     }
   };
 
+  const { action } = useLocalSearchParams<{ action?: string }>();
+
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (action === 'add') {
+      // Small delay to ensure the screen is fully mounted and animations are done
+      setTimeout(() => {
+        handleOpenAdd();
+      }, 100);
+    }
+  }, [action]);
 
   const onRefresh = () => {
     setRefreshing(true);
