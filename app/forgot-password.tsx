@@ -18,7 +18,7 @@ export default function ForgotPasswordScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (countdown > 0) {
       interval = setInterval(() => {
         setCountdown((prev) => prev - 1);
