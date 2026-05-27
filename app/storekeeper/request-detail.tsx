@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, Alert, Modal, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
+import { Alert } from '@/utils/alert';
 import { StatusBar } from 'expo-status-bar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import Button from '@/components/ui/Button';

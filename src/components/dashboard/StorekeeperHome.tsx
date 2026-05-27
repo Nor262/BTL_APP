@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/api/client';
+import { Alert } from '@/utils/alert';
 import Badge from '../ui/Badge';
 import LoadingScreen from '../ui/LoadingScreen';
 import { downloadAndShareReport } from '@/utils/file-downloader';
