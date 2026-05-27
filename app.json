@@ -40,6 +40,9 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "android": {
+      "googleServicesFile": "./google-services.json"
+    },
     "extra": {
       "router": {},
       "eas": {

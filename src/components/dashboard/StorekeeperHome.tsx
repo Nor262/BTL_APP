@@ -219,11 +219,18 @@ export default function StorekeeperHome() {
               onPress={handleExportReports}
             />
             {user?.role === 'admin' && (
-              <ShortcutCard 
-                label="Nhật ký" 
-                icon="file-text" 
-                onPress={() => router.push('/admin/audit' as any)}
-              />
+              <>
+                <ShortcutCard 
+                  label="Người dùng" 
+                  icon="users" 
+                  onPress={() => router.push('/admin/users' as any)}
+                />
+                <ShortcutCard 
+                  label="Nhật ký" 
+                  icon="file-text" 
+                  onPress={() => router.push('/admin/audit' as any)}
+                />
+              </>
             )}
           </View>
 
