@@ -15,50 +15,16 @@ interface Notification {
   created_at: string;
 }
 
-const getStyle = (type: string) => {
-  switch (type) {
-    case 'return': return { icon: 'check-circle' as const, color: '#15803D', bg: '#DCFCE7' };
-    case 'reminder': return { icon: 'clock' as const, color: '#D97706', bg: '#FEF3C7' };
-    case 'rejection': return { icon: 'alert-circle' as const, color: '#B91C1C', bg: '#FEE2E2' };
-    case 'borrow': return { icon: 'package' as const, color: '#CC0D00', bg: '#FEE5E3' };
-    default: return { icon: 'bell' as const, color: '#D97706', bg: '#FEF3C7' };
-  }
-};
-
-const formatTime = (dateStr: string) => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = (now.getTime() - date.getTime()) / 1000;
-  if (diff < 60) return 'Vừa xong';
-  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
-  return date.toLocaleDateString('vi-VN');
-};
-
-const isToday = (dateStr: string) => {
-  const d = new Date(dateStr);
-  const now = new Date();
-  return d.toDateString() === now.toDateString();
-};
-
-const isYesterday = (dateStr: string) => {
-  const d = new Date(dateStr);
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return d.toDateString() === yesterday.toDateString();
-};
-
 export default function NotificationsScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'important'>('all');
 
   const fetchNotifications = async () => {
     try {
       const res = await api.get('/notifications');
-      setNotifications(res.data.data || []);
+      setNotifications(res.data.data);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -67,153 +33,110 @@ export default function NotificationsScreen() {
     }
   };
 
-  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
-  const onRefresh = () => { setRefreshing(true); fetchNotifications(); };
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchNotifications();
+  };
 
   const markAsRead = async (id: number) => {
     try {
       await api.patch(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+      );
     } catch (error) {
-      console.error('Failed to mark as read:', error);
+      console.error('Failed to mark notification as read:', error);
     }
   };
 
-  const markAllRead = async () => {
-    try {
-      await api.patch('/notifications/read-all');
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    } catch {}
+  const getStyle = (type: string) => {
+    switch (type) {
+      case 'borrow': return { icon: 'package', color: '#007AFF' };
+      case 'return': return { icon: 'check-circle', color: '#34C759' };
+      default: return { icon: 'info', color: '#FF9500' };
+    }
   };
 
-  const filtered = notifications.filter(n => {
-    if (filter === 'unread') return !n.is_read;
-    if (filter === 'important') return n.type === 'rejection' || n.type === 'reminder';
-    return true;
-  });
-
-  const todayItems = filtered.filter(n => isToday(n.created_at));
-  const yesterdayItems = filtered.filter(n => isYesterday(n.created_at));
-  const olderItems = filtered.filter(n => !isToday(n.created_at) && !isYesterday(n.created_at));
-  const unreadCount = notifications.filter(n => !n.is_read).length;
-
-  const filters = [
-    { key: 'all' as const, label: 'Tất cả', count: notifications.length },
-    { key: 'unread' as const, label: 'Chưa đọc' },
-    { key: 'important' as const, label: 'Quan trọng' },
-  ];
-
-  const renderItem = (item: Notification, index: number) => {
-    const style = getStyle(item.type);
-    return (
-      <Animated.View key={item.id} entering={FadeInDown.delay(index * 80)}>
-        <Pressable
-          className="bg-white rounded-2xl flex-row p-3.5"
-          style={{ gap: 12, opacity: item.is_read ? 0.7 : 1 }}
-          onPress={() => !item.is_read && markAsRead(item.id)}
-        >
-          <View
-            className="w-10 h-10 rounded-xl items-center justify-center"
-            style={{ backgroundColor: style.bg }}
-          >
-            <Feather name={style.icon} size={20} color={style.color} />
-          </View>
-          <View className="flex-1" style={{ gap: 4 }}>
-            <View className="flex-row items-center justify-between">
-              <Text className="text-[#0F172A] text-[13px] font-bold flex-1" numberOfLines={1}>{item.title}</Text>
-              <Text className="text-[#94A3B8] text-[10px] ml-2">{formatTime(item.created_at)}</Text>
-            </View>
-            <Text className="text-[#475569] text-xs" numberOfLines={2}>{item.message}</Text>
-            {!item.is_read && (
-              <View style={{ paddingTop: 4 }}>
-                <View className="w-1.5 h-1.5 bg-[#3B82F6] rounded-full" />
-              </View>
-            )}
-          </View>
-        </Pressable>
-      </Animated.View>
-    );
-  };
-
-  const renderSection = (label: string, items: Notification[]) => {
-    if (items.length === 0) return null;
-    return (
-      <>
-        <View style={{ paddingVertical: 6, paddingHorizontal: 4 }}>
-          <Text className="text-[#94A3B8] text-[10px] font-bold">{label}</Text>
-        </View>
-        {items.map((item, i) => renderItem(item, i))}
-      </>
-    );
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = (now.getTime() - date.getTime()) / 1000;
+    
+    if (diff < 60) return 'Vừa xong';
+    if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+    return date.toLocaleDateString('vi-VN');
   };
 
   return (
-    <View className="flex-1 bg-[#F8FAFC]">
+    <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
 
-      {/* Nav Bar */}
-      <View
-        className="flex-row items-center justify-between px-5"
-        style={{ paddingTop: 62, height: 118 }}
-      >
+      <View className="bg-white pt-14 pb-4 px-6 border-b border-gray-100 flex-row items-center">
         <Pressable
-          className="w-10 h-10 bg-white rounded-full items-center justify-center"
           onPress={() => router.back()}
+          className="w-10 h-10 items-center justify-center rounded-full bg-gray-50 mr-4"
         >
-          <Feather name="arrow-left" size={20} color="#0F172A" />
+          <Feather name="arrow-left" size={20} color="#333" />
         </Pressable>
-        <Text className="text-[#0F172A] text-base font-bold">Thông báo</Text>
-        <Pressable onPress={markAllRead}>
-          <Text className="text-[#CC0D00] text-xs font-medium">Đã đọc</Text>
-        </Pressable>
+        <Text className="text-xl font-bold text-gray-900">Thông báo</Text>
       </View>
 
       <ScrollView
         className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />}
+        contentContainerStyle={{ padding: 24 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CC0D00" />
+        }
       >
-        <View style={{ gap: 12 }}>
-          {/* Filter Tabs */}
-          <View className="flex-row" style={{ gap: 8 }}>
-            {filters.map(f => (
-              <Pressable
-                key={f.key}
-                className={`rounded-full flex-row items-center ${filter === f.key ? 'bg-[#0F172A]' : 'bg-white'}`}
-                style={{ gap: 6, paddingVertical: 6, paddingHorizontal: 12 }}
-                onPress={() => setFilter(f.key)}
+        {loading ? (
+          <ActivityIndicator size="large" color="#CC0D00" style={{ marginTop: 50 }} />
+        ) : notifications.length > 0 ? (
+          notifications.map((item, index) => {
+            const style = getStyle(item.type);
+            return (
+              <Animated.View
+                key={item.id}
+                entering={FadeInDown.delay(index * 100)}
               >
-                <Text className={`text-[11px] font-semibold ${filter === f.key ? 'text-white' : 'text-[#475569]'}`}>
-                  {f.label}
-                </Text>
-                {f.count !== undefined && filter === f.key && (
-                  <View className="bg-white rounded-full" style={{ paddingVertical: 1, paddingHorizontal: 6 }}>
-                    <Text className="text-[#0F172A] text-[10px] font-bold">{f.count}</Text>
+                <Pressable 
+                  onPress={() => !item.is_read && markAsRead(item.id)}
+                  className={`bg-white p-4 rounded-2xl shadow-sm mb-4 border flex-row items-center ${item.is_read ? 'border-gray-100 opacity-80' : 'border-blue-100'}`}
+                >
+                  <View
+                    className="w-12 h-12 rounded-xl items-center justify-center mr-4"
+                    style={{ backgroundColor: `${style.color}15` }}
+                  >
+                    <Feather name={style.icon as any} size={24} color={style.color} />
                   </View>
-                )}
-              </Pressable>
-            ))}
-          </View>
-
-          {loading ? (
-            <ActivityIndicator size="large" color="#CC0D00" style={{ marginTop: 50 }} />
-          ) : filtered.length > 0 ? (
-            <>
-              {renderSection('HÔM NAY', todayItems)}
-              {renderSection('HÔM QUA', yesterdayItems)}
-              {renderSection('TRƯỚC ĐÓ', olderItems)}
-            </>
-          ) : (
-            <View className="items-center justify-center py-20" style={{ gap: 12 }}>
-              <View className="w-16 h-16 bg-white rounded-full items-center justify-center">
-                <Feather name="bell-off" size={32} color="#E2E8F0" />
-              </View>
-              <Text className="text-[#94A3B8] text-sm">Không có thông báo nào</Text>
+                  <View className="flex-1">
+                    <View className="flex-row justify-between items-center">
+                      <Text className={`font-bold text-gray-900 text-base ${item.is_read ? 'font-medium' : ''}`}>
+                        {item.title}
+                      </Text>
+                      <Text className="text-[10px] text-gray-400">{formatTime(item.created_at)}</Text>
+                    </View>
+                    <Text className="text-gray-500 text-xs mt-1" numberOfLines={2}>
+                      {item.message}
+                    </Text>
+                  </View>
+                  {!item.is_read && <View className="w-2 h-2 rounded-full bg-blue-500 ml-2" />}
+                </Pressable>
+              </Animated.View>
+            );
+          })
+        ) : (
+          <View className="items-center justify-center py-20">
+            <View className="w-20 h-20 bg-gray-100 rounded-full items-center justify-center mb-4">
+              <Feather name="bell-off" size={40} color="#ccc" />
             </View>
-          )}
-        </View>
+            <Text className="text-gray-400 font-medium text-lg">Không có thông báo nào</Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );

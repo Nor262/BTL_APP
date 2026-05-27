@@ -1,15 +1,22 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Khi chạy qua Expo tunnel (ngrok), debuggerHost là *.exp.direct → không gọi được backend LAN.
-// Trong trường hợp đó dùng FALLBACK_IP (IP LAN máy dev) để gọi backend.
-const FALLBACK_IP = '192.168.1.26';
+/**
+ * API Configuration
+ * 
+ * To override the API URL, set the EXPO_PUBLIC_API_URL environment variable in your .env file:
+ * EXPO_PUBLIC_API_URL=http://192.168.1.120:3000/v1
+ */
+
+// Hardcoded fallback IP - update this to your machine's local IP if needed
+const FALLBACK_IP = '192.168.55.104'; 
 
 const expoHost = Constants.expoGoConfig?.debuggerHost?.split(':')[0]
   ?? Constants.expoConfig?.hostUri?.split(':')[0]
   ?? FALLBACK_IP;
 
-const isExpoTunnel = /\.exp\.direct$/i.test(expoHost) || /\.ngrok\./i.test(expoHost);
+// Detect if we are using an Expo tunnel (exp.direct)
+const isExpoTunnel = expoHost.includes('exp.direct');
 
 const DEV_API_URL = Platform.select({
   ios: `http://${isExpoTunnel ? FALLBACK_IP : expoHost}:3000/v1`,

@@ -1,36 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
-import { LocaleConfig } from 'react-native-calendars';
+import 'react-native-reanimated';
 import '../src/global.css';
-
-// Cấu hình locale tiếng Việt cho toàn bộ Calendar — phải load 1 lần duy nhất
-// ngay khi app khởi động để tránh fallback về device locale (Trung/Hàn/...)
-LocaleConfig.locales['vi'] = {
-  monthNames: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
-  monthNamesShort: ['Th.1', 'Th.2', 'Th.3', 'Th.4', 'Th.5', 'Th.6', 'Th.7', 'Th.8', 'Th.9', 'Th.10', 'Th.11', 'Th.12'],
-  dayNames: ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'],
-  dayNamesShort: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
-  today: 'Hôm nay',
-};
-LocaleConfig.defaultLocale = 'vi';
-
-// Tắt cảnh báo strict mode của Reanimated khi đọc/ghi shared value trong lúc render
-configureReanimatedLogger({
-  level: ReanimatedLogLevel.warn,
-  strict: false,
-});
 
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Provider as AntProvider } from '@ant-design/react-native';
-
-const antLocale = {
-  locale: 'vi_VN',
-  DatePickerView: { year: '', month: '', day: '', hour: '', minute: '', am: 'SA', pm: 'CH' },
-  DatePicker: { okText: 'OK', dismissText: 'Hủy', extra: 'Vui lòng chọn', year: '', month: '', day: '', hour: '', minute: '', am: 'SA', pm: 'CH' },
-} as any;
+import { viVN } from '@/utils/locale';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
@@ -38,7 +15,9 @@ import { registerForPushNotificationsAsync, setupNotificationHandler } from '@/u
 import Constants from 'expo-constants';
 import { useRef } from 'react';
 
-// anchor động theo role được xử lý bằng router.replace trong effect bên dưới
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
 
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 
@@ -61,31 +40,12 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isMounted || !navigationState?.key) return;
 
-    const inAuthGroup =
-      segments[0] === 'login' ||
-      segments[0] === 'register' ||
-      segments[0] === 'forgot-password' ||
-      segments[0] === 'verify-otp' ||
-      segments[0] === 'reset-password';
-
-    const homeForRole =
-      user?.role === 'admin'
-        ? '/admin/dashboard'
-        : user?.role === 'storekeeper'
-        ? '/storekeeper/handover'
-        : '/(tabs)';
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register' || segments[0] === 'forgot-password' || segments[0] === 'reset-password';
 
     if (!user && !inAuthGroup) {
       router.replace('/login');
     } else if (user && inAuthGroup) {
-      router.replace(homeForRole as any);
-    } else if (user) {
-      // Đứng sai tab group theo role → kéo về home đúng
-      const inWrongGroup =
-        (user.role === 'admin' && (segments[0] === '(tabs)' || segments[0] === 'storekeeper')) ||
-        (user.role === 'storekeeper' && (segments[0] === '(tabs)' || segments[0] === 'admin')) ||
-        (user.role === 'borrower' && (segments[0] === 'admin' || segments[0] === 'storekeeper'));
-      if (inWrongGroup) router.replace(homeForRole as any);
+      router.replace('/(tabs)');
     }
   }, [user, segments, navigationState?.key, isMounted]);
 
@@ -126,21 +86,22 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <AntProvider locale={antLocale}>
+      <AntProvider locale={viVN}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" />
             <Stack.Screen name="register" />
             <Stack.Screen name="forgot-password" />
-            <Stack.Screen name="verify-otp" />
-            <Stack.Screen name="borrow-request" />
-            <Stack.Screen name="return" />
-            <Stack.Screen name="transactions/[id]" />
-            <Stack.Screen name="equipment/availability" />
             <Stack.Screen name="reset-password" />
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="admin" />
-            <Stack.Screen name="storekeeper" />
+            <Stack.Screen name="storekeeper/scan" />
+            <Stack.Screen name="storekeeper/requests" />
+            <Stack.Screen name="storekeeper/request-detail" />
+            <Stack.Screen name="admin/categories/index" />
+            <Stack.Screen name="admin/locations/index" />
+            <Stack.Screen name="admin/suppliers/index" />
+            <Stack.Screen name="admin/maintenance/index" />
+            <Stack.Screen name="admin/audit/index" />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />

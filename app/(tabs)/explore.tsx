@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -11,18 +10,9 @@ import Input from '@/components/ui/Input';
 import { useAlertStore } from '@/store/useAlertStore';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useFocusEffect } from '@react-navigation/native';
-
-const MENU_ITEMS = [
-  { key: 'profile', icon: 'user' as const, iconColor: '#CC0D00', bg: '#FEE5E3', label: 'Thông tin cá nhân' },
-  { key: 'loans', icon: 'clock' as const, iconColor: '#2563EB', bg: '#DBEAFE', label: 'Lịch sử mượn trả' },
-  { key: 'notifications', icon: 'bell' as const, iconColor: '#D97706', bg: '#FEF3C7', label: 'Thông báo' },
-  { key: 'password', icon: 'lock' as const, iconColor: '#16A34A', bg: '#DCFCE7', label: 'Đổi mật khẩu' },
-  { key: 'help', icon: 'help-circle' as const, iconColor: '#DB2777', bg: '#FCE7F3', label: 'Trợ giúp & Hỗ trợ' },
-];
 
 export default function ProfileScreen() {
-  const { user, logout, setAuth, refreshMe } = useAuthStore();
+  const { user, logout, setAuth } = useAuthStore();
   const { showAlert } = useAlertStore();
   const router = useRouter();
 
@@ -31,116 +21,54 @@ export default function ProfileScreen() {
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [studentId, setStudentId] = useState(user?.student_id || '');
-  const [userClass, setUserClass] = useState(user?.class || '');
+  const [className, setClassName] = useState(user?.class || '');
   const [department, setDepartment] = useState(user?.department || '');
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [stats, setStats] = useState({ total: 0, active: 0, overdue: 0 });
 
-  // Sync state values when modal opens or user updates
-  useEffect(() => {
-    if (showEditModal && user) {
-      setFullName(user.full_name || '');
-      setPhone(user.phone || '');
-      setStudentId(user.student_id || '');
-      setUserClass(user.class || '');
-      setDepartment(user.department || '');
-    }
-  }, [showEditModal, user]);
-
-  const fetchData = () => {
-    api.get('/notifications/unread-count').then(res => {
-      setUnreadCount(res.data?.data?.count || 0);
-    }).catch(() => {});
-    api.get('/transactions/my').then(res => {
-      const txs = res.data?.data || [];
-      setStats({
-        total: txs.length,
-        active: txs.filter((t: any) => t.status === 'active').length,
-        overdue: txs.filter((t: any) => t.status === 'overdue').length,
-      });
-    }).catch(() => {});
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [user]);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchData();
-      refreshMe();
-    }, [])
-  );
-
-  const handleLogout = () => {
-    showAlert({
-      type: 'warning',
-      title: 'Đăng xuất',
-      message: 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?',
-      showCancel: true,
-      onConfirm: () => logout()
-    });
-  };
-
-  const updateProfile = async () => {
-    if (!fullName.trim()) {
-      showAlert({ type: 'warning', title: 'Thông báo', message: 'Họ và tên không được để trống' });
-      return;
-    }
-    setLoading(true);
+  const handlePickAvatar = async () => {
     try {
-      const res = await api.patch('/auth/profile', { 
-        full_name: fullName.trim(), 
-        phone: phone.trim(),
-        student_id: studentId.trim() || null,
-        class: userClass.trim() || null,
-        department: department.trim() || null
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert({
+          type: 'warning',
+          title: 'Quyền truy cập',
+          message: 'Ứng dụng cần quyền truy cập thư viện ảnh để thay đổi avatar.'
+        });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
       });
-      setAuth(res.data.data || res.data, useAuthStore.getState().token!);
-      showAlert({ type: 'success', title: 'Thành công', message: 'Cập nhật thông tin thành công' });
-      setShowEditModal(false);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+        await handleUploadAvatar(selectedImage.uri);
+      }
     } catch (error: any) {
-      showAlert({ type: 'error', title: 'Lỗi', message: error.response?.data?.message || 'Không thể cập nhật thông tin' });
-    } finally { setLoading(false); }
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: 'Không thể mở thư viện ảnh'
+      });
+    }
   };
 
-  const selectAndUploadAvatar = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert({
-        type: 'warning',
-        title: 'Quyền truy cập',
-        message: 'Ứng dụng cần quyền truy cập thư viện ảnh để thay đổi avatar.'
-      });
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-
+  const handleUploadAvatar = async (uri: string) => {
     setUploading(true);
     try {
-      const selectedImage = result.assets[0];
-      const localUri = selectedImage.uri;
-      const filename = localUri.split('/').pop() || 'avatar.jpg';
-      
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image`;
-
       const formData = new FormData();
+      const filename = uri.split('/').pop() || 'avatar.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
       formData.append('file', {
-        uri: localUri,
+        uri,
         name: filename,
         type,
       } as any);
@@ -151,256 +79,337 @@ export default function ProfileScreen() {
         },
       });
 
-      const updatedUser = res.data.user || res.data.data?.user;
+      const updatedUser = res.data.user || res.data.data?.user || res.data.data;
       if (updatedUser) {
         setAuth(updatedUser, useAuthStore.getState().token!);
-      } else if (res.data.avatar_url) {
-        const newUser = { ...user, avatar_url: res.data.avatar_url } as any;
-        setAuth(newUser, useAuthStore.getState().token!);
+        showAlert({
+          type: 'success',
+          title: 'Thành công',
+          message: 'Cập nhật ảnh đại diện thành công'
+        });
       }
-
-      showAlert({
-        type: 'success',
-        title: 'Thành công',
-        message: 'Cập nhật ảnh đại diện thành công'
-      });
     } catch (error: any) {
-      console.error('Upload avatar error:', error);
+      console.error('Upload Avatar Error:', error);
       showAlert({
         type: 'error',
         title: 'Lỗi',
-        message: error.response?.data?.message || 'Không thể tải lên ảnh đại diện'
+        message: error.response?.data?.message || 'Không thể tải ảnh lên hệ thống'
       });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleChangePassword = async () => {
-    const { current, new: newPass, confirm } = passwords;
-    if (!current || !newPass || !confirm) {
-      showAlert({ type: 'warning', title: 'Thông báo', message: 'Vui lòng điền đầy đủ thông tin' });
-      return;
-    }
-    if (newPass !== confirm) {
-      showAlert({ type: 'warning', title: 'Thông báo', message: 'Mật khẩu mới không khớp' });
+  const handleLogout = () => {
+    showAlert({
+      type: 'warning',
+      title: 'Đăng xuất',
+      message: 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?',
+      showCancel: true,
+      onConfirm: () => {
+        logout();
+      }
+    });
+  };
+
+  const updateProfile = async () => {
+    if (!fullName.trim()) {
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Họ và tên không được để trống'
+      });
       return;
     }
     setLoading(true);
     try {
-      await api.patch('/auth/change-password', { old_password: current, new_password: newPass });
-      showAlert({ type: 'success', title: 'Thành công', message: 'Đổi mật khẩu thành công' });
-      setShowPasswordModal(false);
-      setPasswords({ current: '', new: '', confirm: '' });
+      const res = await api.patch('/auth/profile', { 
+        full_name: fullName.trim(), 
+        phone: phone.trim(),
+        student_id: studentId.trim(),
+        class: className.trim(),
+        department: department.trim(),
+      });
+      setAuth(res.data.data || res.data, useAuthStore.getState().token!);
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Cập nhật thông tin cá nhân thành công'
+      });
+      setShowEditModal(false);
     } catch (error: any) {
-      showAlert({ type: 'error', title: 'Lỗi', message: error.response?.data?.message || 'Không thể đổi mật khẩu' });
-    } finally { setLoading(false); }
-  };
-
-  const handleMenuPress = (key: string) => {
-    switch (key) {
-      case 'profile': setShowEditModal(true); break;
-      case 'loans': router.push('/my-loans'); break;
-      case 'notifications': router.push('/notifications'); break;
-      case 'password': setShowPasswordModal(true); break;
-      case 'help':
-        showAlert({ type: 'info', title: 'Hỗ trợ', message: 'Liên hệ quản trị viên CLB tại văn phòng hoặc qua email.' });
-        break;
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: error.response?.data?.message || 'Không thể cập nhật thông tin'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const initials = (user?.full_name?.split(' ').pop() || 'U').charAt(0).toUpperCase();
-  const insets = useSafeAreaInsets();
+  const handleChangePassword = async () => {
+    const { current, new: newPass, confirm } = passwords;
+    if (!current || !newPass || !confirm) {
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Vui lòng điền đầy đủ thông tin mật khẩu'
+      });
+      return;
+    }
+    if (newPass !== confirm) {
+      showAlert({
+        type: 'warning',
+        title: 'Thông báo',
+        message: 'Mật khẩu mới không khớp'
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.patch('/auth/change-password', {
+        old_password: current,
+        new_password: newPass
+      });
+      showAlert({
+        type: 'success',
+        title: 'Thành công',
+        message: 'Đổi mật khẩu thành công'
+      });
+      setShowPasswordModal(false);
+      setPasswords({ current: '', new: '', confirm: '' });
+    } catch (error: any) {
+      showAlert({
+        type: 'error',
+        title: 'Lỗi',
+        message: error.response?.data?.message || 'Không thể đổi mật khẩu'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showHelp = () => {
+    showAlert({
+      type: 'info',
+      title: 'Hỗ trợ',
+      message: 'Vui lòng liên hệ quản trị viên CLB tại văn phòng hoặc qua email để được hỗ trợ kỹ thuật.'
+    });
+  };
+
+  const showAbout = () => {
+    showAlert({
+      type: 'info',
+      title: 'Về ứng dụng',
+      message: 'Hệ thống Quản lý Thiết bị CLB v1.0.0\nPhát triển bởi Team BTL.\n© 2026 PTIT'
+    });
+  };
 
   return (
-    <Animated.View entering={FadeIn} className="flex-1 bg-[#F8FAFC]">
-      <ScrollView
-        className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 140, paddingHorizontal: 20 }}
-      >
-        <View className="items-center" style={{ gap: 18 }}>
-          {/* Header */}
-          <View className="flex-row items-center justify-between" style={{ width: '100%' }}>
-            <Text className="text-[#0F172A] text-2xl font-bold">Hồ sơ</Text>
-            <Pressable
-              onPress={() => router.push('/edit-profile')}
-              className="w-10 h-10 bg-white rounded-full items-center justify-center active:bg-[#F1F5F9]"
-            >
-              <Feather name="settings" size={20} color="#0F172A" />
-            </Pressable>
-          </View>
-
-          {/* Profile Card */}
-          <Animated.View
-            entering={FadeInDown.delay(100)}
-            className="bg-[#0F172A] rounded-[20px] items-center"
-            style={{ width: '100%', padding: 20, gap: 14 }}
+    <Animated.View entering={FadeIn} className="flex-1 bg-gray-50">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="bg-primary pt-20 pb-8 px-6 items-center rounded-b-[40px] shadow-sm">
+          <Pressable 
+            onPress={handlePickAvatar}
+            disabled={uploading}
+            className="relative mb-4"
           >
-            <Pressable 
-              onPress={selectAndUploadAvatar} 
-              className="w-[76px] h-[76px] bg-[#CC0D00] rounded-full items-center justify-center relative overflow-hidden active:scale-95"
-            >
+            <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-lg border-4 border-white/20 overflow-hidden">
               {uploading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color="#CC0D00" />
               ) : user?.avatar_url ? (
                 <Image 
                   source={{ uri: user.avatar_url }} 
-                  className="w-full h-full rounded-full"
+                  style={{ width: '100%', height: '100%' }}
                   contentFit="cover"
                 />
               ) : (
-                <Text className="text-white text-[32px] font-bold">
-                  {initials}
+                <Text className="text-primary text-4xl font-bold">
+                  {user?.full_name?.charAt(0).toUpperCase() || 'U'}
                 </Text>
               )}
-              <View className="absolute bottom-0 right-0 left-0 bg-black/40 py-0.5 items-center">
-                <Feather name="camera" size={8} color="#fff" />
-              </View>
-            </Pressable>
-
-            <Text className="text-white text-lg font-bold">{user?.full_name || 'Người dùng'}</Text>
-            <View className="flex-row items-center" style={{ gap: 8 }}>
-              <View className="bg-[#1E293B] rounded-full" style={{ paddingVertical: 3, paddingHorizontal: 10 }}>
-                <Text className="text-[#22D3EE] text-[10px] font-semibold">
-                  {user?.role === 'storekeeper' ? 'Thủ kho' : user?.role === 'admin' ? 'Admin' : 'Member'}
-                </Text>
-              </View>
-              <Text className="text-[#94A3B8] text-[11px]">{user?.email || ''}</Text>
             </View>
-            
-            {/* Stats */}
-            <View
-              className="bg-[#1E293B] rounded-[14px] flex-row items-center justify-between"
-              style={{ width: '100%', padding: 12 }}
-            >
-              <View className="items-center" style={{ gap: 2 }}>
-                <Text className="text-white text-[17px] font-bold">{stats.total}</Text>
-                <Text className="text-[#94A3B8] text-[10px]">Lần mượn</Text>
-              </View>
-              <View className="bg-[#334155]" style={{ width: 1, height: 28 }} />
-              <View className="items-center" style={{ gap: 2 }}>
-                <Text className="text-[#22D3EE] text-[17px] font-bold">{stats.active}</Text>
-                <Text className="text-[#94A3B8] text-[10px]">Đang mượn</Text>
-              </View>
-              <View className="bg-[#334155]" style={{ width: 1, height: 28 }} />
-              <View className="items-center" style={{ gap: 2 }}>
-                <Text className="text-white text-[17px] font-bold">{stats.overdue}</Text>
-                <Text className="text-[#94A3B8] text-[10px]">Quá hạn</Text>
-              </View>
+            <View className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full items-center justify-center shadow-md border border-gray-100">
+              <Feather name="camera" size={14} color="#666" />
             </View>
-          </Animated.View>
-
-          {/* Detailed Info Card */}
-          <Animated.View 
-            entering={FadeInDown.delay(150)} 
-            className="bg-white rounded-[18px] border border-[#F1F5F9] p-4"
-            style={{ width: '100%', gap: 12 }}
-          >
-            <View className="flex-row items-center border-b border-[#F1F5F9] pb-3" style={{ gap: 8 }}>
-              <View className="w-7 h-7 bg-[#EFF6FF] rounded-lg items-center justify-center">
-                <Feather name="info" size={14} color="#3B82F6" />
-              </View>
-              <Text className="font-bold text-[#0F172A] text-sm">Thông tin chi tiết</Text>
-            </View>
-            
-            <View style={{ gap: 2 }}>
-              {user?.role === 'borrower' && (
-                <DetailItem label="Mã sinh viên" value={user?.student_id || 'Chưa cập nhật'} icon="credit-card" />
-              )}
-              {user?.role === 'borrower' && (
-                <DetailItem label="Lớp học" value={user?.class || 'Chưa cập nhật'} icon="layers" />
-              )}
-              {user?.role === 'borrower' && (
-                <DetailItem label="Khoa" value={user?.department || 'Chưa cập nhật'} icon="grid" />
-              )}
-              <DetailItem label="Số điện thoại" value={user?.phone || 'Chưa cập nhật'} icon="phone" />
-              
-              <DetailItem 
-                label="Ngày tham gia" 
-                value={user?.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '...'} 
-                icon="calendar" 
-              />
-            </View>
-          </Animated.View>
-
-          {/* Menu */}
-          <Animated.View
-            entering={FadeInDown.delay(200)}
-            className="bg-white rounded-[18px] border border-[#F1F5F9]"
-            style={{ width: '100%', padding: 6, gap: 2 }}
-          >
-            {MENU_ITEMS.map((item) => (
-              <Pressable
-                key={item.key}
-                className="flex-row items-center rounded-xl p-3 active:bg-[#F8FAFC]"
-                style={{ gap: 12 }}
-                onPress={() => handleMenuPress(item.key)}
-              >
-                <View
-                  className="w-9 h-9 rounded-[10px] items-center justify-center"
-                  style={{ backgroundColor: item.bg }}
-                >
-                  <Feather name={item.icon} size={18} color={item.iconColor} />
-                </View>
-                <Text className="flex-1 text-[#0F172A] text-sm font-medium">{item.label}</Text>
-                {item.key === 'notifications' && unreadCount > 0 && (
-                  <View className="bg-[#EF4444] rounded-full" style={{ paddingVertical: 1, paddingHorizontal: 7 }}>
-                    <Text className="text-white text-[10px] font-bold">{unreadCount}</Text>
-                  </View>
-                )}
-                <Feather name="chevron-right" size={18} color="#94A3B8" />
-              </Pressable>
-            ))}
-          </Animated.View>
-
-          {/* Logout */}
-          <Animated.View entering={FadeInDown.delay(250)} style={{ width: '100%' }}>
-            <Pressable
-              className="bg-[#FEF2F2] rounded-[14px] flex-row items-center justify-center border border-[#FEE2E2] active:scale-95"
-              style={{ gap: 10, padding: 14 }}
-              onPress={handleLogout}
-            >
-              <Feather name="log-out" size={18} color="#B91C1C" />
-              <Text className="text-[#B91C1C] text-sm font-semibold">Đăng xuất</Text>
-            </Pressable>
-          </Animated.View>
-
-          {/* Version */}
-          <View style={{ paddingTop: 8 }}>
-            <Text className="text-[#94A3B8] text-[10px]">EquipHub v1.0.0 · Made with ♥ for sinh viên</Text>
+          </Pressable>
+          <Text className="text-white text-2xl font-bold">{user?.full_name}</Text>
+          <Text className="text-white/80 mt-1">{user?.email}</Text>
+          {user?.phone && <Text className="text-white/80 mt-1">{user.phone}</Text>}
+          <View className="bg-white/20 px-4 py-1.5 rounded-full mt-3">
+            <Text className="text-white text-xs font-bold uppercase tracking-wider">
+              {user?.role === 'admin' ? 'ADMIN' : user?.role === 'storekeeper' ? 'THỦ KHO' : 'SINH VIÊN'}
+            </Text>
           </View>
         </View>
+
+        <View className="px-6 py-6">
+          {user?.role === 'borrower' && (
+            <>
+              <Text className="font-bold text-gray-900 text-lg mb-4">Thông tin cá nhân</Text>
+              <Animated.View entering={FadeInDown.delay(100)} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+                <View className="flex-row justify-between mb-3.5 pb-3 border-b border-gray-50">
+                  <Text className="text-xs text-gray-500 font-medium">Mã sinh viên</Text>
+                  <Text className="text-xs text-gray-900 font-bold">{user?.student_id || 'Chưa cập nhật'}</Text>
+                </View>
+                <View className="flex-row justify-between mb-3.5 pb-3 border-b border-gray-50">
+                  <Text className="text-xs text-gray-500 font-medium">Lớp học</Text>
+                  <Text className="text-xs text-gray-900 font-bold">{user?.class || 'Chưa cập nhật'}</Text>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-gray-500 font-medium">Khoa / Phòng ban</Text>
+                  <Text className="text-xs text-gray-900 font-bold">{user?.department || 'Chưa cập nhật'}</Text>
+                </View>
+              </Animated.View>
+            </>
+          )}
+
+          <Text className="font-bold text-gray-900 text-lg mb-4">Cài đặt tài khoản</Text>
+
+          <Animated.View entering={FadeInDown.delay(200)} className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <ProfileOption
+              icon="user"
+              title="Sửa thông tin"
+              onPress={() => {
+                setFullName(user?.full_name || '');
+                setPhone(user?.phone || '');
+                setStudentId(user?.student_id || '');
+                setClassName(user?.class || '');
+                setDepartment(user?.department || '');
+                setShowEditModal(true);
+              }}
+              isFirst
+            />
+            <ProfileOption
+              icon="lock"
+              title="Đổi mật khẩu"
+              onPress={() => setShowPasswordModal(true)}
+            />
+            <ProfileOption
+              icon="bell"
+              title="Thông báo"
+              onPress={() => router.push('/notifications')}
+            />
+            <ProfileOption
+              icon="clock"
+              title="Lịch sử mượn trả"
+              onPress={() => router.push('/my-loans')}
+            />
+          </Animated.View>
+
+          <Text className="font-bold text-gray-900 text-lg mb-4">Khác</Text>
+          <Animated.View entering={FadeInDown.delay(400)} className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <ProfileOption
+              icon="help-circle"
+              title="Hỗ trợ & Trợ giúp"
+              onPress={showHelp}
+              isFirst
+            />
+            <ProfileOption
+              icon="info"
+              title="Về ứng dụng"
+              onPress={showAbout}
+            />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(600)}>
+            <Pressable
+              className="bg-red-50 flex-row items-center p-4 rounded-2xl border border-red-100"
+              onPress={handleLogout}
+            >
+              <View className="w-10 h-10 bg-white rounded-xl items-center justify-center mr-4">
+                <Feather name="log-out" size={20} color="#FF3B30" />
+              </View>
+              <Text className="flex-1 font-bold text-red-500 text-base">Đăng xuất</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+        <View className="h-24" />
       </ScrollView>
 
       {/* Edit Profile Modal */}
-      <Modal visible={showEditModal} transparent animationType="fade" statusBarTranslucent>
+      <Modal visible={showEditModal} transparent animationType="fade" statusBarTranslucent={true}>
         <View className="flex-1">
-          <Pressable className="absolute inset-0 bg-black/40" onPress={() => setShowEditModal(false)} />
+          <Pressable 
+            className="absolute inset-0 bg-black/40" 
+            onPress={() => setShowEditModal(false)} 
+          />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
-            <Pressable className="bg-white rounded-[24px] p-6 shadow-2xl max-h-[85%]" onPress={(e) => e.stopPropagation()} style={{ gap: 16 }}>
-              <Text className="text-[#0F172A] text-lg font-bold text-center">Cập nhật thông tin</Text>
-              
-              <ScrollView showsVerticalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 12 }}>
-                <Input label="Họ và tên" value={fullName} onChangeText={setFullName} placeholder="Nhập họ và tên" icon="user" />
-                <Input label="Số điện thoại" value={phone} onChangeText={setPhone} placeholder="Nhập số điện thoại" keyboardType="phone-pad" icon="phone" />
-                
+            <Pressable 
+              className="bg-white rounded-[30px] p-6 shadow-2xl max-h-[85%]" 
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Cập nhật thông tin</Text>
+
+              <ScrollView showsVerticalScrollIndicator={false} className="mb-4">
+                <Input
+                  label="Họ và tên"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Nhập họ và tên"
+                  icon="user"
+                />
+
+                <Input
+                  label="Số điện thoại"
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Nhập số điện thoại"
+                  keyboardType="phone-pad"
+                  icon="phone"
+                />
+
                 {user?.role === 'borrower' && (
                   <>
-                    <Input label="Mã số sinh viên" value={studentId} onChangeText={setStudentId} placeholder="Nhập mã sinh viên" icon="credit-card" />
-                    <Input label="Lớp học" value={userClass} onChangeText={setUserClass} placeholder="Nhập lớp học" icon="layers" />
-                    <Input label="Khoa" value={department} onChangeText={setDepartment} placeholder="Nhập khoa" icon="grid" />
+                    <Input
+                      label="Mã sinh viên"
+                      value={studentId}
+                      onChangeText={setStudentId}
+                      placeholder="Nhập mã sinh viên"
+                      autoCapitalize="characters"
+                      icon="credit-card"
+                    />
+
+                    <Input
+                      label="Lớp học"
+                      value={className}
+                      onChangeText={setClassName}
+                      placeholder="Nhập lớp học (ví dụ: D21CQCN01-B)"
+                      autoCapitalize="characters"
+                      icon="grid"
+                    />
+
+                    <Input
+                      label="Khoa / Phòng ban"
+                      value={department}
+                      onChangeText={setDepartment}
+                      placeholder="Nhập khoa hoặc phòng ban"
+                      icon="briefcase"
+                    />
                   </>
                 )}
               </ScrollView>
-              
-              <View className="flex-row" style={{ gap: 10 }}>
-                <Button title="Hủy" onPress={() => setShowEditModal(false)} containerClassName="flex-1" variant="secondary" />
-                <Button title="Lưu" onPress={updateProfile} loading={loading} containerClassName="flex-1" />
+
+              <View className="flex-row">
+                <Button
+                  title="Hủy"
+                  onPress={() => setShowEditModal(false)}
+                  containerClassName="flex-1 mr-2"
+                  variant="secondary"
+                />
+                <Button
+                  title="Lưu"
+                  onPress={updateProfile}
+                  loading={loading}
+                  containerClassName="flex-1 ml-2"
+                />
               </View>
             </Pressable>
           </KeyboardAvoidingView>
@@ -410,21 +419,65 @@ export default function ProfileScreen() {
       {/* Password Modal */}
       <Modal visible={showPasswordModal} transparent animationType="fade" statusBarTranslucent>
         <View className="flex-1">
-          <Pressable className="absolute inset-0 bg-black/40" onPress={() => setShowPasswordModal(false)} />
+          <Pressable 
+            className="absolute inset-0 bg-black/40" 
+            onPress={() => setShowPasswordModal(false)} 
+          />
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior="padding"
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             className="flex-1 justify-center px-6"
             pointerEvents="box-none"
           >
-            <Pressable className="bg-white rounded-[24px] p-6 shadow-2xl" onPress={(e) => e.stopPropagation()} style={{ gap: 16 }}>
-              <Text className="text-[#0F172A] text-lg font-bold text-center">Đổi mật khẩu</Text>
-              <Input label="Mật khẩu hiện tại" value={passwords.current} onChangeText={(v) => setPasswords(p => ({ ...p, current: v }))} secureTextEntry placeholder="••••••••" icon="lock" />
-              <Input label="Mật khẩu mới" value={passwords.new} onChangeText={(v) => setPasswords(p => ({ ...p, new: v }))} secureTextEntry placeholder="••••••••" icon="lock" />
-              <Input label="Xác nhận mật khẩu" value={passwords.confirm} onChangeText={(v) => setPasswords(p => ({ ...p, confirm: v }))} secureTextEntry placeholder="••••••••" icon="lock" />
-              
-              <View className="flex-row" style={{ gap: 10 }}>
-                <Button title="Hủy" onPress={() => { setShowPasswordModal(false); setPasswords({ current: '', new: '', confirm: '' }); }} containerClassName="flex-1" variant="secondary" />
-                <Button title="Đổi mật khẩu" onPress={handleChangePassword} loading={loading} containerClassName="flex-1" />
+            <Pressable 
+              className="bg-white rounded-[30px] p-6 shadow-2xl" 
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text className="text-xl font-bold text-gray-900 mb-6 text-center">Đổi mật khẩu</Text>
+
+              <Input
+                label="Mật khẩu hiện tại"
+                value={passwords.current}
+                onChangeText={(v) => setPasswords(prev => ({ ...prev, current: v }))}
+                secureTextEntry
+                placeholder="••••••••"
+                icon="lock"
+              />
+
+              <Input
+                label="Mật khẩu mới"
+                value={passwords.new}
+                onChangeText={(v) => setPasswords(prev => ({ ...prev, new: v }))}
+                secureTextEntry
+                placeholder="••••••••"
+                icon="lock"
+              />
+
+              <Input
+                label="Xác nhận mật khẩu mới"
+                value={passwords.confirm}
+                onChangeText={(v) => setPasswords(prev => ({ ...prev, confirm: v }))}
+                secureTextEntry
+                placeholder="••••••••"
+                icon="lock"
+              />
+
+              <View className="flex-row">
+                <Button
+                  title="Hủy"
+                  onPress={() => {
+                    setShowPasswordModal(false);
+                    setPasswords({ current: '', new: '', confirm: '' });
+                  }}
+                  containerClassName="flex-1 mr-2"
+                  variant="secondary"
+                />
+                <Button
+                  title="Đổi mật khẩu"
+                  onPress={handleChangePassword}
+                  loading={loading}
+                  containerClassName="flex-1 ml-2"
+                />
               </View>
             </Pressable>
           </KeyboardAvoidingView>
@@ -434,14 +487,17 @@ export default function ProfileScreen() {
   );
 }
 
-function DetailItem({ label, value, icon, valueColor = '#0F172A' }: any) {
+function ProfileOption({ icon, title, onPress, isFirst = false }: any) {
   return (
-    <View className="flex-row items-center justify-between py-2 border-b border-[#F1F5F9]" style={{ borderBottomWidth: 0.5 }}>
-      <View className="flex-row items-center flex-1 pr-4" style={{ gap: 8 }}>
-        <Feather name={icon} size={12} color="#94A3B8" />
-        <Text className="text-[#64748B] text-xs">{label}</Text>
+    <Pressable
+      className={`flex-row items-center p-4 ${!isFirst ? 'border-t border-gray-100' : ''}`}
+      onPress={onPress}
+    >
+      <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-4">
+        <Feather name={icon} size={20} color="#666" />
       </View>
-      <Text className="font-semibold text-xs text-right flex-1" style={{ color: valueColor }} numberOfLines={1}>{value}</Text>
-    </View>
+      <Text className="flex-1 font-medium text-gray-900 text-base">{title}</Text>
+      <Feather name="chevron-right" size={16} color="#ccc" />
+    </Pressable>
   );
 }
