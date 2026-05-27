@@ -14,7 +14,8 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.nor262.frontendApp"
+      "package": "com.nor262.frontendApp",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -39,9 +40,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "android": {
-      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "router": {},
