@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, FlatList, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, FlatList, ActivityIndicator, RefreshControl, Dimensions, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
@@ -8,6 +8,7 @@ import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import Badge from '../ui/Badge';
 import { useAuthStore } from '@/store/useAuthStore';
 import LoadingScreen from '../ui/LoadingScreen';
+import Button from '../ui/Button';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -22,6 +23,8 @@ export default function BorrowerHome() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<any>(null);
   
   const { user } = useAuthStore();
   const router = useRouter();
@@ -193,7 +196,10 @@ export default function BorrowerHome() {
                   className="mr-4"
                 >
                   <Pressable 
-                    onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
+                    onPress={() => {
+                      setSelectedTx(loan);
+                      setDetailModalVisible(true);
+                    }}
                     className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
                     style={{ width: width - 48 }}
                   >
@@ -246,7 +252,10 @@ export default function BorrowerHome() {
                   className="mr-4"
                 >
                   <Pressable 
-                    onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
+                    onPress={() => {
+                      setSelectedTx(loan);
+                      setDetailModalVisible(true);
+                    }}
                     className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
                     style={{ width: width - 48 }}
                   >
@@ -299,7 +308,10 @@ export default function BorrowerHome() {
                   className="mr-4"
                 >
                   <Pressable 
-                    onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
+                    onPress={() => {
+                      setSelectedTx(loan);
+                      setDetailModalVisible(true);
+                    }}
                     className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
                     style={{ width: width - 48 }}
                   >
@@ -354,6 +366,107 @@ export default function BorrowerHome() {
         </View>
         <View className="h-32" />
       </ScrollView>
+
+      {/* Modal Chi Tiết Giao Dịch */}
+      <Modal visible={detailModalVisible} transparent animationType="slide" statusBarTranslucent>
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-[30px] p-6 max-h-[85%] pb-8">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-bold text-gray-900">Chi tiết đơn mượn</Text>
+              <Pressable onPress={() => setDetailModalVisible(false)} className="w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
+                <Feather name="x" size={18} color="#999" />
+              </Pressable>
+            </View>
+
+            {selectedTx && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-6 flex-row items-center">
+                  <View className="w-12 h-12 bg-white rounded-xl items-center justify-center shadow-sm mr-4">
+                    <Feather name="monitor" size={24} color="#CC0D00" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-bold text-gray-900 text-lg">{selectedTx.equipment?.name}</Text>
+                    <Text className="text-gray-500 text-sm mt-1">SN: {selectedTx.equipment?.serial_number}</Text>
+                  </View>
+                </View>
+
+                {/* Info Fields */}
+                <DetailRow label="Trạng thái" value={<Badge status={selectedTx.status} />} />
+                <DetailRow label="Người mượn" value={selectedTx.borrower?.full_name || user?.full_name} />
+                <DetailRow label="Mục đích mượn" value={selectedTx.purpose || selectedTx.notes || 'Không có'} />
+                
+                <DetailRow 
+                  label="Ngày yêu cầu" 
+                  value={selectedTx.request_date ? new Date(selectedTx.request_date).toLocaleString('vi-VN') : '—'} 
+                />
+                <DetailRow 
+                  label="Hạn trả dự kiến" 
+                  value={selectedTx.due_date ? new Date(selectedTx.due_date).toLocaleDateString('vi-VN') : '—'} 
+                />
+
+                {selectedTx.actual_check_out && (
+                  <DetailRow 
+                    label="Ngày nhận thực tế" 
+                    value={new Date(selectedTx.actual_check_out).toLocaleString('vi-VN')} 
+                  />
+                )}
+
+                {selectedTx.actual_check_in && (
+                  <DetailRow 
+                    label="Ngày trả thực tế" 
+                    value={new Date(selectedTx.actual_check_in).toLocaleString('vi-VN')} 
+                  />
+                )}
+
+                {selectedTx.rejection_reason && (
+                  <DetailRow 
+                    label="Lý do từ chối" 
+                    value={<Text className="text-red-500 font-semibold">{selectedTx.rejection_reason}</Text>} 
+                  />
+                )}
+
+                {selectedTx.is_extended && (
+                  <DetailRow 
+                    label="Gia hạn" 
+                    value={<Text className="text-orange-500 font-bold">Đã gia hạn thêm 1 ngày</Text>} 
+                  />
+                )}
+
+                {selectedTx.rating && (
+                  <DetailRow 
+                    label="Đánh giá thiết bị" 
+                    value={
+                      <View className="flex-row items-center">
+                        <Feather name="star" size={14} color="#F59E0B" />
+                        <Text className="text-orange-500 ml-1 font-bold">{selectedTx.rating}/5 ({selectedTx.feedback || 'Không có nhận xét'})</Text>
+                      </View>
+                    } 
+                  />
+                )}
+
+                <Button 
+                  title="Đóng" 
+                  onPress={() => setDetailModalVisible(false)} 
+                  containerClassName="mt-6" 
+                />
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <View className="flex-row justify-between py-3 border-b border-gray-100 items-center">
+      <Text className="text-gray-500 text-sm font-medium">{label}</Text>
+      {typeof value === 'string' ? (
+        <Text className="text-gray-900 text-sm font-bold">{value}</Text>
+      ) : (
+        value
+      )}
     </View>
   );
 }

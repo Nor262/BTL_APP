@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Pressable, RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
