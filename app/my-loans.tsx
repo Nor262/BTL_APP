@@ -305,10 +305,21 @@ export default function MyLoansScreen() {
                   />
                 )}
 
+                {selectedTx.status === 'active' && !selectedTx.is_extended && (
+                  <Button 
+                    title="Gia hạn (+1 ngày)" 
+                    onPress={() => {
+                      setDetailModalVisible(false);
+                      handleExtend(selectedTx);
+                    }}
+                    containerClassName="mt-4" 
+                  />
+                )}
+
                 <Button 
                   title="Đóng" 
                   onPress={() => setDetailModalVisible(false)} 
-                  containerClassName="mt-6" 
+                  containerClassName="mt-4" 
                 />
               </ScrollView>
             )}

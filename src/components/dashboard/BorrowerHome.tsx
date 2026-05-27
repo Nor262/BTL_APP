@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import Badge from '../ui/Badge';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAlertStore } from '@/store/useAlertStore';
 import LoadingScreen from '../ui/LoadingScreen';
 import Button from '../ui/Button';
 
@@ -56,6 +57,26 @@ export default function BorrowerHome() {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleExtend = (tx: any) => {
+    useAlertStore.getState().showAlert({
+      type: 'warning',
+      title: 'Xác nhận gia hạn',
+      message: 'Bạn muốn gia hạn thêm 1 ngày cho thiết bị này?',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          const newDueDate = new Date(new Date(tx.due_date).getTime() + 1 * 24 * 60 * 60 * 1000);
+          await api.patch(`/transactions/${tx.id}/extend`, { new_due_date: newDueDate.toISOString() });
+          useAlertStore.getState().showAlert({ type: 'success', title: 'Thành công', message: 'Gia hạn thành công!' });
+          fetchData();
+        } catch (error) {
+          console.error(error);
+          useAlertStore.getState().showAlert({ type: 'error', title: 'Lỗi', message: 'Không thể gia hạn đơn mượn' });
+        }
+      }
+    });
   };
 
   useEffect(() => {
@@ -444,10 +465,21 @@ export default function BorrowerHome() {
                   />
                 )}
 
+                {selectedTx.status === 'active' && !selectedTx.is_extended && (
+                  <Button 
+                    title="Gia hạn (+1 ngày)" 
+                    onPress={() => {
+                      setDetailModalVisible(false);
+                      handleExtend(selectedTx);
+                    }}
+                    containerClassName="mt-4" 
+                  />
+                )}
+
                 <Button 
                   title="Đóng" 
                   onPress={() => setDetailModalVisible(false)} 
-                  containerClassName="mt-6" 
+                  containerClassName="mt-4" 
                 />
               </ScrollView>
             )}
