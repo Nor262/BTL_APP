@@ -14,14 +14,14 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://backend-btl-thltw-app.onrender.com/v1",
+        "EXPO_PUBLIC_API_URL": "https://backendbtlthltwapp-production.up.railway.app/v1",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "19807270724-rff969hgaqn5tbaao1hro99060m0bs7l.apps.googleusercontent.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://backend-btl-thltw-app.onrender.com/v1",
+        "EXPO_PUBLIC_API_URL": "https://backendbtlthltwapp-production.up.railway.app/v1",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "19807270724-rff969hgaqn5tbaao1hro99060m0bs7l.apps.googleusercontent.com"
       }
     }
