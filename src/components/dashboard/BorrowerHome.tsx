@@ -484,33 +484,35 @@ export default function BorrowerHome() {
                   />
                 )}
 
-                {selectedTx.status === 'active' && !selectedTx.is_extended && (
+                {['active', 'overdue'].includes(selectedTx.status) && !selectedTx.is_extended && (
                   <Button 
-                    title="Gia hạn (+1 ngày)" 
+                    title="🔄 Gia hạn (+1 ngày)" 
                     onPress={() => {
                       setDetailModalVisible(false);
                       handleExtend(selectedTx);
                     }}
+                    variant="warning"
                     containerClassName="mt-4" 
                   />
                 )}
 
                 {['pending', 'approved'].includes(selectedTx.status) && (
                   <Button 
-                    title="Hủy đơn mượn" 
+                    title="✕ Hủy đơn mượn" 
                     onPress={() => {
                       setDetailModalVisible(false);
                       handleCancel(selectedTx);
                     }}
-                    containerClassName="mt-4 bg-red-600"
                     variant="danger"
+                    containerClassName="mt-3"
                   />
                 )}
 
                 <Button 
                   title="Đóng" 
                   onPress={() => setDetailModalVisible(false)} 
-                  containerClassName="mt-4" 
+                  variant="secondary"
+                  containerClassName="mt-3" 
                 />
               </ScrollView>
             )}

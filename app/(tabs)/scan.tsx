@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, ActivityIndicator, Alert, View as RNView, Pressable, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { StyleSheet, ActivityIndicator, View as RNView, Pressable, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { View, Text } from 'react-native';
@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { handleApiError } from '@/utils/error-handler';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Alert } from '@/utils/alert';
 
 const { width } = Dimensions.get('window');
 

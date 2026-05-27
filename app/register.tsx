@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
-import { Alert } from 'react-native';
+import { Alert } from '@/utils/alert';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';

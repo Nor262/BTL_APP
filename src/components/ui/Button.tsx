@@ -8,7 +8,7 @@ interface ButtonProps {
   title: string;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'warning' | 'success';
   className?: string;
   containerClassName?: string;
   textClassName?: string;
@@ -51,6 +51,14 @@ export default function Button({
         return 'bg-primary';
       case 'outline':
         return 'border border-primary bg-transparent';
+      case 'secondary':
+        return 'bg-gray-100';
+      case 'danger':
+        return 'bg-red-500';
+      case 'warning':
+        return 'bg-orange-500';
+      case 'success':
+        return 'bg-green-600';
       default:
         return 'bg-gray-100';
     }
@@ -59,6 +67,9 @@ export default function Button({
   const getTextColor = () => {
     switch (variant) {
       case 'primary':
+      case 'danger':
+      case 'warning':
+      case 'success':
         return 'text-white';
       case 'outline':
         return 'text-primary';

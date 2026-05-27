@@ -15,10 +15,10 @@ export const Alert = {
     
     if (textToCheck.includes('thành công') || textToCheck.includes('hoàn thành') || textToCheck.includes('đồng ý')) {
       type = 'success';
-    } else if (textToCheck.includes('lỗi') || textToCheck.includes('thất bại') || textToCheck.includes('hủy') || textToCheck.includes('xóa')) {
-      type = 'error';
     } else if (textToCheck.includes('xác nhận') || textToCheck.includes('cảnh báo') || textToCheck.includes('khóa')) {
       type = 'warning';
+    } else if (textToCheck.includes('lỗi') || textToCheck.includes('thất bại') || textToCheck.includes('hủy') || textToCheck.includes('xóa')) {
+      type = 'error';
     }
 
     // Find the non-cancel action button to run on confirm

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Pressable, RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
@@ -44,11 +44,11 @@ export default function MyLoansScreen() {
   }, [user]);
 
   const renderItem = ({ item, index }: { item: any, index: number }) => (
-    <Animated.View 
+    <Animated.View
       entering={FadeInDown.delay(index * 100).duration(500)}
       className="bg-white rounded-2xl mb-3 border border-gray-100 shadow-sm overflow-hidden"
     >
-      <Pressable 
+      <Pressable
         onPress={() => {
           setSelectedTx(item);
           setDetailModalVisible(true);
@@ -65,7 +65,7 @@ export default function MyLoansScreen() {
           </View>
           <Badge status={item.status} />
         </View>
-        
+
         <View className="flex-row justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
           <View>
             <Text className="text-[10px] text-gray-500 uppercase font-bold mb-1">Ngày mượn</Text>
@@ -88,11 +88,11 @@ export default function MyLoansScreen() {
           </View>
         )}
       </Pressable>
-      
+
       {/* Hành động: Gia hạn / Đánh giá */}
       <View className="flex-row justify-end px-4 pb-4 border-t border-gray-50 pt-3">
         {item.status === 'active' && !item.is_extended && (
-          <Pressable 
+          <Pressable
             className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 mr-2"
             onPress={() => handleExtend(item)}
           >
@@ -100,7 +100,7 @@ export default function MyLoansScreen() {
           </Pressable>
         )}
         {item.status === 'completed' && !item.rating && (
-          <Pressable 
+          <Pressable
             className="bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100"
             onPress={() => {
               setSelectedTx(item);
@@ -182,7 +182,7 @@ export default function MyLoansScreen() {
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
       <View className="bg-white pt-16 pb-4 px-6 border-b border-gray-100 flex-row items-center shadow-sm">
-        <Pressable 
+        <Pressable
           className="w-10 h-10 items-center justify-center mr-2"
           onPress={() => router.back()}
         >
@@ -273,96 +273,99 @@ export default function MyLoansScreen() {
                 <DetailRow label="Trạng thái" value={<Badge status={selectedTx.status} />} />
                 <DetailRow label="Người mượn" value={selectedTx.borrower?.full_name || user?.full_name} />
                 <DetailRow label="Mục đích mượn" value={selectedTx.purpose || selectedTx.notes || 'Không có'} />
-                
-                <DetailRow 
-                  label="Ngày yêu cầu" 
-                  value={selectedTx.request_date ? new Date(selectedTx.request_date).toLocaleString('vi-VN') : '—'} 
+
+                <DetailRow
+                  label="Ngày yêu cầu"
+                  value={selectedTx.request_date ? new Date(selectedTx.request_date).toLocaleString('vi-VN') : '—'}
                 />
-                <DetailRow 
-                  label="Hạn trả dự kiến" 
-                  value={selectedTx.due_date ? new Date(selectedTx.due_date).toLocaleDateString('vi-VN') : '—'} 
+                <DetailRow
+                  label="Hạn trả dự kiến"
+                  value={selectedTx.due_date ? new Date(selectedTx.due_date).toLocaleDateString('vi-VN') : '—'}
                 />
 
                 {selectedTx.actual_check_out && (
-                  <DetailRow 
-                    label="Ngày nhận thực tế" 
-                    value={new Date(selectedTx.actual_check_out).toLocaleString('vi-VN')} 
+                  <DetailRow
+                    label="Ngày nhận thực tế"
+                    value={new Date(selectedTx.actual_check_out).toLocaleString('vi-VN')}
                   />
                 )}
 
                 {selectedTx.actual_check_in && (
-                  <DetailRow 
-                    label="Ngày trả thực tế" 
-                    value={new Date(selectedTx.actual_check_in).toLocaleString('vi-VN')} 
+                  <DetailRow
+                    label="Ngày trả thực tế"
+                    value={new Date(selectedTx.actual_check_in).toLocaleString('vi-VN')}
                   />
                 )}
 
                 {selectedTx.rejection_reason && (
-                  <DetailRow 
-                    label="Lý do từ chối" 
-                    value={<Text className="text-red-500 font-semibold">{selectedTx.rejection_reason}</Text>} 
+                  <DetailRow
+                    label="Lý do từ chối"
+                    value={<Text className="text-red-500 font-semibold">{selectedTx.rejection_reason}</Text>}
                   />
                 )}
 
                 {selectedTx.is_extended && (
-                  <DetailRow 
-                    label="Gia hạn" 
-                    value={<Text className="text-orange-500 font-bold">Đã gia hạn thêm 1 ngày</Text>} 
+                  <DetailRow
+                    label="Gia hạn"
+                    value={<Text className="text-orange-500 font-bold">Đã gia hạn thêm 1 ngày</Text>}
                   />
                 )}
 
                 {selectedTx.rating && (
-                  <DetailRow 
-                    label="Đánh giá thiết bị" 
+                  <DetailRow
+                    label="Đánh giá thiết bị"
                     value={
                       <View className="flex-row items-center">
                         <Feather name="star" size={14} color="#F59E0B" />
                         <Text className="text-orange-500 ml-1 font-bold">{selectedTx.rating}/5 ({selectedTx.feedback || 'Không có nhận xét'})</Text>
                       </View>
-                    } 
+                    }
                   />
                 )}
 
-                {selectedTx.status === 'active' && !selectedTx.is_extended && (
-                  <Button 
-                    title="Gia hạn (+1 ngày)" 
+                {['active', 'overdue'].includes(selectedTx.status) && !selectedTx.is_extended && (
+                  <Button
+                    title="Gia hạn (+1 ngày)"
                     onPress={() => {
                       setDetailModalVisible(false);
                       handleExtend(selectedTx);
                     }}
-                    containerClassName="mt-4" 
+                    variant="warning"
+                    containerClassName="mt-4"
                   />
                 )}
 
                 {selectedTx.status === 'completed' && !selectedTx.rating && (
-                  <Button 
-                    title="Đánh giá thiết bị" 
+                  <Button
+                    title="Đánh giá thiết bị"
                     onPress={() => {
                       setDetailModalVisible(false);
                       setRating('5');
                       setFeedback('');
                       setRatingModalVisible(true);
                     }}
-                    containerClassName="mt-4" 
+                    variant="success"
+                    containerClassName="mt-3"
                   />
                 )}
 
                 {['pending', 'approved'].includes(selectedTx.status) && (
-                  <Button 
-                    title="Hủy đơn mượn" 
+                  <Button
+                    title="✕ Hủy đơn mượn"
                     onPress={() => {
                       setDetailModalVisible(false);
                       handleCancel(selectedTx);
                     }}
-                    containerClassName="mt-4 bg-red-600"
                     variant="danger"
+                    containerClassName="mt-3"
                   />
                 )}
 
-                <Button 
-                  title="Đóng" 
-                  onPress={() => setDetailModalVisible(false)} 
-                  containerClassName="mt-4" 
+                <Button
+                  title="Đóng"
+                  onPress={() => setDetailModalVisible(false)}
+                  variant="secondary"
+                  containerClassName="mt-3"
                 />
               </ScrollView>
             )}

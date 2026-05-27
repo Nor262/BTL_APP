@@ -20,6 +20,6 @@ export const useAlertStore = create<AlertState>((set) => ({
   message: '',
   onConfirm: undefined,
   showCancel: false,
-  showAlert: (config) => set({ visible: true, ...config }),
-  hideAlert: () => set({ visible: false }),
+  showAlert: (config) => set({ visible: true, onConfirm: undefined, showCancel: false, ...config }),
+  hideAlert: () => set({ visible: false, onConfirm: undefined, showCancel: false }),
 }));

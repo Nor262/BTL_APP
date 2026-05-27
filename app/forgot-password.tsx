@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { StatusBar } from 'expo-status-bar';
 import { handleApiError } from '@/utils/error-handler';
+import { Alert } from '@/utils/alert';
 
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState(1);
