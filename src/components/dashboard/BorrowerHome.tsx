@@ -195,7 +195,7 @@ export default function BorrowerHome() {
                   <Pressable 
                     onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
                     className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
-                    style={{ width: width * 0.75 }}
+                    style={{ width: width - 48 }}
                   >
                     <View className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center overflow-hidden">
                       {loan.equipment?.image_url ? (
@@ -248,7 +248,7 @@ export default function BorrowerHome() {
                   <Pressable 
                     onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
                     className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
-                    style={{ width: width * 0.75 }}
+                    style={{ width: width - 48 }}
                   >
                     <View className="w-16 h-16 bg-green-50 rounded-2xl items-center justify-center overflow-hidden">
                       {loan.equipment?.image_url ? (
@@ -301,7 +301,7 @@ export default function BorrowerHome() {
                   <Pressable 
                     onPress={() => router.push(`/equipment/${loan.equipment_id}`)}
                     className="bg-white rounded-[28px] p-4 flex-row items-center shadow-md shadow-gray-200 border border-gray-100"
-                    style={{ width: width * 0.75 }}
+                    style={{ width: width - 48 }}
                   >
                     <View className="w-16 h-16 bg-amber-50 rounded-2xl items-center justify-center overflow-hidden">
                       {loan.equipment?.image_url ? (

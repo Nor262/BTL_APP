@@ -14,8 +14,7 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.nor262.frontendApp",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.nor262.frontendApp"
     },
     "web": {
       "output": "static",

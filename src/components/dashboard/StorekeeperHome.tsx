@@ -259,7 +259,7 @@ export default function StorekeeperHome() {
               <View className="items-end">
                 <Badge status={item.status} />
                 <Text className="text-[9px] text-gray-400 mt-1 italic">
-                  {new Date(item.created_at).toLocaleDateString('vi-VN')}
+                  {item.request_date ? new Date(item.request_date).toLocaleDateString('vi-VN') : '—'}
                 </Text>
               </View>
             </Animated.View>

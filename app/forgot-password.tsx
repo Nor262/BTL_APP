@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/api/client';
@@ -14,7 +14,22 @@ export default function ForgotPasswordScreen() {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    let interval: any;
+    if (countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [countdown]);
+
+  const startTimer = () => {
+    setCountdown(60);
+  };
 
   const handleSendOtp = async () => {
     if (!email.trim()) {
@@ -25,6 +40,21 @@ export default function ForgotPasswordScreen() {
       await api.post('/auth/forgot-password', { email });
       Alert.alert('Thành công', 'Mã xác nhận đã được gửi vào Email của bạn.');
       setStep(2);
+      startTimer();
+    } catch (error: any) {
+      handleApiError(error, 'Lỗi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (countdown > 0) return;
+    setLoading(true);
+    try {
+      await api.post('/auth/forgot-password', { email });
+      Alert.alert('Thành công', 'Mã xác nhận mới đã được gửi vào Email của bạn.');
+      startTimer();
     } catch (error: any) {
       handleApiError(error, 'Lỗi');
     } finally {
@@ -122,6 +152,18 @@ export default function ForgotPasswordScreen() {
                     loading={loading}
                     className="mt-6"
                   />
+
+                  <View className="flex-row justify-center mt-6">
+                    <Text className="text-gray-500 text-base">Chưa nhận được mã? </Text>
+                    <Pressable 
+                      onPress={handleResendOtp}
+                      disabled={countdown > 0}
+                    >
+                      <Text className={`font-bold text-base ${countdown > 0 ? 'text-gray-400' : 'text-primary'}`}>
+                        {countdown > 0 ? `Gửi lại mã (${countdown}s)` : 'Gửi lại mã'}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </>
               )}
 
