@@ -316,6 +316,19 @@ export default function MyLoansScreen() {
                   />
                 )}
 
+                {selectedTx.status === 'completed' && !selectedTx.rating && (
+                  <Button 
+                    title="Đánh giá thiết bị" 
+                    onPress={() => {
+                      setDetailModalVisible(false);
+                      setRating('5');
+                      setFeedback('');
+                      setRatingModalVisible(true);
+                    }}
+                    containerClassName="mt-4" 
+                  />
+                )}
+
                 <Button 
                   title="Đóng" 
                   onPress={() => setDetailModalVisible(false)} 
