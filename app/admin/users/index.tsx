@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Pressable, RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, Modal, KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import api from '@/api/client';
@@ -167,16 +167,25 @@ export default function AdminUsersScreen() {
       </View>
 
       {/* Search bar */}
-      <View className="p-4 bg-white border-b border-gray-100">
-        <View className="flex-row items-center bg-gray-50 px-4 rounded-xl border border-gray-100">
-          <Feather name="search" size={16} color="#999" />
-          <Input
+      <View className="px-6 pt-4 pb-2 bg-white border-b border-gray-100">
+        <View className="flex-row items-center bg-gray-50 rounded-2xl px-4 h-12 border border-gray-100">
+          <Feather name="search" size={18} color="#999" />
+          <TextInput
+            className="flex-1 ml-3 text-gray-900 text-sm h-10"
+            style={{ 
+              textAlignVertical: 'center',
+              includeFontPadding: false,
+            }}
             placeholder="Tìm theo họ tên, username, email..."
+            placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            className="flex-1 ml-2 text-sm text-gray-900 py-3"
-            style={{ borderBottomWidth: 0 }}
           />
+          {searchQuery ? (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Feather name="x" size={16} color="#999" />
+            </Pressable>
+          ) : null}
         </View>
       </View>
 
