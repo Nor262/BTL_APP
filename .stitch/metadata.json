@@ -1,0 +1,106 @@
+{
+  "name": "projects/16021716213140395678",
+  "projectId": "16021716213140395678",
+  "title": "Equipment Management System - Mobile UI",
+  "visibility": "PRIVATE",
+  "projectType": "PROJECT_DESIGN",
+  "origin": "STITCH",
+  "deviceType": "MOBILE",
+  "designTheme": {
+    "colorMode": "LIGHT",
+    "font": "INTER",
+    "roundness": "ROUND_TWELVE",
+    "customColor": "#CC0D00",
+    "saturation": 3
+  },
+  "screens": {
+    "login": {
+      "id": "c5e2c64e1c124374926261627dc90850",
+      "sourceScreen": "projects/16021716213140395678/screens/c5e2c64e1c124374926261627dc90850"
+    },
+    "borrower-home": {
+      "id": "e63f7351b398461c967647f9ac99a658",
+      "sourceScreen": "projects/16021716213140395678/screens/e63f7351b398461c967647f9ac99a658"
+    },
+    "equipment-detail": {
+      "id": "9352aaa264c843309cfb6b80ce6344f8",
+      "sourceScreen": "projects/16021716213140395678/screens/9352aaa264c843309cfb6b80ce6344f8"
+    },
+    "admin-equipment-detail": {
+      "id": "b0d27544a1c74736969e2c8ab1090819",
+      "sourceScreen": "projects/16021716213140395678/screens/b0d27544a1c74736969e2c8ab1090819"
+    },
+    "admin-categories": {
+      "id": "aafb938562e349c994da9ffb4be58542",
+      "sourceScreen": "projects/16021716213140395678/screens/aafb938562e349c994da9ffb4be58542"
+    },
+    "register": {
+      "id": "300e83484b4a40a6b59658d2349948ae",
+      "sourceScreen": "projects/16021716213140395678/screens/300e83484b4a40a6b59658d2349948ae"
+    },
+    "forgot-password": {
+      "id": "a8166f59b5e34825a6e6c2a792a7a6fe",
+      "sourceScreen": "projects/16021716213140395678/screens/a8166f59b5e34825a6e6c2a792a7a6fe"
+    },
+    "reset-password": {
+      "id": "35a4a945c1e7488e8a537c1acaea6806",
+      "sourceScreen": "projects/16021716213140395678/screens/35a4a945c1e7488e8a537c1acaea6806"
+    },
+    "notifications": {
+      "id": "798685098e574b2f901056f22f6901f5",
+      "sourceScreen": "projects/16021716213140395678/screens/798685098e574b2f901056f22f6901f5"
+    },
+    "explore": {
+      "id": "f752cf35e34e4505b0fd90f8ae17115e",
+      "sourceScreen": "projects/16021716213140395678/screens/f752cf35e34e4505b0fd90f8ae17115e"
+    },
+    "scan": {
+      "id": "e950d054d58f4b66a2b40964996e2f64",
+      "sourceScreen": "projects/16021716213140395678/screens/e950d054d58f4b66a2b40964996e2f64"
+    },
+    "my-loans": {
+      "id": "33cb750ba122484da292ad979c7b98d5",
+      "sourceScreen": "projects/16021716213140395678/screens/33cb750ba122484da292ad979c7b98d5"
+    },
+    "storekeeper-requests": {
+      "id": "18ab32929f8c458c924d1bfa462cb9a5",
+      "sourceScreen": "projects/16021716213140395678/screens/18ab32929f8c458c924d1bfa462cb9a5"
+    },
+    "storekeeper-request-detail": {
+      "id": "7f5c5ba92cee49df923b2cac18180294",
+      "sourceScreen": "projects/16021716213140395678/screens/7f5c5ba92cee49df923b2cac18180294"
+    },
+    "storekeeper-scan": {
+      "id": "6a1c0994337f495cba3ca9aebadfa5b5",
+      "sourceScreen": "projects/16021716213140395678/screens/6a1c0994337f495cba3ca9aebadfa5b5"
+    },
+    "admin-locations": {
+      "id": "1edf7d4a06234731a8e1fdea36584b75",
+      "sourceScreen": "projects/16021716213140395678/screens/1edf7d4a06234731a8e1fdea36584b75"
+    },
+    "admin-suppliers": {
+      "id": "1e61eae3e60e444d9cbc844425dfe808",
+      "sourceScreen": "projects/16021716213140395678/screens/1e61eae3e60e444d9cbc844425dfe808"
+    },
+    "admin-equipment": {
+      "id": "c0fe3b72976943e4b39214e3509c465a",
+      "sourceScreen": "projects/16021716213140395678/screens/c0fe3b72976943e4b39214e3509c465a"
+    },
+    "admin-equipment-add": {
+      "id": "5d392a467e1341baaa366986dac10b8a",
+      "sourceScreen": "projects/16021716213140395678/screens/5d392a467e1341baaa366986dac10b8a"
+    },
+    "admin-users": {
+      "id": "f36ad169b0b64fe79fb6be8ff857a445",
+      "sourceScreen": "projects/16021716213140395678/screens/f36ad169b0b64fe79fb6be8ff857a445"
+    },
+    "admin-audit": {
+      "id": "4d8420d9d9484bac9185dd86fbfbbc88",
+      "sourceScreen": "projects/16021716213140395678/screens/4d8420d9d9484bac9185dd86fbfbbc88"
+    },
+    "admin-maintenance": {
+      "id": "32755c5a20c54b2d906bcd7fb02ba244",
+      "sourceScreen": "projects/16021716213140395678/screens/32755c5a20c54b2d906bcd7fb02ba244"
+    }
+  }
+}

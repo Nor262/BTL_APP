@@ -12,7 +12,12 @@ import { handleApiError } from '@/utils/error-handler';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
+import { useAuthStore } from '@/store/useAuthStore';
+
 export default function AdminCategoriesScreen() {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
+
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -107,20 +112,22 @@ export default function AdminCategoriesScreen() {
           <Text className="text-xs text-gray-500 mt-1" numberOfLines={2}>{item.description}</Text>
         ) : null}
       </View>
-      <View className="flex-row">
-        <Pressable 
-          className="w-9 h-9 bg-gray-50 rounded-lg items-center justify-center border border-gray-100 mr-2"
-          onPress={() => handleOpenEdit(item)}
-        >
-          <Feather name="edit-2" size={14} color="#666" />
-        </Pressable>
-        <Pressable 
-          className="w-9 h-9 bg-red-50 rounded-lg items-center justify-center border border-red-100"
-          onPress={() => handleDelete(item.id)}
-        >
-          <Feather name="trash-2" size={14} color="#CC0D00" />
-        </Pressable>
-      </View>
+      {isAdmin && (
+        <View className="flex-row">
+          <Pressable 
+            className="w-9 h-9 bg-gray-50 rounded-lg items-center justify-center border border-gray-100 mr-2"
+            onPress={() => handleOpenEdit(item)}
+          >
+            <Feather name="edit-2" size={14} color="#666" />
+          </Pressable>
+          <Pressable 
+            className="w-9 h-9 bg-red-50 rounded-lg items-center justify-center border border-red-100"
+            onPress={() => handleDelete(item.id)}
+          >
+            <Feather name="trash-2" size={14} color="#CC0D00" />
+          </Pressable>
+        </View>
+      )}
     </Animated.View>
   );
 
@@ -141,12 +148,14 @@ export default function AdminCategoriesScreen() {
           </Pressable>
           <Text className="text-xl font-bold text-gray-900">Quản lý Danh mục</Text>
         </View>
-        <Pressable 
-          className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center"
-          onPress={handleOpenAdd}
-        >
-          <Feather name="plus" size={20} color="#CC0D00" />
-        </Pressable>
+        {isAdmin && (
+          <Pressable 
+            className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center"
+            onPress={handleOpenAdd}
+          >
+            <Feather name="plus" size={20} color="#CC0D00" />
+          </Pressable>
+        )}
       </View>
 
       <FlatList

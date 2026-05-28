@@ -211,6 +211,35 @@ export default function EquipmentDetailScreen() {
     }
   };
 
+  const handleDeleteEquipment = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    showAlert({
+      type: 'warning',
+      title: 'Xác nhận xóa',
+      message: 'Bạn có chắc chắn muốn xóa thiết bị này khỏi hệ thống? Hành động này không thể hoàn tác.',
+      showCancel: true,
+      onConfirm: async () => {
+        setSubmitting(true);
+        try {
+          await api.delete(`/equipment/${id}`);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          showAlert({
+            type: 'success',
+            title: 'Thành công',
+            message: 'Đã xóa thiết bị khỏi hệ thống.',
+            onConfirm: () => {
+              router.replace('/(tabs)');
+            }
+          });
+        } catch (error) {
+          handleApiError(error, 'Lỗi khi xóa thiết bị');
+        } finally {
+          setSubmitting(false);
+        }
+      }
+    });
+  };
+
   const handleBorrow = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (!notes.trim()) {
@@ -400,12 +429,31 @@ export default function EquipmentDetailScreen() {
 
         {(user?.role === 'admin' || user?.role === 'storekeeper') ? (
           <View className="absolute bottom-0 left-0 right-0 bg-white p-5 border-t border-gray-100 flex-row items-center">
-            <View className="flex-1">
-              <Button 
-                title="CHỈNH SỬA THÔNG TIN" 
-                onPress={() => setEditModalVisible(true)}
-              />
-            </View>
+            {user?.role === 'admin' ? (
+              <>
+                <View className="flex-1 mr-2">
+                  <Button 
+                    title="XÓA THIẾT BỊ" 
+                    variant="danger"
+                    onPress={handleDeleteEquipment}
+                    loading={submitting}
+                  />
+                </View>
+                <View className="flex-1 ml-2">
+                  <Button 
+                    title="CHỈNH SỬA" 
+                    onPress={() => setEditModalVisible(true)}
+                  />
+                </View>
+              </>
+            ) : (
+              <View className="flex-1">
+                <Button 
+                  title="CHỈNH SỬA THÔNG TIN" 
+                  onPress={() => setEditModalVisible(true)}
+                />
+              </View>
+            )}
           </View>
         ) : (
           <View className="absolute bottom-0 left-0 right-0 bg-white p-5 border-t border-gray-100 flex-row items-center">
