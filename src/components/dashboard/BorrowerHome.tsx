@@ -484,7 +484,7 @@ export default function BorrowerHome() {
                   />
                 )}
 
-                {['active', 'overdue'].includes(selectedTx.status) && !selectedTx.is_extended && (
+                {selectedTx.status === 'active' && !selectedTx.is_extended && new Date(selectedTx.due_date) >= new Date() && (
                   <Button 
                     title="🔄 Gia hạn (+1 ngày)" 
                     onPress={() => {

@@ -91,7 +91,7 @@ export default function MyLoansScreen() {
 
       {/* Hành động: Gia hạn / Đánh giá */}
       <View className="flex-row justify-end px-4 pb-4 border-t border-gray-50 pt-3">
-        {item.status === 'active' && !item.is_extended && (
+        {item.status === 'active' && !item.is_extended && new Date(item.due_date) >= new Date() && (
           <Pressable
             className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 mr-2"
             onPress={() => handleExtend(item)}
@@ -323,7 +323,7 @@ export default function MyLoansScreen() {
                   />
                 )}
 
-                {['active', 'overdue'].includes(selectedTx.status) && !selectedTx.is_extended && (
+                {selectedTx.status === 'active' && !selectedTx.is_extended && new Date(selectedTx.due_date) >= new Date() && (
                   <Button
                     title="Gia hạn (+1 ngày)"
                     onPress={() => {
