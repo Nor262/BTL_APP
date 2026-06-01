@@ -8,6 +8,7 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import Input from '@/components/ui/Input';
 import { handleApiError } from '@/utils/error-handler';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function AdminAuditScreen() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -16,8 +17,10 @@ export default function AdminAuditScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+  const { user } = useAuthStore();
 
   const fetchLogs = async () => {
+    if (!user) return;
     try {
       const response = await api.get('/audit');
       const data = response.data.data || response.data;

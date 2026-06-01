@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView, Modal, ActivityIndicator } from 'react-native';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/api/client';
@@ -11,6 +10,28 @@ import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { handleApiError } from '@/utils/error-handler';
 import { useAlertStore } from '@/store/useAlertStore';
+
+let GoogleSignin: any;
+let statusCodes: any;
+
+try {
+  const gs = require('@react-native-google-signin/google-signin');
+  GoogleSignin = gs.GoogleSignin;
+  statusCodes = gs.statusCodes;
+} catch (e) {
+  console.warn("Google Sign-In is not supported in this environment (likely Expo Go).", e);
+  GoogleSignin = {
+    configure: () => {},
+    hasPlayServices: async () => false,
+    signIn: async () => { throw new Error("Google Sign-In requires a development build (npx expo run:android / ios) and is not supported in Expo Go."); },
+    signOut: async () => {},
+  };
+  statusCodes = {
+    SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+    IN_PROGRESS: 'IN_PROGRESS',
+    PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE'
+  };
+}
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
