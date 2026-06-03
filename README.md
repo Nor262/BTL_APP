@@ -1,6 +1,6 @@
-# 📱 BTL-EQM: Mobile Application
+# 📱 Equipment Management System: Mobile Application
 
-Ứng dụng di động quản lý thiết bị đa năng của dự án **Hệ thống Quản lý Thiết bị Đa nền tảng (BTL-EQM)**. Được phát triển bằng Expo và React Native dành cho các đối tượng **Người mượn (Sinh viên)** và **Thủ kho (Storekeeper)** tương tác trực tiếp tại kho.
+Ứng dụng di động quản lý thiết bị đa năng của dự án **Hệ thống Quản lý Thiết bị Đa nền tảng (Equipment Management System)**. Được phát triển bằng Expo và React Native dành cho các đối tượng **Người mượn (Sinh viên)** và **Thủ kho (Storekeeper)** tương tác trực tiếp tại kho.
 
 ---
 
