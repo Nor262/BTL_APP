@@ -5,15 +5,17 @@
 ---
 
 ### 🌐 Dự án liên quan
-* **Cổng thông tin Web Portal (Production):** [https://btl-thltw.onrender.com/](https://btl-thltw.onrender.com/)
-* **Tải xuống ứng dụng di động Android (APK):** [Tải về EquipmentManagement.apk](https://github.com/Nor262/BTL_APP/releases/download/v1.0.0/EquipmentManagement.apk)
+* **Cổng thông tin Web Portal (Production):** [https://equipmentmanagementsystem.netlify.app/](https://equipmentmanagementsystem.netlify.app/)
+* **Tải xuống ứng dụng di động Android (APK):** [Tải về EquipmentManagement.apk](https://github.com/Nor262/APP_Equipment_Management_System/releases/download/v1.0.0/EquipmentManagement.apk)
+* 🖥️ **Mã nguồn Web Portal:** [RIPT1307-04-2026-Nhom05-KTHP](https://github.com/Nor262/RIPT1307-04-2026-Nhom05-KTHP)
+* 🚀 **Mã nguồn Backend:** [Backend_Equipment_Management_System](https://github.com/Nor262/Backend_Equipment_Management_System)
 
 ---
 
 ### 📊 Công nghệ sử dụng & Huy hiệu
 
 <p align="left">
-  <a href="https://github.com/Nor262/BTL_APP/releases/download/v1.0.0/EquipmentManagement.apk"><img src="https://img.shields.io/badge/Android%20App-APK%20Download-green?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" /></a>
+  <a href="https://github.com/Nor262/APP_Equipment_Management_System/releases/download/v1.0.0/EquipmentManagement.apk"><img src="https://img.shields.io/badge/Android%20App-APK%20Download-green?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" /></a>
   <img src="https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white" alt="Expo" />
   <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React Native" />
   <img src="https://img.shields.io/badge/NativeWind_v4-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="NativeWind" />
